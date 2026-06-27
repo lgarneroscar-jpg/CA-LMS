@@ -1,0 +1,2 @@
+-- See apply_migration seed_phase2_p1_content in Supabase dashboard.
+-- Seeds Demo University (cohort started 3 days ago), P1 + P2 modules, P1 quiz, links students.

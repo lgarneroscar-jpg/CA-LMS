@@ -11,6 +11,14 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import type { ExerciseField, WorkbookBlock } from "@/types/modules";
+import { isStructuredExercise } from "@/types/modules";
+
+type LegacyExerciseField = Extract<
+  ExerciseField,
+  { type: "text" | "choice" | "checkbox" }
+>;
+
+type LegacyExerciseType = LegacyExerciseField["type"];
 
 type QuizQuestion = {
   id?: string;
@@ -301,6 +309,32 @@ export function ModuleContentEditor({
         </div>
         {exercises.map((exercise, index) => (
           <div key={index} className="space-y-2 rounded-lg border p-3">
+            {isStructuredExercise(exercise) ? (
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-xs text-muted-foreground">
+                    {exercise.key}
+                  </span>
+                  <span className="rounded bg-muted px-2 py-0.5 text-xs font-medium">
+                    {exercise.input_type}
+                  </span>
+                </div>
+                <p className="text-sm font-medium">{exercise.title}</p>
+                <p className="text-sm text-muted-foreground">
+                  {exercise.instructions}
+                </p>
+                <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                  {exercise.fields.map((field) => (
+                    <li key={field.key}>{field.label}</li>
+                  ))}
+                </ul>
+                <p className="text-xs text-muted-foreground">
+                  Structured exercises are seeded from the workbook — edit via
+                  re-seed, not this form.
+                </p>
+              </>
+            ) : (
+              <>
             <div className="grid gap-2 sm:grid-cols-2">
               <Input
                 value={exercise.key}
@@ -316,10 +350,10 @@ export function ModuleContentEditor({
               <select
                 value={exercise.type}
                 onChange={(e) => {
-                  const type = e.target.value as ExerciseField["type"];
+                  const type = e.target.value as LegacyExerciseType;
                   setExercises((items) =>
                     items.map((item, i) => {
-                      if (i !== index) return item;
+                      if (i !== index || isStructuredExercise(item)) return item;
                       if (type === "choice") {
                         return {
                           key: item.key,
@@ -384,21 +418,23 @@ export function ModuleContentEditor({
                 placeholder="One option per line"
                 onChange={(e) =>
                   setExercises((items) =>
-                    items.map((item, i) =>
-                      i === index && item.type === "choice"
-                        ? {
-                            ...item,
-                            options: e.target.value
-                              .split("\n")
-                              .map((s) => s.trim())
-                              .filter(Boolean),
-                          }
-                        : item
-                    )
+                    items.map((item, i) => {
+                      if (i !== index || isStructuredExercise(item)) return item;
+                      if (item.type !== "choice") return item;
+                      return {
+                        ...item,
+                        options: e.target.value
+                          .split("\n")
+                          .map((s) => s.trim())
+                          .filter(Boolean),
+                      };
+                    })
                   )
                 }
                 rows={4}
               />
+            )}
+              </>
             )}
             <Button
               type="button"

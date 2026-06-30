@@ -29,9 +29,23 @@ function CalloutBox({
   );
 }
 
-export function WorkbookContent({ blocks }: { blocks: WorkbookBlock[] }) {
+type WorkbookContentProps = {
+  overview?: string;
+  blocks: WorkbookBlock[];
+  completionCheck?: string[];
+};
+
+export function WorkbookContent({
+  overview,
+  blocks,
+  completionCheck,
+}: WorkbookContentProps) {
   return (
     <article className="prose prose-slate max-w-none dark:prose-invert">
+      {overview ? (
+        <p className="mt-0 leading-relaxed text-muted-foreground">{overview}</p>
+      ) : null}
+
       {blocks.map((block, i) => {
         switch (block.type) {
           case "heading":
@@ -80,10 +94,44 @@ export function WorkbookContent({ blocks }: { blocks: WorkbookBlock[] }) {
                 variant="concept"
               />
             );
+          case "application":
+            return (
+              <ul key={i} className="mt-4 list-disc space-y-2 pl-5 text-muted-foreground">
+                {block.items.map((item, j) => (
+                  <li key={j} className="leading-relaxed">
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            );
           default:
             return null;
         }
       })}
+
+      {completionCheck && completionCheck.length > 0 ? (
+        <section className="mt-10 rounded-xl border border-border bg-muted/30 p-5">
+          <h3 className="text-lg font-semibold text-foreground">
+            Completion Check
+          </h3>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Confirm you can honestly check each item before moving on.
+          </p>
+          <ul className="mt-4 space-y-2">
+            {completionCheck.map((item, index) => (
+              <li
+                key={index}
+                className="flex items-start gap-3 text-sm leading-relaxed text-foreground"
+              >
+                <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded border border-border bg-background text-[10px] text-muted-foreground">
+                  ✓
+                </span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </article>
   );
 }

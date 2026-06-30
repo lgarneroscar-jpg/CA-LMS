@@ -9,6 +9,7 @@ import {
   tryCompleteModule,
 } from "@/lib/progress";
 import type { ExerciseField } from "@/types/modules";
+import { isStructuredExercise } from "@/types/modules";
 
 async function requireStudent() {
   const user = await getSessionUser();
@@ -98,6 +99,20 @@ export async function submitExercises(
   }
 
   for (const field of exerciseFields) {
+    if (isStructuredExercise(field)) {
+      await supabase.from("exercise_responses").upsert(
+        {
+          student_id: user.id,
+          module_id: moduleId,
+          exercise_key: field.key,
+          response: "reviewed",
+          submitted_at: new Date().toISOString(),
+        },
+        { onConflict: "student_id,module_id,exercise_key" }
+      );
+      continue;
+    }
+
     const value = responses[field.key]?.trim() ?? "";
     if (field.type === "checkbox") {
       if (value !== "true") {

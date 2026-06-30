@@ -1,4 +1,15 @@
-import type { ExerciseField, WorkbookBlock } from "@/types/modules";
+import type { ExerciseField, ExerciseInputType, WorkbookBlock } from "@/types/modules";
+
+const STRUCTURED_INPUT_TYPES = new Set([
+  "anchor_select",
+  "rewrite_pairs",
+  "fill_blank",
+  "reflection",
+  "checklist",
+  "star",
+  "tier_map",
+  "scorecard",
+]);
 
 /** Normalize legacy or editor block shapes for rendering. */
 export function normalizeWorkbookBlock(raw: Record<string, unknown>): WorkbookBlock | null {
@@ -27,26 +38,58 @@ export function normalizeWorkbookBlock(raw: Record<string, unknown>): WorkbookBl
       body: String(raw.body ?? ""),
     };
   }
+  if (type === "application" && Array.isArray(raw.items)) {
+    return {
+      type: "application",
+      items: raw.items.map((item) => String(item)),
+    };
+  }
   return null;
 }
 
 export function normalizeExerciseField(raw: Record<string, unknown>): ExerciseField | null {
   const key = String(raw.key ?? "");
+  if (!key) return null;
+
+  const inputType = String(raw.input_type ?? "");
+  if (STRUCTURED_INPUT_TYPES.has(inputType) && Array.isArray(raw.fields)) {
+    const title = String(raw.title ?? raw.label ?? key);
+    return {
+      key,
+      title,
+      label: String(raw.label ?? title),
+      instructions: String(raw.instructions ?? ""),
+      input_type: inputType as ExerciseInputType,
+      fields: raw.fields
+        .map((field, index) => {
+          if (!field || typeof field !== "object") return null;
+          const f = field as Record<string, unknown>;
+          const label = String(f.label ?? "");
+          if (!label) return null;
+          return {
+            key: String(f.key ?? `field_${index + 1}`),
+            label,
+          };
+        })
+        .filter((field): field is { key: string; label: string } => field !== null),
+    };
+  }
+
   const label = String(raw.label ?? "");
-  if (!key || !label) return null;
+  if (!label) return null;
 
   const instructions =
     typeof raw.instructions === "string" ? raw.instructions : undefined;
-  const inputType = String(raw.input_type ?? raw.type ?? "text");
+  const legacyType = String(raw.type ?? raw.input_type ?? "text");
 
-  if (inputType === "radio" || inputType === "choice") {
+  if (legacyType === "radio" || legacyType === "choice") {
     const options = Array.isArray(raw.options)
       ? raw.options.map((o) => String(o))
       : [];
     return { key, label, instructions, type: "choice", options };
   }
 
-  if (inputType === "checklist" || inputType === "checkbox") {
+  if (legacyType === "checklist" || legacyType === "checkbox") {
     return { key, label, instructions, type: "checkbox" };
   }
 

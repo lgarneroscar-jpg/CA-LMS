@@ -54,7 +54,11 @@ export function parseWorkbookContent(raw: unknown): WorkbookContent {
   return {
     estimated_minutes:
       typeof obj.estimated_minutes === "number" ? obj.estimated_minutes : 30,
+    overview: typeof obj.overview === "string" ? obj.overview : undefined,
     blocks,
+    completion_check: Array.isArray(obj.completion_check)
+      ? obj.completion_check.map((item) => String(item))
+      : undefined,
   };
 }
 

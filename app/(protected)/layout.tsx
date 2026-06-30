@@ -6,6 +6,8 @@ import { AppHeader } from "@/components/layout/app-header";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { LoginTracker } from "@/components/layout/login-tracker";
+import { getContentModuleCatalog } from "@/lib/modules-queries";
+import { buildProgramNavByPillar } from "@/lib/program-nav";
 import type { UserRole } from "@/types/index";
 
 export default async function ProtectedLayout({
@@ -40,6 +42,11 @@ export default async function ProtectedLayout({
   const unreadCount =
     notifications?.filter((n) => !n.is_read).length ?? 0;
 
+  const programNav =
+    profile.role === "student"
+      ? buildProgramNavByPillar(await getContentModuleCatalog())
+      : undefined;
+
   return (
     <div className="flex min-h-full flex-col">
       <LoginTracker />
@@ -53,6 +60,7 @@ export default async function ProtectedLayout({
           role={profile.role as UserRole}
           institutionId={profile.institution_id}
           isDemo={profile.is_demo}
+          programNav={programNav}
         />
         <main className="flex-1 overflow-auto bg-muted/30 p-4 pb-20 md:p-6 md:pb-6">
           {children}

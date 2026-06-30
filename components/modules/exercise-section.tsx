@@ -9,7 +9,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Badge } from "@/components/ui/badge";
 import type { ExerciseField } from "@/types/modules";
+import { isStructuredExercise } from "@/types/modules";
 import { cn } from "@/lib/utils";
 
 type ExerciseSectionProps = {
@@ -39,6 +41,7 @@ export function ExerciseSection({
   const [submitted, setSubmitted] = useState(exercisesSubmitted);
 
   const locked = !videoWatched;
+  const hasStructured = exercises.some(isStructuredExercise);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -90,108 +93,152 @@ export function ExerciseSection({
         </p>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-8">
-          {exercises.map((field, index) => (
-            <div key={field.key} className="space-y-3">
-              {field.type !== "checkbox" && (
-                <div className="space-y-1">
-                  <Label className="text-base font-medium">
-                    <span className="mr-2 text-muted-foreground">
-                      {index + 1}.
-                    </span>
-                    {field.label}
-                  </Label>
-                  {field.instructions && field.instructions !== field.label && (
-                    <p className="text-sm text-muted-foreground">
-                      {field.instructions}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {field.type === "text" &&
-                (field.multiline ? (
-                  <Textarea
-                    value={responses[field.key] ?? ""}
-                    onChange={(e) =>
-                      setResponses((r) => ({
-                        ...r,
-                        [field.key]: e.target.value,
-                      }))
-                    }
-                    placeholder={field.placeholder}
-                    rows={4}
-                    disabled={submitted}
-                  />
-                ) : (
-                  <Input
-                    value={responses[field.key] ?? ""}
-                    onChange={(e) =>
-                      setResponses((r) => ({
-                        ...r,
-                        [field.key]: e.target.value,
-                      }))
-                    }
-                    placeholder={field.placeholder}
-                    disabled={submitted}
-                  />
-                ))}
-
-              {field.type === "choice" && (
-                <RadioGroup
-                  value={responses[field.key] ?? ""}
-                  onValueChange={(v) =>
-                    setResponses((r) => ({ ...r, [field.key]: v }))
-                  }
-                  disabled={submitted}
-                  className="gap-3"
+          {exercises.map((field, index) => {
+            if (isStructuredExercise(field)) {
+              return (
+                <div
+                  key={field.key}
+                  className="space-y-4 rounded-lg border border-dashed border-border/80 bg-muted/10 p-4"
                 >
-                  {field.options.map((opt) => (
-                    <div key={opt} className="flex items-center gap-2">
-                      <RadioGroupItem value={opt} id={`${field.key}-${opt}`} />
-                      <Label
-                        htmlFor={`${field.key}-${opt}`}
-                        className="font-normal"
-                      >
-                        {opt}
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Label className="text-base font-medium">
+                        <span className="mr-2 text-muted-foreground">
+                          {index + 1}.
+                        </span>
+                        {field.title}
                       </Label>
+                      <Badge variant="outline" className="font-mono text-[10px]">
+                        {field.input_type}
+                      </Badge>
                     </div>
-                  ))}
-                </RadioGroup>
-              )}
+                    {field.instructions ? (
+                      <p className="text-sm text-muted-foreground">
+                        {field.instructions}
+                      </p>
+                    ) : null}
+                  </div>
 
-              {field.type === "checkbox" && (
-                <div className="space-y-2">
-                  <div className="flex items-start gap-3">
-                    <span className="mt-0.5 font-mono text-sm text-muted-foreground">
-                      {index + 1}.
-                    </span>
-                    <Checkbox
-                      id={field.key}
-                      checked={responses[field.key] === "true"}
-                      onCheckedChange={(checked) =>
-                        setResponses((r) => ({
-                          ...r,
-                          [field.key]: checked ? "true" : "",
-                        }))
-                      }
-                      disabled={submitted}
-                    />
-                    <Label
-                      htmlFor={field.key}
-                      className="font-normal leading-snug"
-                    >
+                  <div className="space-y-3">
+                    {field.fields.map((prompt) => (
+                      <div key={prompt.key} className="space-y-1.5">
+                        <Label className="text-sm font-medium text-foreground">
+                          {prompt.label}
+                        </Label>
+                        <div className="rounded-md border border-border bg-background px-3 py-2 text-sm text-muted-foreground">
+                          Response field — interactive input coming in the next
+                          pass
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <div key={field.key} className="space-y-3">
+                {field.type !== "checkbox" && (
+                  <div className="space-y-1">
+                    <Label className="text-base font-medium">
+                      <span className="mr-2 text-muted-foreground">
+                        {index + 1}.
+                      </span>
                       {field.label}
                     </Label>
+                    {field.instructions && field.instructions !== field.label && (
+                      <p className="text-sm text-muted-foreground">
+                        {field.instructions}
+                      </p>
+                    )}
                   </div>
-                  {field.instructions && field.instructions !== field.label && (
-                    <p className="ml-8 text-sm text-muted-foreground">
-                      {field.instructions}
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
+                )}
+
+                {field.type === "text" &&
+                  (field.multiline ? (
+                    <Textarea
+                      value={responses[field.key] ?? ""}
+                      onChange={(e) =>
+                        setResponses((r) => ({
+                          ...r,
+                          [field.key]: e.target.value,
+                        }))
+                      }
+                      placeholder={field.placeholder}
+                      rows={4}
+                      disabled={submitted}
+                    />
+                  ) : (
+                    <Input
+                      value={responses[field.key] ?? ""}
+                      onChange={(e) =>
+                        setResponses((r) => ({
+                          ...r,
+                          [field.key]: e.target.value,
+                        }))
+                      }
+                      placeholder={field.placeholder}
+                      disabled={submitted}
+                    />
+                  ))}
+
+                {field.type === "choice" && (
+                  <RadioGroup
+                    value={responses[field.key] ?? ""}
+                    onValueChange={(v) =>
+                      setResponses((r) => ({ ...r, [field.key]: v }))
+                    }
+                    disabled={submitted}
+                    className="gap-3"
+                  >
+                    {field.options.map((opt) => (
+                      <div key={opt} className="flex items-center gap-2">
+                        <RadioGroupItem value={opt} id={`${field.key}-${opt}`} />
+                        <Label
+                          htmlFor={`${field.key}-${opt}`}
+                          className="font-normal"
+                        >
+                          {opt}
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                )}
+
+                {field.type === "checkbox" && (
+                  <div className="space-y-2">
+                    <div className="flex items-start gap-3">
+                      <span className="mt-0.5 font-mono text-sm text-muted-foreground">
+                        {index + 1}.
+                      </span>
+                      <Checkbox
+                        id={field.key}
+                        checked={responses[field.key] === "true"}
+                        onCheckedChange={(checked) =>
+                          setResponses((r) => ({
+                            ...r,
+                            [field.key]: checked ? "true" : "",
+                          }))
+                        }
+                        disabled={submitted}
+                      />
+                      <Label
+                        htmlFor={field.key}
+                        className="font-normal leading-snug"
+                      >
+                        {field.label}
+                      </Label>
+                    </div>
+                    {field.instructions && field.instructions !== field.label && (
+                      <p className="ml-8 text-sm text-muted-foreground">
+                        {field.instructions}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
           {error && (
             <p className="text-sm text-destructive">{error}</p>
@@ -199,7 +246,11 @@ export function ExerciseSection({
 
           {!submitted && (
             <Button type="submit" disabled={loading}>
-              {loading ? "Saving responses…" : "Submit exercises"}
+              {loading
+                ? "Saving…"
+                : hasStructured
+                  ? "I've reviewed these exercises — continue"
+                  : "Submit exercises"}
             </Button>
           )}
         </form>

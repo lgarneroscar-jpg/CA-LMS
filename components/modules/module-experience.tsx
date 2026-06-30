@@ -21,6 +21,8 @@ type ModuleExperienceProps = {
   estimatedMinutes: number;
   videoUrl: string;
   workbookBlocks: WorkbookBlock[];
+  workbookOverview?: string;
+  completionCheck?: string[];
   exercises: ExerciseField[];
   questions: QuizQuestionView[];
   correctAnswers: Record<string, string>;
@@ -40,6 +42,8 @@ export function ModuleExperience({
   estimatedMinutes,
   videoUrl,
   workbookBlocks,
+  workbookOverview,
+  completionCheck,
   exercises,
   questions,
   correctAnswers,
@@ -119,7 +123,11 @@ export function ModuleExperience({
               Workbook
             </h2>
             <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-              <WorkbookContent blocks={workbookBlocks} />
+              <WorkbookContent
+                overview={workbookOverview}
+                blocks={workbookBlocks}
+                completionCheck={completionCheck}
+              />
             </div>
           </section>
 

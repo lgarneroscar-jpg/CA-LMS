@@ -146,6 +146,8 @@ export default async function ModulePage({ params }: PageProps) {
       estimatedMinutes={workbook.estimated_minutes}
       videoUrl={module.video_url ?? "https://www.youtube.com/watch?v=LXb3EKWsInQ"}
       workbookBlocks={workbook.blocks}
+      workbookOverview={workbook.overview}
+      completionCheck={workbook.completion_check}
       exercises={exercises}
       questions={questions}
       correctAnswers={correctAnswers}

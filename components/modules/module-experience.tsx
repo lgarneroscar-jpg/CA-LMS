@@ -10,6 +10,7 @@ import { QuizSection, type QuizQuestionView } from "@/components/modules/quiz-se
 import { CompletionCelebration } from "@/components/modules/completion-celebration";
 import { ProgramCompletionCelebration } from "@/components/program/program-completion-celebration";
 import type { ExerciseField, WorkbookBlock, ModuleProgressState } from "@/types/modules";
+import type { SavedExerciseAnswer } from "@/lib/exercise-answers";
 
 type ModuleExperienceProps = {
   moduleId: string;
@@ -28,6 +29,9 @@ type ModuleExperienceProps = {
   correctAnswers: Record<string, string>;
   progress: ModuleProgressState;
   savedResponses: Record<string, string>;
+  savedAnswers: Record<string, SavedExerciseAnswer>;
+  defaultAnswerVisibility: boolean | null;
+  hasAnySavedAnswers: boolean;
   nextModuleHref: string | null;
   studentName: string;
 };
@@ -49,6 +53,9 @@ export function ModuleExperience({
   correctAnswers,
   progress,
   savedResponses,
+  savedAnswers,
+  defaultAnswerVisibility,
+  hasAnySavedAnswers,
   nextModuleHref,
   studentName,
 }: ModuleExperienceProps) {
@@ -139,6 +146,9 @@ export function ModuleExperience({
             videoWatched={progress.video_watched}
             exercisesSubmitted={progress.exercises_submitted}
             savedResponses={savedResponses}
+            savedAnswers={savedAnswers}
+            defaultAnswerVisibility={defaultAnswerVisibility}
+            hasAnySavedAnswers={hasAnySavedAnswers}
           />
 
           <QuizSection

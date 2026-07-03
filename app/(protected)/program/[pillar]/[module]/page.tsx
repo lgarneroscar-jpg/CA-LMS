@@ -17,6 +17,10 @@ import { ModuleExperience } from "@/components/modules/module-experience";
 import type { ExerciseField } from "@/types/modules";
 import type { QuizQuestionView } from "@/components/modules/quiz-section";
 import type { Json } from "@/types/database";
+import {
+  parseAnswerData,
+  type SavedExerciseAnswer,
+} from "@/lib/exercise-answers";
 import { normalizeExerciseField } from "@/lib/content-normalize";
 import {
   Card,
@@ -89,9 +93,14 @@ export default async function ModulePage({ params }: PageProps) {
 
   if (error || !module) notFound();
 
-  const [progressRow, savedResult, quizResult, catalog, progressMap] =
+  const [progressRow, answersResult, savedResult, quizResult, catalog, progressMap] =
     await Promise.all([
       getOrCreateProgress(profile.id, module.id),
+      supabase
+        .from("exercise_answers")
+        .select("exercise_key, answer, is_public, updated_at")
+        .eq("user_id", profile.id)
+        .eq("module_id", module.id),
       supabase
         .from("exercise_responses")
         .select("exercise_key, response")
@@ -114,6 +123,21 @@ export default async function ModulePage({ params }: PageProps) {
   savedResult.data?.forEach((r) => {
     if (r.response) savedResponses[r.exercise_key] = r.response;
   });
+
+  const savedAnswers: Record<string, SavedExerciseAnswer> = {};
+  answersResult.data?.forEach((row) => {
+    savedAnswers[row.exercise_key] = {
+      exercise_key: row.exercise_key,
+      answer: parseAnswerData(row.answer),
+      is_public: row.is_public,
+      updated_at: row.updated_at,
+    };
+  });
+
+  const { count: totalSavedCount } = await supabase
+    .from("exercise_answers")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", profile.id);
 
   const quizRows = quizResult.data ?? [];
   const questions: QuizQuestionView[] = quizRows.map((q) => ({
@@ -153,6 +177,9 @@ export default async function ModulePage({ params }: PageProps) {
       correctAnswers={correctAnswers}
       progress={progress}
       savedResponses={savedResponses}
+      savedAnswers={savedAnswers}
+      defaultAnswerVisibility={profile.default_answer_visibility ?? null}
+      hasAnySavedAnswers={(totalSavedCount ?? 0) > 0}
       nextModuleHref={nextModuleHref}
       studentName={profile.full_name?.split(" ")[0] ?? "Student"}
     />

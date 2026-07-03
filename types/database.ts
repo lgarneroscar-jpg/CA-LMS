@@ -83,6 +83,54 @@ export type Database = {
           },
         ];
       };
+      exercise_answers: {
+        Row: {
+          id: string;
+          user_id: string;
+          module_id: string;
+          exercise_key: string;
+          answer: Json;
+          is_public: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          module_id: string;
+          exercise_key: string;
+          answer?: Json;
+          is_public?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          module_id?: string;
+          exercise_key?: string;
+          answer?: Json;
+          is_public?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "exercise_answers_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "exercise_answers_module_id_fkey";
+            columns: ["module_id"];
+            isOneToOne: false;
+            referencedRelation: "modules";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       flags: {
         Row: {
           created_at: string;
@@ -286,6 +334,7 @@ export type Database = {
         Row: {
           bio: string | null;
           created_at: string;
+          default_answer_visibility: boolean | null;
           diagnostic_complete: boolean;
           earned_badges: Json;
           full_name: string | null;
@@ -310,6 +359,7 @@ export type Database = {
         Insert: {
           bio?: string | null;
           created_at?: string;
+          default_answer_visibility?: boolean | null;
           diagnostic_complete?: boolean;
           earned_badges?: Json;
           full_name?: string | null;
@@ -334,6 +384,7 @@ export type Database = {
         Update: {
           bio?: string | null;
           created_at?: string;
+          default_answer_visibility?: boolean | null;
           diagnostic_complete?: boolean;
           earned_badges?: Json;
           full_name?: string | null;

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
+import { isQuizLocked } from "@/lib/module-gates";
 
 export type QuizQuestionView = {
   id: string;
@@ -49,7 +50,7 @@ export function QuizSection({
   const [completed, setCompleted] = useState(quizCompleted);
   const [score, setScore] = useState(quizScore);
 
-  const locked = !exercisesSubmitted;
+  const locked = isQuizLocked(exercisesSubmitted);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

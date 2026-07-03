@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Play, CheckCircle2 } from "lucide-react";
 import { markVideoWatched } from "@/app/actions/module-progress";
+import { VIDEO_GATE_ENABLED } from "@/lib/module-gates";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
@@ -94,9 +95,11 @@ export function VideoSection({
           <span>{saving ? "Saving…" : `${progress}%`}</span>
         </div>
         <Progress value={progress} className="h-2" />
-        <p className="text-xs text-muted-foreground">
-          Exercises unlock after you watch at least 90% of this video.
-        </p>
+        {VIDEO_GATE_ENABLED ? (
+          <p className="text-xs text-muted-foreground">
+            Exercises unlock after you watch at least 90% of this video.
+          </p>
+        ) : null}
       </div>
     </section>
   );

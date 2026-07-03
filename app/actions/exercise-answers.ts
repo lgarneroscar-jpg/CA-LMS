@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { getOrCreateProgress } from "@/lib/progress";
+import { assertVideoWatched } from "@/lib/module-gates";
 import type { ExerciseAnswerData } from "@/lib/exercise-answers";
 import type { Json } from "@/types/database";
 
@@ -71,9 +72,10 @@ export async function saveExerciseAnswer(params: {
   const { user, profile, supabase } = await requireStudent();
 
   const progress = await getOrCreateProgress(user.id, params.moduleId);
-  if (!progress.video_watched) {
-    throw new Error("Watch the video before saving exercises");
-  }
+  assertVideoWatched(
+    progress.video_watched,
+    "Watch the video before saving exercises"
+  );
 
   if (
     params.setDefaultVisibility !== undefined &&
@@ -121,10 +123,7 @@ export async function markExercisesReadyForQuiz(
 ) {
   const { user, supabase } = await requireStudent();
   const progress = await getOrCreateProgress(user.id, moduleId);
-
-  if (!progress.video_watched) {
-    throw new Error("Watch the video before continuing");
-  }
+  assertVideoWatched(progress.video_watched, "Watch the video before continuing");
 
   const { data: savedRows, error: fetchError } = await supabase
     .from("exercise_answers")

@@ -5,6 +5,7 @@ import { recalculateCohortRanksAndNotify } from "@/lib/rankings";
 import { updateWeeklyStreakOnActivity } from "@/lib/streaks";
 import { checkProgramCompletion } from "@/lib/program-completion";
 import { sendProgramCompletionEmail } from "@/lib/email";
+import { moduleCompletionPrerequisitesMet } from "@/lib/module-gates";
 import type { ModuleProgressState } from "@/types/modules";
 import type { Tables } from "@/types/database";
 
@@ -73,11 +74,7 @@ export async function tryCompleteModule(params: {
     return { completed: false, xpEarned: progress.xp_earned, progress };
   }
 
-  if (
-    !progress.video_watched ||
-    !progress.exercises_submitted ||
-    !progress.quiz_completed
-  ) {
+  if (!moduleCompletionPrerequisitesMet(progress)) {
     return { completed: false, xpEarned: 0, progress };
   }
 

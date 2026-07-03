@@ -10,6 +10,10 @@ import {
 } from "@/lib/progress";
 import type { ExerciseField } from "@/types/modules";
 import { isStructuredExercise } from "@/types/modules";
+import {
+  assertExercisesSubmitted,
+  assertVideoWatched,
+} from "@/lib/module-gates";
 
 async function requireStudent() {
   const user = await getSessionUser();
@@ -94,9 +98,10 @@ export async function submitExercises(
   const { user, supabase } = await requireStudent();
   const progress = await getOrCreateProgress(user.id, moduleId);
 
-  if (!progress.video_watched) {
-    throw new Error("Watch the video before submitting exercises");
-  }
+  assertVideoWatched(
+    progress.video_watched,
+    "Watch the video before submitting exercises"
+  );
 
   for (const field of exerciseFields) {
     if (isStructuredExercise(field)) {
@@ -154,9 +159,10 @@ export async function submitQuiz(
   const { user, profile, supabase } = await requireStudent();
   const progress = await getOrCreateProgress(user.id, moduleId);
 
-  if (!progress.exercises_submitted) {
-    throw new Error("Submit exercises before taking the quiz");
-  }
+  assertExercisesSubmitted(
+    progress.exercises_submitted,
+    "Submit exercises before taking the quiz"
+  );
 
   let score = 0;
   for (const qId of questionIds) {

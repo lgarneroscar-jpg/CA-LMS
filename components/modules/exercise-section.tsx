@@ -13,6 +13,9 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ExerciseCard } from "@/components/modules/exercise-card";
 import type { ExerciseField } from "@/types/modules";
 import { isStructuredExercise } from "@/types/modules";
+import type { SavedExerciseAnswer } from "@/lib/exercise-answers";
+import { isExercisesLocked } from "@/lib/module-gates";
+import { cn } from "@/lib/utils";
 
 function isLegacyExercise(
   field: ExerciseField
@@ -22,8 +25,6 @@ function isLegacyExercise(
 > {
   return !isStructuredExercise(field);
 }
-import type { SavedExerciseAnswer } from "@/lib/exercise-answers";
-import { cn } from "@/lib/utils";
 
 type ExerciseSectionProps = {
   moduleId: string;
@@ -62,7 +63,7 @@ export function ExerciseSection({
   const [error, setError] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(exercisesSubmitted);
 
-  const locked = !videoWatched;
+  const locked = isExercisesLocked(videoWatched);
   const structuredExercises = useMemo(
     () => exercises.filter(isStructuredExercise),
     [exercises]

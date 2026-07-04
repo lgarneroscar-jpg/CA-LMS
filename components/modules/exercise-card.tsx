@@ -93,7 +93,7 @@ export function ExerciseCard({
   }
 
   function handleSaveClick() {
-    if (isAnswerEmpty(exercise.input_type, draft, exercise.fields)) {
+    if (isAnswerEmpty(exercise.input_type, draft, exercise.fields, exercise.key)) {
       setError("Add at least one response before saving");
       return;
     }
@@ -138,6 +138,7 @@ export function ExerciseCard({
           inputType={exercise.input_type}
           exerciseKey={exercise.key}
           fields={exercise.fields}
+          options={exercise.options}
           value={draft}
           onChange={setDraft}
         />

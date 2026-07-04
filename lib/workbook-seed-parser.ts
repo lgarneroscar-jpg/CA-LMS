@@ -24,6 +24,7 @@ export type ParsedExercise = {
   instructions: string;
   input_type: ExerciseInputType;
   fields: ParsedExerciseField[];
+  options?: string[];
 };
 
 export type ParsedQuiz = {
@@ -58,7 +59,20 @@ function parseNumberedConcept(line: string): { heading: string; body: string } |
   return { heading: match[1].trim(), body: match[2].trim() };
 }
 
-function parseFields(raw: string): ParsedExerciseField[] {
+const SCORECARD_DESCRIPTOR = /^(.+?)\s*\(\s*score\s*\+\s*notes\s*\)\s*$/i;
+const SCORECARD_TOTAL = /^total\s*\/?\s*\d+$/i;
+
+function parseOptionsSegment(raw: string): string[] {
+  return raw
+    .split(/,\s*/)
+    .map((part) => part.trim())
+    .filter(Boolean);
+}
+
+function parseFields(
+  raw: string,
+  inputType?: ExerciseInputType
+): ParsedExerciseField[] {
   const cleaned = raw.replace(/\s*—\s*seed prompts:.*$/i, "").trim();
 
   const pairsMatch = cleaned.match(/(\d+)\s+pairs?\s+of\s+\{([^}]+)\}/i);
@@ -77,29 +91,68 @@ function parseFields(raw: string): ParsedExerciseField[] {
     return fields;
   }
 
-  if (cleaned.includes(" + ")) {
-    return cleaned.split(/\s*\+\s*/).map((part, index) => {
-      const label = part.trim();
-      return { key: slugify(label) || `field_${index + 1}`, label };
+  const fields: ParsedExerciseField[] = [];
+
+  for (const part of cleaned.split(/,\s*/)) {
+    const label = part.trim().replace(/^"|"$/g, "");
+    if (!label) continue;
+
+    if (inputType === "scorecard" && SCORECARD_TOTAL.test(label)) {
+      continue;
+    }
+
+    const scorecardMatch = label.match(SCORECARD_DESCRIPTOR);
+    if (scorecardMatch) {
+      const rowLabel = scorecardMatch[1].trim();
+      fields.push({
+        key: slugify(rowLabel) || `field_${fields.length + 1}`,
+        label: rowLabel,
+      });
+      continue;
+    }
+
+    if (label.includes(" + ")) {
+      for (const subpart of label.split(/\s*\+\s*/)) {
+        const subLabel = subpart.trim();
+        if (!subLabel) continue;
+        fields.push({
+          key: slugify(subLabel) || `field_${fields.length + 1}`,
+          label: subLabel,
+        });
+      }
+      continue;
+    }
+
+    fields.push({
+      key: slugify(label) || `field_${fields.length + 1}`,
+      label,
     });
   }
 
-  return cleaned.split(/,\s*/).map((part, index) => {
-    const label = part.trim().replace(/^"|"$/g, "");
-    return { key: slugify(label) || `field_${index + 1}`, label };
-  });
+  return fields;
 }
 
 function parseExerciseLine(line: string): ParsedExercise | null {
-  const match = line.match(
-    /^\d+\.\s+\*\*(.+?)\*\*\s*\|\s*input_type:\s*`([^`]+)`\s*\|\s*(.+?)\s*\|\s*fields:\s*(.+)$/i
-  );
-  if (!match) return null;
+  const titleMatch = line.match(/^\d+\.\s+\*\*(.+?)\*\*/);
+  if (!titleMatch) return null;
 
-  const title = match[1].trim();
-  const input_type = match[2].trim() as ExerciseInputType;
-  const instructions = match[3].trim();
-  const fields = parseFields(match[4]);
+  const inputTypeMatch = line.match(/input_type:\s*`([^`]+)`/i);
+  if (!inputTypeMatch) return null;
+
+  const fieldsMatch = line.match(
+    /fields:\s*(.+?)(?:\s*\|\s*options:\s*(.+))?$/i
+  );
+  if (!fieldsMatch) return null;
+
+  const afterInputType = line.split(/input_type:\s*`[^`]+`\s*\|\s*/i)[1];
+  const instructions =
+    afterInputType?.split(/\s*\|\s*fields:/i)[0]?.trim() ?? "";
+
+  const title = titleMatch[1].trim();
+  const input_type = inputTypeMatch[1].trim() as ExerciseInputType;
+  const fields = parseFields(fieldsMatch[1].trim(), input_type);
+  const optionsRaw = fieldsMatch[2]?.trim();
+  const options = optionsRaw ? parseOptionsSegment(optionsRaw) : undefined;
 
   const key = slugify(title);
 
@@ -110,6 +163,7 @@ function parseExerciseLine(line: string): ParsedExercise | null {
     instructions,
     input_type,
     fields,
+    ...(options?.length ? { options } : {}),
   };
 }
 
@@ -274,6 +328,7 @@ export function toDbExercises(module: ParsedWorkbookModule) {
     instructions: exercise.instructions,
     input_type: exercise.input_type,
     fields: exercise.fields,
+    ...(exercise.options?.length ? { options: exercise.options } : {}),
   }));
 }
 

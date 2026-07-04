@@ -166,6 +166,27 @@ export function blankKeysForTemplate(
   return Array.from({ length: blankCount }, (_, i) => `${exerciseKey}_blank_${i}`);
 }
 
+/** Keys the fill_blank renderer reads/writes — keep validator in sync. */
+export function fillBlankValueKeys(
+  exerciseKey: string,
+  fields: ExerciseFieldPrompt[]
+): string[] {
+  const template = fields[0]?.label ?? "";
+  const parts = parseFillBlankParts(template);
+  const blankCount = Math.max(parts.length - 1, fields.length);
+  if (blankCount > 0 && parts.length > 1) {
+    return blankKeysForTemplate(exerciseKey, blankCount);
+  }
+  return fields.map((field) => field.key);
+}
+
+export function fieldsAllEmptyStrings(
+  data: ExerciseAnswerData,
+  fields: ExerciseFieldPrompt[]
+): boolean {
+  return fields.every((field) => !getStringValue(data, field.key).trim());
+}
+
 export function starFieldMap(fields: ExerciseFieldPrompt[]) {
   const findKey = (words: string[]) =>
     fields.find((f) =>
@@ -183,25 +204,41 @@ export function starFieldMap(fields: ExerciseFieldPrompt[]) {
 export function isAnswerEmpty(
   inputType: ExerciseInputType,
   data: ExerciseAnswerData,
-  fields: ExerciseFieldPrompt[]
+  fields: ExerciseFieldPrompt[],
+  exerciseKey?: string
 ): boolean {
   switch (inputType) {
     case "reflection":
-    case "fill_blank":
     case "tier_map":
-      return fields.every((f) => !getStringValue(data, f.key).trim());
-    case "rewrite_pairs":
-      return groupRewritePairs(fields).every(
-        (p) =>
-          !getStringValue(data, p.beforeKey).trim() &&
-          !getStringValue(data, p.afterKey).trim()
+      return fieldsAllEmptyStrings(data, fields);
+    case "fill_blank": {
+      const keys = exerciseKey
+        ? fillBlankValueKeys(exerciseKey, fields)
+        : fields.map((field) => field.key);
+      return keys.every((key) => !getStringValue(data, key).trim());
+    }
+    case "rewrite_pairs": {
+      const pairs = groupRewritePairs(fields);
+      if (pairs.length === 0) {
+        return fieldsAllEmptyStrings(data, fields);
+      }
+      return pairs.every(
+        (pair) =>
+          !getStringValue(data, pair.beforeKey).trim() &&
+          !getStringValue(data, pair.afterKey).trim()
       );
-    case "anchor_select":
-      return groupAnchorPairs(fields).every(
-        (p) =>
-          !getStringValue(data, p.anchorKey).trim() &&
-          !getStringValue(data, p.reasonKey).trim()
+    }
+    case "anchor_select": {
+      const pairs = groupAnchorPairs(fields);
+      if (pairs.length === 0) {
+        return fieldsAllEmptyStrings(data, fields);
+      }
+      return pairs.every(
+        (pair) =>
+          !getStringValue(data, pair.anchorKey).trim() &&
+          !getStringValue(data, pair.reasonKey).trim()
       );
+    }
     case "star": {
       const map = starFieldMap(fields);
       return Object.values(map).every((k) => !getStringValue(data, k).trim());

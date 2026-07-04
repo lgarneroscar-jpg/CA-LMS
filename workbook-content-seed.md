@@ -13,6 +13,7 @@ Each module has these structured sections:
 - **exercises[]** — each `{title, instructions, input_type, fields[]}`
   - `input_type` is one of: `anchor_select` (multi-select + reason), `rewrite_pairs` (before/after text pairs), `fill_blank` (sentence with blanks), `reflection` (open text-area), `checklist` (checkable items), `star` (S/T/A/R fields), `tier_map` (tiered lists), `scorecard` (rated rows)
   - `fields[]` defines the inputs for that exercise
+  - optional `options:` segment (comma-separated) for `anchor_select` chip choices
 - **application** — real-world application bullets
 - **completion_check[]** — yes/no self-confirmation items (the authentic workbook closer)
 - **quiz[]** — 3-4 derived comprehension questions, each `{question, options[], correct}`
@@ -43,7 +44,7 @@ Most students think careers start with skills. They don't — they start with id
 3. **The Identity Flywheel** — Identity compounds through visibility: Clear behavior → Trust → Visible Execution → more responsibility → (repeat). The earlier this flywheel starts, the faster your career accelerates.
 
 ### exercises
-1. **Select Your Identity Anchors** | input_type: `anchor_select` | Choose three identity anchors you want associated with your name. For each, write one sentence explaining why it matters. | fields: anchor1 + reason1, anchor2 + reason2, anchor3 + reason3
+1. **Select Your Identity Anchors** | input_type: `anchor_select` | Choose three identity anchors you want associated with your name. For each, write one sentence explaining why it matters. | fields: anchor1 + reason1, anchor2 + reason2, anchor3 + reason3 | options: Clear communicator, Reliable executor, Always prepared, Organized and structured, Connector of people and information, Calm and composed
 2. **Rewrite Student Mode → Pre-Professional Mode** | input_type: `rewrite_pairs` | Complete at least three rewrites. For each, write the student behavior and its pre-pro rewrite. | fields: 3 pairs of {student_behavior, prepro_rewrite}
 
 ### application

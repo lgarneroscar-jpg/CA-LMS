@@ -39,6 +39,7 @@ export type ExerciseField =
       instructions: string;
       input_type: ExerciseInputType;
       fields: ExerciseFieldPrompt[];
+      options?: string[];
     }
   | {
       key: string;

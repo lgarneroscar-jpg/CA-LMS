@@ -4,10 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import type { ExerciseFieldPrompt, ExerciseInputType } from "@/types/modules";
 import {
+  type AnchorPair,
   type ExerciseAnswerData,
-  blankKeysForTemplate,
+  fillBlankValueKeys,
   getBoolValue,
   getNumberValue,
   getStringValue,
@@ -18,11 +20,13 @@ import {
   scoreFieldKeys,
   starFieldMap,
 } from "@/lib/exercise-answers";
+import { cn } from "@/lib/utils";
 
 type StructuredExerciseInputProps = {
   inputType: ExerciseInputType;
   exerciseKey: string;
   fields: ExerciseFieldPrompt[];
+  options?: string[];
   value: ExerciseAnswerData;
   onChange: (next: ExerciseAnswerData) => void;
   disabled?: boolean;
@@ -55,10 +59,144 @@ function setNumber(
   onChange({ values: { ...value.values, [key]: next } });
 }
 
+type AnchorSelection = {
+  anchorKey: string;
+  reasonKey: string;
+  label: string;
+  reason: string;
+};
+
+function readAnchorSelections(
+  value: ExerciseAnswerData,
+  pairs: AnchorPair[]
+): AnchorSelection[] {
+  return pairs
+    .map((pair) => ({
+      anchorKey: pair.anchorKey,
+      reasonKey: pair.reasonKey,
+      label: getStringValue(value, pair.anchorKey),
+      reason: getStringValue(value, pair.reasonKey),
+    }))
+    .filter((selection) => selection.label.trim());
+}
+
+function writeAnchorSelections(
+  value: ExerciseAnswerData,
+  pairs: AnchorPair[],
+  selections: Pick<AnchorSelection, "label" | "reason">[],
+  onChange: (next: ExerciseAnswerData) => void
+) {
+  const nextValues = { ...value.values };
+  for (const pair of pairs) {
+    delete nextValues[pair.anchorKey];
+    delete nextValues[pair.reasonKey];
+  }
+  selections.slice(0, pairs.length).forEach((selection, index) => {
+    nextValues[pairs[index].anchorKey] = selection.label;
+    nextValues[pairs[index].reasonKey] = selection.reason;
+  });
+  onChange({ values: nextValues });
+}
+
+type AnchorSelectChipsProps = {
+  pairs: AnchorPair[];
+  options: string[];
+  value: ExerciseAnswerData;
+  onChange: (next: ExerciseAnswerData) => void;
+  disabled?: boolean;
+};
+
+function AnchorSelectChips({
+  pairs,
+  options,
+  value,
+  onChange,
+  disabled,
+}: AnchorSelectChipsProps) {
+  const selections = readAnchorSelections(value, pairs);
+  const maxSelections = pairs.length;
+  const atMax = selections.length >= maxSelections;
+
+  function toggleOption(option: string) {
+    const existing = selections.find((selection) => selection.label === option);
+    if (existing) {
+      writeAnchorSelections(
+        value,
+        pairs,
+        selections
+          .filter((selection) => selection.label !== option)
+          .map(({ label, reason }) => ({ label, reason })),
+        onChange
+      );
+      return;
+    }
+    if (atMax) return;
+    writeAnchorSelections(
+      value,
+      pairs,
+      [...selections, { label: option, reason: "" }].map(({ label, reason }) => ({
+        label,
+        reason,
+      })),
+      onChange
+    );
+  }
+
+  function updateReason(option: string, reason: string) {
+    writeAnchorSelections(
+      value,
+      pairs,
+      selections.map((selection) =>
+        selection.label === option ? { ...selection, reason } : selection
+      ),
+      onChange
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2">
+        {options.map((option) => {
+          const isSelected = selections.some((selection) => selection.label === option);
+          return (
+            <Button
+              key={option}
+              type="button"
+              size="sm"
+              variant={isSelected ? "default" : "outline"}
+              disabled={disabled || (atMax && !isSelected)}
+              className={cn("h-auto whitespace-normal px-3 py-1.5 text-left")}
+              onClick={() => toggleOption(option)}
+            >
+              {option}
+            </Button>
+          );
+        })}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Select up to {maxSelections} anchors ({selections.length}/{maxSelections} selected)
+      </p>
+      {selections.map((selection) => (
+        <div key={selection.label} className="space-y-2 rounded-lg border p-3">
+          <Label className="text-sm font-medium">{selection.label}</Label>
+          <Textarea
+            value={selection.reason}
+            onChange={(e) => updateReason(selection.label, e.target.value)}
+            placeholder="Why this anchor matters to you"
+            rows={2}
+            disabled={disabled}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export function StructuredExerciseInput({
   inputType,
   exerciseKey,
   fields,
+  options,
   value,
   onChange,
   disabled,
@@ -84,15 +222,12 @@ export function StructuredExerciseInput({
     case "fill_blank": {
       const template = fields[0]?.label ?? "";
       const parts = parseFillBlankParts(template);
-      const blankCount = Math.max(parts.length - 1, fields.length);
-      const blankKeys =
-        blankCount > 0 && parts.length > 1
-          ? blankKeysForTemplate(exerciseKey, blankCount)
-          : fields.map((f) => f.key);
+      const blankKeys = fillBlankValueKeys(exerciseKey, fields);
+      const usesTemplateBlanks = parts.length > 1;
 
       return (
         <div className="space-y-3">
-          {parts.length > 1 ? (
+          {usesTemplateBlanks ? (
             <div className="flex flex-wrap items-center gap-2 text-sm leading-relaxed">
               {parts.map((part, index) => (
                 <span key={index} className="inline-flex items-center gap-2">
@@ -172,7 +307,19 @@ export function StructuredExerciseInput({
       const pairs = groupAnchorPairs(fields);
       const fallbackFields = pairs.length
         ? null
-        : fields.filter((f) => !f.key.toLowerCase().startsWith("reason"));
+        : fields.filter((field) => !field.key.toLowerCase().startsWith("reason"));
+
+      if (options?.length && pairs.length > 0) {
+        return (
+          <AnchorSelectChips
+            pairs={pairs}
+            options={options}
+            value={value}
+            onChange={onChange}
+            disabled={disabled}
+          />
+        );
+      }
 
       return (
         <div className="space-y-4">

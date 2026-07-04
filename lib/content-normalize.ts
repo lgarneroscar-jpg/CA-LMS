@@ -72,6 +72,9 @@ export function normalizeExerciseField(raw: Record<string, unknown>): ExerciseFi
           };
         })
         .filter((field): field is { key: string; label: string } => field !== null),
+      ...(Array.isArray(raw.options) && raw.options.length > 0
+        ? { options: raw.options.map((option) => String(option)) }
+        : {}),
     };
   }
 

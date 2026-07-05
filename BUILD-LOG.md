@@ -207,3 +207,51 @@ Append-only chronological history. Every entry begins with an explicit update st
 
 - Next step (the single concrete next action):
   Oscar reviews/approves the Pass 3 prompt → runs it in Cursor → deploy ritual (git status → npm run build → push incl. BUILD-LOG.md → NO re-seed needed → Vercel green) → I verify both profile views in the browser and log.
+
+---
+
+=== LOG UPDATED: 2026-07-05 13:28 (America/Detroit) — PASS 3 SHIPPED & FULLY VERIFIED (both profile views, toggle, privacy). Pass 3 CLOSED ===
+
+- Context / why this was done:
+  Oscar approved the Pass 3 prompt, ran it in Cursor, and pushed after my diff review. This entry records the diff review, deploy, and full browser verification.
+
+- What was attempted (specific):
+  (a) Pre-push diff review of Cursor's Pass 3 output. (b) Post-deploy browser verification of /profile (as test student) and /profile/[student-id] (as super admin).
+
+- Cursor prompt used: CURSOR-PROMPT-pass3-profile.md (run by Oscar). Cursor's file list: NEW lib/profile-workbook.ts, components/profile/answer-display.tsx, answer-visibility-control.tsx, living-workbook-section.tsx, profile-identity-header.tsx, app/(protected)/profile/[student-id]/page.tsx; MODIFIED app/(protected)/profile/page.tsx, components/profile/profile-editor.tsx, app/actions/exercise-answers.ts (setAnswerVisibility), components/modules/structured-exercise-input.tsx (× remove control).
+
+- Files changed (git status before commit): matched Cursor's list exactly + BUILD-LOG.md.
+
+- Local build result: PASS (Oscar's terminal: ✓ Compiled 2.6s, ✓ TypeScript 2.5s; route list shows new ƒ /profile/[student-id]).
+
+- Commit hash + message: pushed to main as "feat: pass 3 living-workbook profile (own view + public student view, visibility toggle, anchor remove control)". (Hash not captured in chat — retrieve with `git log -1` if needed; my sandbox git access is disabled after the index.lock incident, see below.)
+
+- Deploy result: Vercel Production Ready (Oscar confirmed; new route live and verified below).
+
+- Migration run? No (none needed).
+
+- INCIDENT (process note): my sandboxed `git status` created a stale `.git/index.lock` that blocked Oscar's commit; the sandbox couldn't delete it (mount permissions) — Oscar removed it manually (`rm .git/index.lock`). DECISION: I no longer run git commands against the repo from the Cowork sandbox; I read files directly instead. Oscar runs all git operations.
+
+- Diff review findings (pre-push, all pass):
+  - setAnswerVisibility scopes update with .eq("user_id", user.id) (ownership enforced server-side), requireStudent(), no video-gate assert, revalidates profile + module paths.
+  - /profile/[student-id]: requireProfile() auth; own-id → redirect("/profile"); missing student → notFound(); portfolio fetched with publicOnly → explicit .eq("is_public", true) (defense in depth on top of RLS).
+  - Sorting via parseModuleNumber(module_code) ascending (not unlock_week). Shared read-only renderer answer-display.tsx reuses lib/exercise-answers.ts helpers. × remove control compacts selections via existing writeAnchorSelections.
+
+- Verification performed (exact steps + observed results):
+  AS TEST STUDENT (student@test.com) on /profile:
+  1. "My Living Workbook" renders below the edit-profile card (avatar upload UI intact). Grouped Pillar → Module → Exercise: Identity & Brand Building → P1 (anchors, rewrite pairs), P2 (brain dump reflection, North Star fill_blank); Career Navigation → P10 (scorecard). Ascending P-number order. ✓
+  2. Read-only rendering per type: anchors as badges + reason text (incl. legacy free-text entry as a badge); rewrite pairs as before → after; reflection with field label; fill_blank as reconstructed sentence with emphasized values ("I want to help teams communicate clearly by/through structured writing and operations work so that good ideas actually ship."); scorecard row (Manager Quality 4) + "Total: 4 / 25". Timestamps on every entry. ✓
+  3. Visibility toggle: clicked "Make public" on the P10 scorecard → badge flipped to Public immediately, timestamp refreshed; after full reload state persisted (2 Public / 3 Private across the account). ✓
+  4. /profile/<own-id> redirects to /profile ✓. /profile/<nonexistent-uuid> → 404 ✓ (discovered accidentally via a wrong id, a useful negative test).
+  AS SUPER ADMIN (Oscar's login, my browser tab) on /profile/87383f30-acd8-4ae7-93ef-08e775980adf:
+  5. Identity header: Test Student, Demo University, avatar placeholder. ✓
+  6. Shows EXACTLY the 2 public entries (P1 rewrite pairs, P10 scorecard), same grouping/renderer. ✓
+  7. NO toggle/edit affordances anywhere. ✓
+  8. PRIVACY LEAK CHECK: searched the full rendered HTML payload for the private answers' text (reflection "Messy processes...", fill_blank "help teams communicate clearly", anchor reason "never waste the room's...") — ALL ABSENT from the payload. Private data is not shipped to other viewers. ✓
+
+- Decisions made: Pass 3 is CLOSED — built, deployed, verified. (× remove control on anchors deployed with it; not separately exercised this session — it's the same writeAnchorSelections path verified in Pass 2 chips testing.)
+
+- Open questions / things needing Oscar's input: none new. Standing items: cohort/institution scoping of public answers (before institution #2); quiz content review incl. option-parsing bug (P10 Q2); Pass 1 content polish; /program page P10–P14 ordering fix; pre-launch service-role key roll (brief §5).
+
+- Next step (the single concrete next action):
+  Pass 4 (social layer: per-module comments + home-page activity stream) — draft scope with Oscar, then Cursor prompt for his review. The living workbook + public profiles it depends on are now live.

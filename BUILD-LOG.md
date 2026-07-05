@@ -126,3 +126,84 @@ Append-only chronological history. Every entry begins with an explicit update st
 
 - Next step (the single concrete next action):
   Oscar: `git add -A && git commit -m "fix: pass 2 exercise save (fill_blank/anchor_select), seed parser field mangling, anchor multi-select" && git push origin main`, then `npx tsx scripts/seed-workbook-content.ts`, confirm Vercel deploy Ready. Then I re-verify in the browser and log.
+
+---
+
+=== LOG UPDATED: 2026-07-03 23:49 (America/Detroit) — Fix deployed & verified working; RE-SEED STILL NOT RUN (blocks P1 chips + P10/P13 scorecard labels) ===
+
+- Context / why this was done:
+  Oscar pushed commit 403d904 ("fix: pass 2 exercise save (fill_blank/anchor_select), seed parser field mangling, anchor multi-select" — 8 files, 412 insertions, includes BUILD-LOG.md). His first seed-script attempt FAILED with "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY" (tsx does not auto-load .env.local). Correct command supplied: `npx tsx --env-file=.env.local scripts/seed-workbook-content.ts` (both keys confirmed present in .env.local by name). Oscar then said "ready"; browser verification performed.
+
+- What was attempted (specific): browser re-verification as student@test.com against Production.
+
+- Cursor prompt used: n/a (verification).
+- Files changed (`git status`): BUILD-LOG.md only (this entry).
+- Local build result: n/a. - Commit: 403d904 pushed to main earlier this session.
+- Deploy result: new code CONFIRMED LIVE on ca-lms.vercel.app (behavioral proof below).
+- Migration run? No. RE-SEED SCRIPT: NOT YET RUN SUCCESSFULLY — this is the open blocker.
+
+- Verification performed (exact steps + results):
+  1. fill_blank FIXED ✓ — P2 "Build Your North Star": filled all 3 blanks, Save succeeded ("Saved" + Last updated, displayed 8:44 PM browser-local). Previously impossible (validation bug). After full reload, all 3 values pre-fill (confirmed via DOM inspection: input values = "help teams communicate clearly" / "structured writing and operations work" / "good ideas actually ship"; note the accessibility tree misleadingly shows placeholders, so a JS DOM check was used as ground truth). Saved row confirmed in server payload: exercise_key build_your_north_star, values keyed build_your_north_star_blank_0..2.
+  2. anchor_select empty-group footgun FIXED ✓ — P1: typing into the (still-mangled) fallback "anchor1" field and saving now WORKS ("Saved" + timestamp, displayed 8:43 PM). Previously always rejected.
+  3. Regressions ✓ — P1 rewrite_pairs answers still pre-fill (pairs 1+2 intact); P2 reflection still pre-fills with its timestamp.
+  4. NOT YET FIXED (data, not code): P1 still renders the single fallback "anchor1" field — NO chips (options not in DB). P10 scorecard labels still mangled ("notes), Skill Development (score", bogus "Total /25" row). Both require the re-seed.
+
+- Decisions made: treated accessibility-tree "empty input" readings as unreliable for pre-fill verification; DOM value inspection is the standard going forward.
+
+- Open questions / things needing Oscar's input: none — one action pending on Oscar's Mac (see next step).
+
+- Next step (the single concrete next action):
+  Oscar runs: `npx tsx --env-file=.env.local scripts/seed-workbook-content.ts` (must print "Re-seeding workbook body content for 14 modules..." and finish without error). Then I verify P1 anchor chips (6 options, max 3, reasons, save/persist) and P10/P13 scorecard labels + "/25" total, then log and proceed to drafting Pass 3.
+
+---
+
+=== LOG UPDATED: 2026-07-04 16:56 (America/Detroit) — Re-seed verified: ALL Pass 2 fixes confirmed working end-to-end. Pass 2 verification CLOSED. Two minor follow-ups logged ===
+
+- Context / why this was done:
+  Oscar ran the re-seed successfully (`npx tsx --env-file=.env.local scripts/seed-workbook-content.ts`, confirmed in Cursor terminal). Final browser verification of the seed-dependent fixes.
+
+- What was attempted (specific): browser verification as student@test.com on Production (commit 403d904 + re-seeded DB).
+
+- Cursor prompt used: n/a. Files changed: BUILD-LOG.md only. Build/commit/deploy: none new. Migration: n/a (re-seed completed by Oscar).
+
+- Verification performed (exact steps + results):
+  1. P1 anchor_select multi-select FULLY WORKING ✓ — renders all 6 chips verbatim from the workbook framework (Clear communicator, Reliable executor, Always prepared, Organized and structured, Connector of people and information, Calm and composed). Selected 2 chips ("Always prepared", "Calm and composed"): counter updates (3/3 incl. legacy entry, see follow-up 1), reason textarea appears per selection, 4th chip click correctly blocked (unselected chips disabled at max). Typed a reason, saved → "Saved" + timestamp. Full reload: chip selections persist (selected chips enabled/highlighted, others disabled), reason pre-fills (DOM-verified).
+  2. P10 scorecard FIXED ✓ — 5 cleanly-labeled rows (Manager Quality, Skill Development, Learning Velocity, Environment/Culture, Brand/Trajectory), bogus "Total /25" row gone, total reads "/ 25". Set Manager Quality=4 → live "Total: 4 / 25", saved successfully ("Saved" + timestamp).
+  3. fill_blank re-confirmed working post-re-seed (P2 values still pre-filled).
+
+- FOLLOW-UPS DISCOVERED (logged, not blocking, no action taken):
+  1. Legacy free-text anchor answer on the TEST ACCOUNT (saved pre-fix into fallback field) now occupies selection slot 1 with no matching chip and has no remove control in the chips UI. Only affects answers saved before the fix (i.e., just the test student). Options: clear that exercise_answers row, or add a remove control per selection card. Oscar to choose (can fold into a later pass).
+  2. P10 module QUIZ question 2 renders ~11 radio options (brand/trajectory, GPA, school, major, network, luck, Prestige, pay, perks, people, place) — quiz OPTION parsing from the seed appears comma-mangled for at least this question. Separate from the exercise fields fix. Note: quizzes were already flagged for Oscar's content review (they're Claude-derived); fold an options-parsing check into that review.
+
+- Decisions made: Pass 2 verification is CLOSED — all 8 input-type save paths that exist in seeded content behave correctly (reflection, rewrite_pairs, scorecard, fill_blank, anchor_select verified working; star/checklist/tier_map not present in any seeded module exercise encountered — no seeded instances found in P1/P2/P4/P5/P10 checks; they share the same fixed validation paths).
+
+- Open questions / things needing Oscar's input:
+  1. Follow-up 1 above: clear the test student's legacy anchor row, or add a per-selection remove control?
+  2. Follow-up 2: fold quiz-option parsing check into the planned quiz content review?
+
+- Next step (the single concrete next action):
+  Draft the Pass 3 Cursor prompt (profile living-workbook display per handoff brief Section 4B) and submit to Oscar for review. Pass 2 is no longer a blocker.
+
+---
+
+=== LOG UPDATED: 2026-07-05 11:28 (America/Detroit) — Oscar's scope decisions recorded; Pass 3 Cursor prompt drafted, AWAITING OSCAR'S REVIEW ===
+
+- Context / why this was done:
+  Oscar answered the open questions from the 2026-07-04 16:56 entry, plus the Pass 3 scope question from the handoff brief (§4B "confirm with Oscar").
+
+- Decisions made (all Oscar's, this entry exists to relay them to the core chat):
+  1. Legacy anchor answer: ADD A PER-SELECTION REMOVE CONTROL (× on each selection card) rather than deleting the test row — folded into the Pass 3 prompt as an approved Pass 2 follow-up.
+  2. Quiz-option parsing bug (P10 Q2 rendering ~11 mangled options): FOLD INTO the planned quiz content review (quizzes are Claude-derived and were already flagged for Oscar's accuracy review).
+  3. Pass 3 scope: INCLUDE the other-student profile view now. Oscar's words: the profile is the social aspect — students within cohorts should be able to view each other, "like social media — if you'd like to go private you can." So: /profile (own, everything + toggles) AND /profile/[student-id] (public answers only, authenticated users). No discovery/browse UI yet (Pass 4).
+  4. Flagged for LATER (recorded in the prompt, not in this pass): cohort/institution scoping of public answers — current RLS lets any authenticated user view public answers; decide before onboarding a second institution.
+
+- What was attempted (specific): drafted CURSOR-PROMPT-pass3-profile.md (delivered to Oscar via Cowork). Key technical points baked into the prompt: read-only per-input-type answer renderer (shared component, reusable by the future activity feed); pillar→module→exercise grouping with ascending P-number sort (module_code numeric — NOT unlock_week, avoiding the known /program ordering bug); dedicated `setAnswerVisibility` server action for profile toggles (deliberately NOT reusing saveExerciseAnswer, which asserts the video gate); explicit is_public filter in the public-view query as defense in depth; no migrations, no RLS changes.
+
+- Cursor prompt used: none run yet. Files changed: BUILD-LOG.md only. Build/deploy/migration: none.
+- Verification performed: n/a (drafting entry).
+
+- Open questions / things needing Oscar's input:
+  1. Approve CURSOR-PROMPT-pass3-profile.md to run in Cursor?
+
+- Next step (the single concrete next action):
+  Oscar reviews/approves the Pass 3 prompt → runs it in Cursor → deploy ritual (git status → npm run build → push incl. BUILD-LOG.md → NO re-seed needed → Vercel green) → I verify both profile views in the browser and log.

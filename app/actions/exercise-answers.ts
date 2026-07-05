@@ -60,6 +60,32 @@ export async function setDefaultAnswerVisibility(isPublic: boolean) {
   return { success: true, isPublic };
 }
 
+export async function setAnswerVisibility(params: {
+  answerId: string;
+  moduleId: string;
+  pillarSlug: string;
+  moduleSlug: string;
+  isPublic: boolean;
+}) {
+  const { user, supabase } = await requireStudent();
+
+  const { data, error } = await supabase
+    .from("exercise_answers")
+    .update({ is_public: params.isPublic })
+    .eq("id", params.answerId)
+    .eq("user_id", user.id)
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    throw new Error(error?.message ?? "Failed to update visibility");
+  }
+
+  revalidateModulePaths(params.pillarSlug, params.moduleSlug);
+  revalidatePath("/profile");
+  return { success: true, isPublic: params.isPublic };
+}
+
 export async function saveExerciseAnswer(params: {
   moduleId: string;
   pillarSlug: string;

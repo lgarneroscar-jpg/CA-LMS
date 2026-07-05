@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import { X } from "lucide-react";
 import type { ExerciseFieldPrompt, ExerciseInputType } from "@/types/modules";
 import {
   type AnchorPair,
@@ -153,6 +154,17 @@ function AnchorSelectChips({
     );
   }
 
+  function removeSelection(label: string) {
+    writeAnchorSelections(
+      value,
+      pairs,
+      selections
+        .filter((selection) => selection.label !== label)
+        .map(({ label: anchorLabel, reason }) => ({ label: anchorLabel, reason })),
+      onChange
+    );
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
@@ -177,7 +189,21 @@ function AnchorSelectChips({
         Select up to {maxSelections} anchors ({selections.length}/{maxSelections} selected)
       </p>
       {selections.map((selection) => (
-        <div key={selection.label} className="space-y-2 rounded-lg border p-3">
+        <div
+          key={selection.label}
+          className="relative space-y-2 rounded-lg border p-3 pr-10"
+        >
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute right-1 top-1 size-7"
+            disabled={disabled}
+            aria-label={`Remove ${selection.label}`}
+            onClick={() => removeSelection(selection.label)}
+          >
+            <X className="size-4" />
+          </Button>
           <Label className="text-sm font-medium">{selection.label}</Label>
           <Textarea
             value={selection.reason}

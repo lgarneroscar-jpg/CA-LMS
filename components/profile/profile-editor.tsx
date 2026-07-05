@@ -41,6 +41,7 @@ type ProfileEditorProps = {
     quiz_score: number | null;
     quiz_total: number;
   }[];
+  afterIdentity?: React.ReactNode;
 };
 
 export function ProfileEditor({
@@ -48,6 +49,7 @@ export function ProfileEditor({
   streakHistory,
   xpLines,
   completedModules,
+  afterIdentity,
 }: ProfileEditorProps) {
   const [pending, startTransition] = useTransition();
   const [uploadPending, startUploadTransition] = useTransition();
@@ -160,6 +162,8 @@ export function ProfileEditor({
           </form>
         </CardContent>
       </Card>
+
+      {afterIdentity}
 
       <Card>
         <CardHeader>

@@ -2,7 +2,9 @@ import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { fetchXpBreakdownForStudent } from "@/lib/program-completion";
 import { buildStreakHistory } from "@/lib/streaks";
+import { fetchWorkbookPortfolio } from "@/lib/profile-workbook";
 import { ProfileEditor } from "@/components/profile/profile-editor";
+import { LivingWorkbookSection } from "@/components/profile/living-workbook-section";
 
 export default async function ProfilePage() {
   const profile = await requireRole(["student"]);
@@ -57,6 +59,8 @@ export default async function ProfilePage() {
     (profile.streak_milestones_awarded as number[]) ?? []
   );
 
+  const workbookPillars = await fetchWorkbookPortfolio(supabase, profile.id);
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
@@ -80,6 +84,12 @@ export default async function ProfilePage() {
         streakHistory={streakHistory}
         xpLines={breakdown.lines}
         completedModules={completedModules}
+        afterIdentity={
+          <LivingWorkbookSection
+            pillars={workbookPillars}
+            showVisibilityControls
+          />
+        }
       />
     </div>
   );

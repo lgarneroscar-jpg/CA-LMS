@@ -37,6 +37,8 @@ type ExerciseSectionProps = {
   savedAnswers: Record<string, SavedExerciseAnswer>;
   defaultAnswerVisibility: boolean | null;
   hasAnySavedAnswers: boolean;
+  variant?: "default" | "lift";
+  sectionId?: string;
 };
 
 export function ExerciseSection({
@@ -50,6 +52,8 @@ export function ExerciseSection({
   savedAnswers: initialSavedAnswers,
   defaultAnswerVisibility,
   hasAnySavedAnswers: initialHasAnySavedAnswers,
+  variant = "default",
+  sectionId,
 }: ExerciseSectionProps) {
   const [responses, setResponses] = useState<Record<string, string>>(
     savedResponses
@@ -120,17 +124,25 @@ export function ExerciseSection({
     }
   }
 
+  const isLift = variant === "lift";
+
   return (
     <section
+      id={sectionId}
       className={cn(
-        "space-y-6 rounded-xl border border-border p-6",
-        locked && "bg-muted/20"
+        isLift ? "scroll-mt-36 space-y-6" : "space-y-6 rounded-xl border border-border p-6",
+        !isLift && locked && "bg-muted/20"
       )}
     >
       <div className="flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <PenLine className="size-5 text-primary" />
-          Exercises
+        <h2
+          className={cn(
+            "flex items-center gap-2 font-semibold",
+            isLift ? "text-2xl" : "text-lg"
+          )}
+        >
+          <PenLine className={cn("size-5", isLift ? "text-lift" : "text-primary")} />
+          {isLift ? "Do the work" : "Exercises"}
         </h2>
         {locked && (
           <span className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -138,9 +150,14 @@ export function ExerciseSection({
             Complete the video first
           </span>
         )}
-        {submitted && !locked && (
+        {submitted && !locked && !isLift ? (
           <span className="text-sm font-medium text-accent">Ready for quiz</span>
-        )}
+        ) : null}
+        {submitted && !locked && isLift ? (
+          <span className="rounded-full bg-lift-muted px-3 py-1 text-sm font-medium text-lift">
+            Ready for quiz
+          </span>
+        ) : null}
       </div>
 
       {locked ? (
@@ -154,6 +171,8 @@ export function ExerciseSection({
             <ExerciseCard
               key={exercise.key}
               index={index}
+              total={isLift ? structuredExercises.length : undefined}
+              variant={variant}
               exercise={exercise}
               moduleId={moduleId}
               pillarSlug={pillarSlug}
@@ -270,7 +289,8 @@ export function ExerciseSection({
           {structuredExercises.length > 0 && !submitted ? (
             <Button
               type="button"
-              variant="secondary"
+              variant={isLift ? "default" : "secondary"}
+              className={cn(isLift && "lift-btn")}
               disabled={!allStructuredSaved || continueLoading}
               onClick={handleContinueToQuiz}
             >

@@ -255,3 +255,59 @@ Append-only chronological history. Every entry begins with an explicit update st
 
 - Next step (the single concrete next action):
   Pass 4 (social layer: per-module comments + home-page activity stream) — draft scope with Oscar, then Cursor prompt for his review. The living workbook + public profiles it depends on are now live.
+
+---
+
+=== LOG UPDATED: 2026-07-05 19:23 (America/Detroit) — E1 (Experience Lift) kickoff: passthrough fact-check DONE, P1 proof design plan drafted, AWAITING OSCAR'S APPROVAL. No code written ===
+
+- Context / why this was done:
+  New phase brief COWORK-PASS-E1-look-and-feel.md (supersedes COWORK-RESTART-experience-lift.md): locked design direction — learning experience → Quizlet feel; profile → LinkedIn structure in CA's style. Restyle/restructure ONLY, no re-engineering (no new data models/engines; social layer + export + deep gamification explicitly deferred). Rollout locked: prove on ONE module first. Supporting docs received: CA-LMS-priorities-post-pass3.md (fact-check source) + CA-LMS-design-reference-library.md.
+
+- What was attempted (specific):
+  (a) Full passthrough as test student (dashboard, program tab, P1, P11, quiz, profile knowledge from Pass 3). (b) Reference study — NOTE: Quizlet blocks automated browsing (2 navigation timeouts) and LinkedIn walls logged-out automation; borrow-lists built from product knowledge, flagged for Oscar's gut-check. (c) Drafted E1-P1-PROOF-DESIGN-PLAN.md (delivered via Cowork).
+
+- Cursor prompt used: none — per brief, NO code until Oscar approves the P1 proof plan.
+- Files changed: BUILD-LOG.md only. Build/deploy/migration: none.
+
+- Verification performed (passthrough fact-check of the priorities doc — ALL themes CONFIRM):
+  - Theme 2 confirmed hard: P1 = 6+ identical callout cards (blue=concepts / gold=frameworks — data-model logic invisible to students); P11 "10-Week Audition" = 10 weeks in ONE paragraph; "six qualities" = run-on sentence; embedded lists flattened to prose everywhere.
+  - Theme 4 quantified: P11 Q2 "six qualities" quiz question renders ~24 single-select radio options (same family as P10 Q2 mangled options) — CONTENT/parse fix, belongs to quiz-review workstream.
+  - Theme 6 confirmed cheap: nav = Home/Program/Profile + tree; Program tab duplicates sidebar as plain lists AND still shows the P10,P14,P11,P13,P12 ordering bug (S4) live.
+  - Placeholder video = huge black dead zone atop every module (major exam-portal contributor).
+  - NEW observations beyond the doc: zero institution presence anywhere (relevant to Home-as-institution-space); "Behind pace" amber banner is the loudest dashboard element — demotivating first impression, propose momentum framing in the IA chunk.
+
+- Decisions made (mine, all reversible, surfaced in the plan): recommend accent Option B "Campus Indigo" (one interaction accent; gold demoted to achievement-only); recommend P1-only proof with P11 as immediate stress-test; renderer-side list-pattern detection with prose fallback for the rollout (no seed changes in the proof).
+
+- Open questions / things needing Oscar's input (numbered in E1-P1-PROOF-DESIGN-PLAN.md §6):
+  1. Accent system: A Scholar Gold / B Campus Indigo (recommended) / C institution-adaptive now-or-later?
+  2. Proof scope: P1 only (recommended) or P1+P11 two-page proof?
+  3. Rollout list-formatting: renderer pattern-detection (recommended) vs seed-format extension + re-seed?
+  4. Collapse placeholder video to slim "coming soon" strip?
+  5. Quizlet-literalness dial 1–10 (recommend ~7).
+
+- Next step (the single concrete next action):
+  Oscar reviews E1-P1-PROOF-DESIGN-PLAN.md and answers decisions 1–5 → then I write the P1 proof Cursor prompt for his review → deploy ritual → live proof review.
+
+---
+
+=== LOG UPDATED: 2026-07-05 19:39 (America/Detroit) — Oscar answered all 5 E1 design decisions; P1 proof Cursor prompt drafted, AWAITING HIS GO-AHEAD TO RUN ===
+
+- Context / why this was done:
+  Oscar answered the E1 plan's numbered decisions. Recording them (this is the design-direction record for the whole E1 phase) and drafting the Cursor prompt.
+
+- Decisions made (ALL Oscar's, verbatim intent):
+  1. Accent = B "Campus Indigo": one vivid indigo interaction accent; gold demoted to achievement-only; navy = neutral ink. (C institution-adaptive theming deferred, not dead.)
+  2. Proof scope = P1 only. (P11 stress-test follows approval, per plan.)
+  3. Rollout list handling = RENDERER-side pattern detection with prose fallback. No seed-format changes.
+  4. Placeholder video = YES, collapse to slim "coming soon" strip (one-line restore flag).
+  5. Quizlet literalness = 6–7: "inspiration should be felt but not recognized" — energy via spacing/rounding/motion; CA's own type + colors; no Quizlet hex, no copied layouts. (This phrase is now the E1 styling north star, embedded in the Cursor prompt.)
+
+- What was attempted (specific):
+  Drafted CURSOR-PROMPT-E1-P1-proof.md (delivered via Cowork). Key mechanics: new experience GATED to P1 via lib/experience-lift.ts (EXPERIENCE_LIFT_MODULE_CODES=["P1"]) with new components in components/modules/v2/ so non-gated modules stay byte-identical; rollout later = adding module codes. Campus Indigo tokens; hero + Watch/Read/Do/Check station progress (derived from existing state only); sticky scroll-spy chips; slim video strip behind a restore flag; workbook-blocks v2 renderer (lede, numbered Key Ideas, frameworks as structured objects, application context cards); lib/workbook-format.ts pure-function detectors (colon-lists, arrow chains, enumerations, Week-sequences, before→after pairs) with unit tests and prose fallback; generic NarrativeCard (Maya) shipped in proof, exercised on P11 at rollout; exercises restyled as the dominant station WITHOUT touching save/visibility logic; quiz options as cards, no engine changes. Hard constraints: no schema/actions/seed/RLS/gamification changes; stop-and-flag rule if anything seems to need backend work.
+
+- Files changed: BUILD-LOG.md only. Build/deploy/migration: none. Verification: n/a (drafting).
+
+- Open questions / things needing Oscar's input: approve CURSOR-PROMPT-E1-P1-proof.md to run in Cursor (or request edits).
+
+- Next step (the single concrete next action):
+  Oscar runs the approved prompt in Cursor → deploy ritual (git status → npm run build → push incl. BUILD-LOG.md → no re-seed → Vercel Ready) → Cowork verifies P1 visually+functionally and confirms P2 unchanged → Oscar reviews the live proof and rules on rollout.

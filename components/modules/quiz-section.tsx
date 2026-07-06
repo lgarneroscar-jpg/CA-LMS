@@ -24,6 +24,8 @@ type QuizSectionProps = {
   exercisesSubmitted: boolean;
   quizCompleted: boolean;
   quizScore: number | null;
+  variant?: "default" | "lift";
+  sectionId?: string;
   onModuleComplete: (
     xp: number,
     score: number,
@@ -42,6 +44,8 @@ export function QuizSection({
   exercisesSubmitted,
   quizCompleted,
   quizScore,
+  variant = "default",
+  sectionId,
   onModuleComplete,
 }: QuizSectionProps) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -51,6 +55,7 @@ export function QuizSection({
   const [score, setScore] = useState(quizScore);
 
   const locked = isQuizLocked(exercisesSubmitted);
+  const isLift = variant === "lift";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -85,15 +90,21 @@ export function QuizSection({
 
   return (
     <section
+      id={sectionId}
       className={cn(
-        "space-y-6 rounded-xl border border-border p-6",
-        locked && "bg-muted/20"
+        isLift ? "scroll-mt-36 space-y-6" : "space-y-6 rounded-xl border border-border p-6",
+        !isLift && locked && "bg-muted/20"
       )}
     >
       <div className="flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <HelpCircle className="size-5 text-primary" />
-          Module quiz
+        <h2
+          className={cn(
+            "flex items-center gap-2 font-semibold",
+            isLift ? "text-2xl" : "text-lg"
+          )}
+        >
+          <HelpCircle className={cn("size-5", isLift ? "text-lift" : "text-primary")} />
+          {isLift ? "Check your understanding" : "Module quiz"}
         </h2>
         {locked && (
           <span className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -102,7 +113,12 @@ export function QuizSection({
           </span>
         )}
         {completed && score !== null && (
-          <span className="text-sm font-medium text-accent">
+          <span
+            className={cn(
+              "text-sm font-medium",
+              isLift ? "text-lift" : "text-accent"
+            )}
+          >
             Score: {score}/{questions.length}
           </span>
         )}
@@ -129,26 +145,58 @@ export function QuizSection({
                 onValueChange={(v) =>
                   setAnswers((a) => ({ ...a, [q.id]: v }))
                 }
-                className="gap-3"
+                className={cn("gap-3", isLift && "grid gap-3 sm:grid-cols-2")}
               >
-                {q.options.map((opt) => (
-                  <div key={opt.id} className="flex items-center gap-2">
-                    <RadioGroupItem value={opt.id} id={`${q.id}-${opt.id}`} />
-                    <Label
-                      htmlFor={`${q.id}-${opt.id}`}
-                      className="font-normal"
-                    >
-                      {opt.label}
-                    </Label>
-                  </div>
-                ))}
+                {q.options.map((opt) => {
+                  const selected = answers[q.id] === opt.id;
+                  return (
+                    <div key={opt.id}>
+                      <RadioGroupItem
+                        value={opt.id}
+                        id={`${q.id}-${opt.id}`}
+                        className="peer sr-only"
+                      />
+                      <Label
+                        htmlFor={`${q.id}-${opt.id}`}
+                        className={cn(
+                          "flex cursor-pointer items-start gap-3 font-normal leading-snug",
+                          isLift
+                            ? cn(
+                                "rounded-2xl border p-4 transition-colors",
+                                "peer-focus-visible:ring-2 peer-focus-visible:ring-lift/40",
+                                selected
+                                  ? "border-lift bg-lift-muted text-foreground"
+                                  : "border-border bg-card hover:border-lift/30 hover:bg-lift-muted/40"
+                              )
+                            : ""
+                        )}
+                      >
+                        {isLift ? (
+                          <span
+                            className={cn(
+                              "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border",
+                              selected
+                                ? "border-lift bg-lift text-lift-foreground"
+                                : "border-border"
+                            )}
+                          >
+                            {selected ? (
+                              <span className="size-1.5 rounded-full bg-current" />
+                            ) : null}
+                          </span>
+                        ) : null}
+                        {opt.label}
+                      </Label>
+                    </div>
+                  );
+                })}
               </RadioGroup>
             </div>
           ))}
 
           {error && <p className="text-sm text-destructive">{error}</p>}
 
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading} className={cn(isLift && "lift-btn")}>
             {loading ? "Submitting…" : "Submit quiz"}
           </Button>
         </form>

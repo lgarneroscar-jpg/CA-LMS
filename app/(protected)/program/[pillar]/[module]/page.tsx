@@ -167,6 +167,7 @@ export default async function ModulePage({ params }: PageProps) {
       title={module.title}
       moduleCode={module.module_code}
       pillar={module.pillar}
+      unlockWeek={module.unlock_week ?? 1}
       estimatedMinutes={workbook.estimated_minutes}
       videoUrl={module.video_url ?? "https://www.youtube.com/watch?v=LXb3EKWsInQ"}
       workbookBlocks={workbook.blocks}

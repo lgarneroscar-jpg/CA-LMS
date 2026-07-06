@@ -9,6 +9,8 @@ import { ExerciseSection } from "@/components/modules/exercise-section";
 import { QuizSection, type QuizQuestionView } from "@/components/modules/quiz-section";
 import { CompletionCelebration } from "@/components/modules/completion-celebration";
 import { ProgramCompletionCelebration } from "@/components/program/program-completion-celebration";
+import { isExperienceLiftModule } from "@/lib/experience-lift";
+import { ModuleExperienceV2 } from "@/components/modules/v2/module-experience-v2";
 import type { ExerciseField, WorkbookBlock, ModuleProgressState } from "@/types/modules";
 import type { SavedExerciseAnswer } from "@/lib/exercise-answers";
 
@@ -19,6 +21,7 @@ type ModuleExperienceProps = {
   title: string;
   moduleCode: string;
   pillar: number;
+  unlockWeek: number;
   estimatedMinutes: number;
   videoUrl: string;
   workbookBlocks: WorkbookBlock[];
@@ -43,6 +46,7 @@ export function ModuleExperience({
   title,
   moduleCode,
   pillar,
+  unlockWeek,
   estimatedMinutes,
   videoUrl,
   workbookBlocks,
@@ -89,6 +93,35 @@ export function ModuleExperience({
   }
 
   const linkedInCaption = `I'm proud to share that I've completed the Corporate Academy program — building my pre-professional identity, communication skills, and career strategy. #CorporateAcademy #CareerReady`;
+
+  if (isExperienceLiftModule(moduleCode)) {
+    return (
+      <ModuleExperienceV2
+        moduleId={moduleId}
+        pillarSlug={pillarSlug}
+        moduleSlug={moduleSlug}
+        title={title}
+        moduleCode={moduleCode}
+        pillar={pillar}
+        unlockWeek={unlockWeek}
+        estimatedMinutes={estimatedMinutes}
+        videoUrl={videoUrl}
+        workbookBlocks={workbookBlocks}
+        workbookOverview={workbookOverview}
+        completionCheck={completionCheck}
+        exercises={exercises}
+        questions={questions}
+        correctAnswers={correctAnswers}
+        progress={progress}
+        savedResponses={savedResponses}
+        savedAnswers={savedAnswers}
+        defaultAnswerVisibility={defaultAnswerVisibility}
+        hasAnySavedAnswers={hasAnySavedAnswers}
+        nextModuleHref={nextModuleHref}
+        studentName={studentName}
+      />
+    );
+  }
 
   return (
     <div className="mx-auto max-w-3xl space-y-10 pb-16">

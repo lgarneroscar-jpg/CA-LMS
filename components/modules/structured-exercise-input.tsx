@@ -175,9 +175,12 @@ function AnchorSelectChips({
               key={option}
               type="button"
               size="sm"
-              variant={isSelected ? "default" : "outline"}
+              variant="outline"
               disabled={disabled || (atMax && !isSelected)}
-              className={cn("h-auto whitespace-normal px-3 py-1.5 text-left")}
+              className={cn(
+                "h-auto whitespace-normal px-3 py-1.5 text-left anchor-chip",
+                isSelected && "anchor-chip-selected"
+              )}
               onClick={() => toggleOption(option)}
             >
               {option}

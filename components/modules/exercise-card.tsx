@@ -18,9 +18,12 @@ import {
   type ExerciseAnswerData,
   type SavedExerciseAnswer,
 } from "@/lib/exercise-answers";
+import { cn } from "@/lib/utils";
 
 type ExerciseCardProps = {
   index: number;
+  total?: number;
+  variant?: "default" | "lift";
   exercise: Extract<ExerciseField, { input_type: string; fields: unknown[] }>;
   moduleId: string;
   pillarSlug: string;
@@ -33,6 +36,8 @@ type ExerciseCardProps = {
 
 export function ExerciseCard({
   index,
+  total,
+  variant = "default",
   exercise,
   moduleId,
   pillarSlug,
@@ -109,6 +114,9 @@ export function ExerciseCard({
     void persist(isPublicDefault);
   }
 
+  const isLift = variant === "lift";
+  const isSaved = Boolean(updatedAt);
+
   return (
     <>
       <ExerciseVisibilityPrompt
@@ -118,17 +126,39 @@ export function ExerciseCard({
         onChoose={handleVisibilityChoice}
       />
 
-      <div className="space-y-4 rounded-lg border border-border bg-card p-4">
+      <div
+        className={cn(
+          "space-y-4 border bg-card",
+          isLift
+            ? "rounded-2xl border-border/80 p-6 shadow-sm [&_input]:lift-input [&_textarea]:lift-input [&_textarea]:min-h-[7rem] [&_textarea]:rounded-xl [&_input]:rounded-xl"
+            : "rounded-lg border-border p-4"
+        )}
+      >
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
-            <Label className="text-base font-medium">
-              <span className="mr-2 text-muted-foreground">{index + 1}.</span>
-              {exercise.title}
-            </Label>
-            <Badge variant="outline" className="font-mono text-[10px]">
-              {exercise.input_type}
-            </Badge>
+            {isLift ? (
+              <Badge className="lift-chip border-0 bg-lift-muted font-normal text-lift">
+                Exercise {index + 1}
+                {total ? ` of ${total}` : ""}
+              </Badge>
+            ) : (
+              <Label className="text-base font-medium">
+                <span className="mr-2 text-muted-foreground">{index + 1}.</span>
+                {exercise.title}
+              </Label>
+            )}
+            {!isLift ? (
+              <Badge variant="outline" className="font-mono text-[10px]">
+                {exercise.input_type}
+              </Badge>
+            ) : null}
+            {isLift && isSaved ? (
+              <Badge className="border-lift/20 bg-lift-muted text-lift">Saved ✓</Badge>
+            ) : null}
           </div>
+          {isLift ? (
+            <h3 className="text-lg font-semibold text-foreground">{exercise.title}</h3>
+          ) : null}
           {exercise.instructions ? (
             <p className="text-sm text-muted-foreground">{exercise.instructions}</p>
           ) : null}
@@ -153,11 +183,23 @@ export function ExerciseCard({
           </label>
 
           <div className="flex flex-col items-start gap-1 sm:items-end">
-            <Button type="button" onClick={handleSaveClick} disabled={loading}>
+            <Button
+              type="button"
+              onClick={handleSaveClick}
+              disabled={loading}
+              className={cn(isLift && "lift-btn px-6")}
+            >
               {loading ? "Saving…" : "Save exercise"}
             </Button>
             {savedFlash ? (
-              <span className="text-xs font-medium text-accent">Saved</span>
+              <span
+                className={cn(
+                  "text-xs font-medium",
+                  isLift ? "text-lift" : "text-accent"
+                )}
+              >
+                Saved
+              </span>
             ) : null}
             {updatedAt ? (
               <span className="text-xs text-muted-foreground">

@@ -128,9 +128,9 @@ export function ExerciseCard({
 
       <div
         className={cn(
-          "space-y-4 border bg-card",
+          "space-y-5 border bg-card",
           isLift
-            ? "rounded-2xl border-border/80 p-6 shadow-sm [&_input]:lift-input [&_textarea]:lift-input [&_textarea]:min-h-[7rem] [&_textarea]:rounded-xl [&_input]:rounded-xl"
+            ? "lift-card-interactive rounded-3xl border-border/80 p-7 shadow-md shadow-lift/5 [&_input]:lift-input [&_textarea]:lift-input [&_textarea]:min-h-[8rem] [&_textarea]:rounded-xl [&_textarea]:text-base [&_input]:rounded-xl [&_input]:text-base [&_label]:text-base"
             : "rounded-lg border-border p-4"
         )}
       >
@@ -157,10 +157,12 @@ export function ExerciseCard({
             ) : null}
           </div>
           {isLift ? (
-            <h3 className="text-lg font-semibold text-foreground">{exercise.title}</h3>
+            <h3 className="text-xl font-bold text-foreground">{exercise.title}</h3>
           ) : null}
           {exercise.instructions ? (
-            <p className="text-sm text-muted-foreground">{exercise.instructions}</p>
+            <p className={cn(isLift ? "lift-body text-muted-foreground" : "text-sm text-muted-foreground")}>
+              {exercise.instructions}
+            </p>
           ) : null}
         </div>
 
@@ -173,8 +175,8 @@ export function ExerciseCard({
           onChange={setDraft}
         />
 
-        <div className="flex flex-col gap-3 border-t border-border pt-3 sm:flex-row sm:items-center sm:justify-between">
-          <label className="flex items-center gap-2 text-sm">
+        <div className="flex flex-col gap-4 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <label className={cn("flex items-center gap-2", isLift ? "lift-body" : "text-sm")}>
             <Checkbox
               checked={isPublic}
               onCheckedChange={(checked) => setIsPublic(checked === true)}

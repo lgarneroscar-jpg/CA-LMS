@@ -99,6 +99,40 @@
 /* Campus Indigo — scoped to v2 module experience only */
 .experience-lift {
   --lift-ring: #4f46e5;
+  font-size: 1.0625rem;
+  line-height: 1.65;
+}
+
+.experience-lift .lift-prose {
+  max-width: 70ch;
+}
+
+.experience-lift .lift-body {
+  @apply text-[1.0625rem] leading-relaxed;
+}
+
+.experience-lift .lift-lede {
+  @apply text-xl leading-relaxed text-foreground/90 md:text-[1.35rem] md:leading-relaxed;
+}
+
+.experience-lift .lift-section-title {
+  @apply tracking-tight;
+}
+
+.experience-lift .lift-station-header {
+  @apply mb-2;
+}
+
+.experience-lift .lift-card {
+  @apply rounded-2xl border border-border/80 bg-card shadow-sm transition-all duration-200;
+}
+
+.experience-lift .lift-card-interactive {
+  @apply rounded-2xl border border-border/80 bg-card shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-lift/25 hover:shadow-md hover:shadow-lift/10;
+}
+
+.experience-lift .lift-framework {
+  @apply overflow-hidden rounded-3xl border border-lift/20 bg-card shadow-md shadow-lift/5;
 }
 
 .experience-lift :where(button, a, input, textarea, select, [role="checkbox"], [role="radio"]) {
@@ -110,27 +144,31 @@
 }
 
 .experience-lift .lift-btn {
-  @apply bg-lift text-lift-foreground hover:bg-lift-hover;
+  @apply h-11 rounded-xl bg-lift px-6 text-base font-medium text-lift-foreground shadow-sm shadow-lift/20 transition-all hover:bg-lift-hover hover:shadow-md hover:shadow-lift/25;
 }
 
 .experience-lift .lift-chip {
-  @apply border-lift/20 bg-lift-subtle text-lift;
+  @apply rounded-full border-lift/25 bg-lift-subtle px-3.5 py-1.5 text-sm font-medium text-lift;
 }
 
 .experience-lift .lift-chip-active {
-  @apply border-lift bg-lift text-lift-foreground;
+  @apply border-lift bg-lift text-lift-foreground shadow-sm shadow-lift/20;
 }
 
 .experience-lift .lift-input:focus-visible {
-  @apply border-lift ring-2 ring-lift/20;
+  @apply border-lift ring-2 ring-lift/25;
 }
 
 .experience-lift .anchor-chip {
-  @apply border-lift/20 bg-background text-foreground hover:bg-lift-muted/50;
+  @apply rounded-full border-lift/25 bg-background text-base text-foreground transition-all hover:border-lift/40 hover:bg-lift-muted/60;
 }
 
 .experience-lift .anchor-chip-selected {
-  @apply border-lift bg-lift text-lift-foreground hover:bg-lift-hover;
+  @apply border-lift bg-lift text-lift-foreground shadow-sm shadow-lift/20 hover:bg-lift-hover;
+}
+
+.experience-lift .lift-progress-fill {
+  @apply transition-all duration-500 ease-out;
 }
 
 .dark {

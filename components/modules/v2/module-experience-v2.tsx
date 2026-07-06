@@ -16,6 +16,7 @@ import {
   VideoStripV2,
   useStationScrollSpy,
 } from "@/components/modules/v2/station-nav";
+import { StationHeaderV2 } from "@/components/modules/v2/station-header";
 import { WorkbookBlocksV2 } from "@/components/modules/v2/workbook-blocks";
 import { SHOW_PLACEHOLDER_VIDEO_STRIP } from "@/lib/experience-lift";
 import type { ExerciseField, WorkbookBlock, ModuleProgressState } from "@/types/modules";
@@ -121,7 +122,7 @@ export function ModuleExperienceV2(props: ModuleExperienceV2Props) {
   const linkedInCaption = `I'm proud to share that I've completed the Corporate Academy program — building my pre-professional identity, communication skills, and career strategy. #CorporateAcademy #CareerReady`;
 
   return (
-    <div className="experience-lift mx-auto max-w-3xl space-y-8 pb-16">
+    <div className="experience-lift mx-auto max-w-5xl space-y-14 px-1 pb-20 md:px-2">
       {showProgramComplete && certificateStudentId ? (
         <ProgramCompletionCelebration
           studentName={studentName}
@@ -151,9 +152,16 @@ export function ModuleExperienceV2(props: ModuleExperienceV2Props) {
           <StationNavV2
             activeStation={activeStation}
             onNavigate={scrollToStation}
+            stationProgress={stationProgress}
           />
 
-          <section id="station-watch" className="scroll-mt-36 space-y-3">
+          <section id="station-watch" className="scroll-mt-40 space-y-5">
+            <StationHeaderV2
+              stationId="watch"
+              title="Watch the lesson"
+              icon={<span className="text-lg">▶</span>}
+              status={stationProgress.watch}
+            />
             {SHOW_PLACEHOLDER_VIDEO_STRIP ? (
               <VideoStripV2 />
             ) : (
@@ -167,11 +175,13 @@ export function ModuleExperienceV2(props: ModuleExperienceV2Props) {
             )}
           </section>
 
-          <section id="station-read" className="scroll-mt-36 space-y-4">
-            <h2 className="flex items-center gap-2 text-2xl font-semibold">
-              <BookOpen className="size-5 text-lift" />
-              Read the workbook
-            </h2>
+          <section id="station-read" className="scroll-mt-40 space-y-6">
+            <StationHeaderV2
+              stationId="read"
+              title="Read the workbook"
+              icon={<BookOpen className="size-6" />}
+              status={stationProgress.read}
+            />
             <WorkbookBlocksV2
               overview={workbookOverview}
               blocks={workbookBlocks}
@@ -182,6 +192,7 @@ export function ModuleExperienceV2(props: ModuleExperienceV2Props) {
           <ExerciseSection
             sectionId="station-do"
             variant="lift"
+            liftStationStatus={stationProgress.do}
             moduleId={moduleId}
             pillarSlug={pillarSlug}
             moduleSlug={moduleSlug}
@@ -197,6 +208,7 @@ export function ModuleExperienceV2(props: ModuleExperienceV2Props) {
           <QuizSection
             sectionId="station-check"
             variant="lift"
+            liftStationStatus={stationProgress.check}
             moduleId={moduleId}
             pillarSlug={pillarSlug}
             moduleSlug={moduleSlug}

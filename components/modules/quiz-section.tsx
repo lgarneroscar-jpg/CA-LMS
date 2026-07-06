@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 import { isQuizLocked } from "@/lib/module-gates";
+import { StationHeaderV2 } from "@/components/modules/v2/station-header";
 
 export type QuizQuestionView = {
   id: string;
@@ -26,6 +27,7 @@ type QuizSectionProps = {
   quizScore: number | null;
   variant?: "default" | "lift";
   sectionId?: string;
+  liftStationStatus?: "complete" | "current" | "upcoming";
   onModuleComplete: (
     xp: number,
     score: number,
@@ -46,6 +48,7 @@ export function QuizSection({
   quizScore,
   variant = "default",
   sectionId,
+  liftStationStatus = "upcoming",
   onModuleComplete,
 }: QuizSectionProps) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -92,19 +95,22 @@ export function QuizSection({
     <section
       id={sectionId}
       className={cn(
-        isLift ? "scroll-mt-36 space-y-6" : "space-y-6 rounded-xl border border-border p-6",
+        isLift ? "scroll-mt-40 space-y-8" : "space-y-6 rounded-xl border border-border p-6",
         !isLift && locked && "bg-muted/20"
       )}
     >
+      {isLift ? (
+        <StationHeaderV2
+          stationId="check"
+          title="Check your understanding"
+          icon={<HelpCircle className="size-6" />}
+          status={liftStationStatus}
+        />
+      ) : (
       <div className="flex items-center justify-between">
-        <h2
-          className={cn(
-            "flex items-center gap-2 font-semibold",
-            isLift ? "text-2xl" : "text-lg"
-          )}
-        >
-          <HelpCircle className={cn("size-5", isLift ? "text-lift" : "text-primary")} />
-          {isLift ? "Check your understanding" : "Module quiz"}
+        <h2 className="flex items-center gap-2 text-lg font-semibold">
+          <HelpCircle className="size-5 text-primary" />
+          Module quiz
         </h2>
         {locked && (
           <span className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -113,16 +119,27 @@ export function QuizSection({
           </span>
         )}
         {completed && score !== null && (
-          <span
-            className={cn(
-              "text-sm font-medium",
-              isLift ? "text-lift" : "text-accent"
-            )}
-          >
+          <span className="text-sm font-medium text-accent">
             Score: {score}/{questions.length}
           </span>
         )}
       </div>
+      )}
+      {isLift && completed && score !== null ? (
+        <div className="flex justify-end">
+          <span className="rounded-full bg-lift-muted px-4 py-1.5 text-sm font-semibold text-lift">
+            Score: {score}/{questions.length}
+          </span>
+        </div>
+      ) : null}
+      {isLift && locked ? (
+        <div className="flex justify-end">
+          <span className="flex items-center gap-1 text-sm text-muted-foreground">
+            <Lock className="size-4" />
+            Submit exercises first
+          </span>
+        </div>
+      ) : null}
 
       {locked ? (
         <p className="text-sm text-muted-foreground">
@@ -162,11 +179,11 @@ export function QuizSection({
                           "flex cursor-pointer items-start gap-3 font-normal leading-snug",
                           isLift
                             ? cn(
-                                "rounded-2xl border p-4 transition-colors",
+                                "lift-card-interactive cursor-pointer rounded-2xl border p-5 text-base transition-all",
                                 "peer-focus-visible:ring-2 peer-focus-visible:ring-lift/40",
                                 selected
-                                  ? "border-lift bg-lift-muted text-foreground"
-                                  : "border-border bg-card hover:border-lift/30 hover:bg-lift-muted/40"
+                                  ? "border-lift bg-lift-muted text-foreground shadow-md shadow-lift/15"
+                                  : "border-border bg-card hover:border-lift/30 hover:bg-lift-muted/50"
                               )
                             : ""
                         )}

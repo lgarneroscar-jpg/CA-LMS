@@ -311,3 +311,57 @@ Append-only chronological history. Every entry begins with an explicit update st
 
 - Next step (the single concrete next action):
   Oscar runs the approved prompt in Cursor → deploy ritual (git status → npm run build → push incl. BUILD-LOG.md → no re-seed → Vercel Ready) → Cowork verifies P1 visually+functionally and confirms P2 unchanged → Oscar reviews the live proof and rules on rollout.
+
+---
+
+=== LOG UPDATED: 2026-07-06 00:03 (America/Detroit) — E1 P1 PROOF DEPLOYED & VERIFIED (visual + functional + gate isolation). Awaiting Oscar's formal proof verdict for rollout ===
+
+- Context / why this was done:
+  Oscar ran the E1 P1 proof prompt in Cursor; build passed (✓ Compiled 2.7s, ✓ TS 2.5s, workbook-format tests added); pushed to Vercel (note: first git status showed uncommitted — Oscar had Cursor complete the push). Cursor's summary matched the spec: gate lib/experience-lift.ts (["P1"]) + SHOW_PLACEHOLDER_VIDEO_STRIP flag; scoped .experience-lift Campus Indigo tokens in globals.css; new components/modules/v2/ (module-experience-v2, module-hero, station-nav, workbook-blocks, workbook-body, narrative-card, completion-check); lib/workbook-format.ts + tests; variant="lift" styling on existing exercise/quiz components without logic changes.
+
+- Verification performed (browser, Production, as test student):
+  P1 VISUAL — ALL SPEC ITEMS PRESENT:
+  1. Hero: P1 chip, pillar tag, serif title, week/min metadata, 4-station progress bar reading 3/4 stations (Watch/Read/Do earned from existing state; Check pending — quiz not yet submitted). ✓
+  2. Sticky Watch·Read·Do·Check chips with active state. ✓
+  3. Slim "Video lesson — coming soon" strip replaces the black player. ✓
+  4. Workbook: styled lede; KEY IDEAS as numbered sequence (indigo number chips, bold claims, inline key-phrase emphasis — no card wall); Identity Anchors colon-list → real bulleted list; Student-Mode Detector → bullets + labeled BEFORE→AFTER two-column pair; Identity Flywheel → chip step-chain diagram. The formatter detectors all fired correctly on real content. ✓
+  5. Real-World Application → labeled context mini-cards (IN CLASS / IN CLUBS / IN CONVERSATIONS). ✓
+  6. Completion Check: card targets + "0 of 5" counter. ✓
+  7. "Do the work" station: Exercise 1 of 2 / 2 of 2 chips, "Saved ✓" chips on both saved exercises, dominant cards, indigo save buttons, anchor chips show persisted selections with × removes, saved answers pre-filled. ✓
+  8. Quiz → "Check your understanding": options as selectable cards in a 2-col grid. ✓
+  9. Color discipline: indigo everywhere interactive; NO gold on the module page. ✓
+  P1 FUNCTIONAL REGRESSION:
+  10. Edited anchor reason ("Calm and composed") and re-saved on the new UI → "Saved" + timestamp advanced. Persistence intact. ✓
+  GATE ISOLATION:
+  11. P2 renders the ORIGINAL experience (old header, full black video player, old workbook cards). Non-gated modules unaffected. ✓
+
+- Decisions made: none mine — proof is live for Oscar's verdict. Oscar's initial reaction: "looks good," wants to expand site-wide.
+
+- Open questions / things needing Oscar's input:
+  1. Formal proof verdict: approve the P1 look as-is (or list tweaks)?
+  2. On approval, rollout order per plan: flip P11 on FIRST (stress-test: 10-week timeline, Maya NarrativeCard, six-qualities content) → then all 14 modules. Confirm?
+
+- Next step (the single concrete next action):
+  On Oscar's verdict: one-line Cursor edit adding "P11" to EXPERIENCE_LIFT_MODULE_CODES → deploy → Cowork stress-tests P11 → then add remaining codes → then IA split → profile restyle.
+
+---
+
+=== LOG UPDATED: 2026-07-06 00:19 (America/Detroit) — Oscar's proof verdict recorded; P1.1 refinement + P11-enable Cursor prompt drafted, awaiting run ===
+
+- Context / why this was done:
+  Oscar reviewed the live P1 proof and gave a directional verdict rather than plain approval.
+
+- Decisions made (Oscar's, verbatim intent — this is the styling adjustment record):
+  1. Proceed with P11 next (stress-test before full rollout). APPROVED.
+  2. Refinements required: page reads "quiet and compact" — use more of the margins (wider content usage), expand the content, LARGER text; readability is the priority ("making it more readable is huge here").
+  3. Energy dial: raise Quizlet-likeness from ~6 to 7.5/10 (still "felt, not recognized").
+  4. The HERO (module title + station progress "bubble") is the benchmark: "that look and feel and functionality I'm looking for" — the rest of the page should rise to it; the prompt echoes the hero's language down the page (station-level status affordances).
+
+- What was attempted (specific): drafted CURSOR-PROMPT-E1-P1.1-refine-plus-P11.md — adds "P11" to the gate; type scale up (~17–18px reading base, bolder claim headings, station headers as real section moments); wider container (max-w-5xl territory) with prose kept at ~70ch measure (width goes to structure, not long lines); increased vertical rhythm/padding; bolder indigo usage, larger radii/chips/buttons, tasteful motion (hover lift, check animation, bar transitions; explicitly no confetti); all scoped to .experience-lift/v2.
+
+- Files changed: BUILD-LOG.md only. Build/deploy: none yet. Verification: n/a.
+
+- Open questions / things needing Oscar's input: none — run the prompt when ready.
+
+- Next step (the single concrete next action):
+  Oscar runs P1.1 prompt in Cursor → build → push → Vercel Ready → Cowork: stress-test P11 (Week-timeline detector, Maya NarrativeCard, six-qualities list, exercises/quiz function), re-check P1 refinements, confirm P2 isolation → report for rollout-to-all verdict.

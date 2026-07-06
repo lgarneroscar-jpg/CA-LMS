@@ -38,9 +38,9 @@ export function ModuleHeroV2({
   ).length;
 
   return (
-    <header className="space-y-5 rounded-2xl border border-border bg-card p-6 shadow-sm">
+    <header className="lift-framework space-y-6 rounded-3xl border border-lift/15 bg-card p-7 shadow-md shadow-lift/5 md:p-8">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-full bg-lift-muted px-3 py-1 font-mono text-xs font-semibold text-lift">
+        <span className="rounded-full bg-lift px-3.5 py-1.5 font-mono text-xs font-bold text-lift-foreground shadow-sm shadow-lift/20">
           {moduleCode}
         </span>
         <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
@@ -51,7 +51,7 @@ export function ModuleHeroV2({
         </span>
       </div>
 
-      <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+      <h1 className="font-serif text-3xl font-semibold tracking-tight text-foreground md:text-[2.5rem] md:leading-tight">
         {title}
       </h1>
 
@@ -65,9 +65,9 @@ export function ModuleHeroV2({
             {completedCount} / {STATIONS.length} stations
           </span>
         </div>
-        <div className="relative h-2 overflow-hidden rounded-full bg-muted">
+        <div className="relative h-2.5 overflow-hidden rounded-full bg-muted">
           <div
-            className="absolute inset-y-0 left-0 rounded-full bg-lift transition-all"
+            className="lift-progress-fill absolute inset-y-0 left-0 rounded-full bg-lift"
             style={{ width: `${(completedCount / STATIONS.length) * 100}%` }}
           />
           <div className="absolute inset-0 grid grid-cols-4">

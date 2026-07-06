@@ -18,19 +18,21 @@ export function CompletionCheckV2({ items }: CompletionCheckV2Props) {
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-      <div className="flex flex-wrap items-end justify-between gap-2">
-        <div>
-          <h3 className="text-lg font-semibold text-foreground">Completion Check</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Confirm you can honestly check each item before moving on.
+    <section className="lift-framework">
+      <div className="border-b border-lift/15 bg-lift-muted/50 px-6 py-5">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h3 className="text-xl font-bold text-foreground">Completion Check</h3>
+            <p className="mt-1.5 lift-body text-muted-foreground">
+              Confirm you can honestly check each item before moving on.
+            </p>
+          </div>
+          <p className="lift-chip border-0 bg-lift text-lift-foreground shadow-sm shadow-lift/20">
+            {checkedCount} of {items.length}
           </p>
         </div>
-        <p className="text-sm font-medium text-lift">
-          {checkedCount} of {items.length}
-        </p>
       </div>
-      <ul className="mt-5 space-y-2">
+      <ul className="space-y-3 p-6 md:p-7">
         {items.map((item, index) => {
           const isChecked = Boolean(checked[index]);
           return (
@@ -39,26 +41,23 @@ export function CompletionCheckV2({ items }: CompletionCheckV2Props) {
                 type="button"
                 onClick={() => toggle(index)}
                 className={cn(
-                  "flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left transition-colors",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lift/40 focus-visible:ring-offset-2",
-                  isChecked
-                    ? "border-lift/30 bg-lift-muted/60"
-                    : "border-border bg-background hover:bg-muted/40"
+                  "lift-card-interactive flex w-full items-start gap-4 rounded-2xl px-5 py-4 text-left",
+                  isChecked && "border-lift/35 bg-lift-muted/70"
                 )}
               >
                 <span
                   className={cn(
-                    "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md border transition-all",
+                    "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-lg border-2 transition-all duration-200",
                     isChecked
                       ? "scale-100 border-lift bg-lift text-lift-foreground"
                       : "scale-100 border-border bg-background"
                   )}
                 >
                   {isChecked ? (
-                    <Check className="size-3.5 animate-in zoom-in-50 duration-200" />
+                    <Check className="size-4 animate-in zoom-in-50 duration-200" />
                   ) : null}
                 </span>
-                <span className="text-sm leading-relaxed text-foreground">{item}</span>
+                <span className="lift-body text-foreground">{item}</span>
               </button>
             </li>
           );

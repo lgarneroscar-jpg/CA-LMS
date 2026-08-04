@@ -6,6 +6,13 @@ export type FormattedColonList = {
   useChips: boolean;
 };
 
+export type FormattedContrastGroups = {
+  type: "contrast_groups";
+  intro?: string;
+  groups: { label: string; items: string[] }[];
+  outro?: string;
+};
+
 export type FormattedArrowChain = {
   type: "arrow_chain";
   intro?: string;
@@ -41,14 +48,190 @@ export type FormattedProse = {
 
 export type FormattedBody =
   | FormattedColonList
+  | FormattedContrastGroups
   | FormattedArrowChain
   | FormattedEnumeration
   | FormattedWeekTimeline
   | FormattedSignalRewrite
   | FormattedProse;
 
+const MAX_LIST_ITEM_WORDS = 12;
+
 function wordCount(value: string): number {
   return value.trim().split(/\s+/).filter(Boolean).length;
+}
+
+/**
+ * Split on a separator only at nesting depth 0 — ignore separators inside
+ * (...), [...], and inside "..." or '...' quotes (not mid-word apostrophes).
+ */
+export function splitTopLevel(
+  text: string,
+  separator: string = ","
+): string[] {
+  const parts: string[] = [];
+  let current = "";
+  let depth = 0;
+  let quote: '"' | "'" | null = null;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+
+    if (quote) {
+      current += ch;
+      if (ch === quote && text[i - 1] !== "\\") {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (ch === '"') {
+      quote = '"';
+      current += ch;
+      continue;
+    }
+
+    // Single quote opens a string only at a boundary — skip contractions (doesn't).
+    if (ch === "'") {
+      const atBoundary = i === 0 || /[\s([{,:]/.test(text[i - 1]);
+      if (atBoundary) {
+        quote = "'";
+      }
+      current += ch;
+      continue;
+    }
+
+    if (ch === "(" || ch === "[") {
+      depth += 1;
+      current += ch;
+      continue;
+    }
+
+    if (ch === ")" || ch === "]") {
+      depth = Math.max(0, depth - 1);
+      current += ch;
+      continue;
+    }
+
+    if (depth === 0 && text.startsWith(separator, i)) {
+      parts.push(current.trim());
+      current = "";
+      i += separator.length - 1;
+      continue;
+    }
+
+    current += ch;
+  }
+
+  if (current.trim()) parts.push(current.trim());
+  return parts.filter(Boolean);
+}
+
+/** True when a double-quoted span covers roughly half or more of the text. */
+function isPredominantlyQuoted(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed) return false;
+
+  let longest = 0;
+  let inQuote = false;
+  let start = -1;
+
+  for (let i = 0; i < trimmed.length; i++) {
+    const ch = trimmed[i];
+    if (inQuote) {
+      if (ch === '"' && trimmed[i - 1] !== "\\") {
+        longest = Math.max(longest, i - start + 1);
+        inQuote = false;
+        start = -1;
+      }
+      continue;
+    }
+    if (ch === '"') {
+      inQuote = true;
+      start = i;
+    }
+  }
+
+  return longest >= trimmed.length * 0.5;
+}
+
+/** Item looks like a new sentence/clause was glued in — not a list item. */
+function itemLooksLikeProseClause(item: string): boolean {
+  return /\.\s+[A-Z]/.test(item);
+}
+
+/**
+ * Real workbook lists are short noun/trait phrases that start with a capital
+ * (or a digit). Lowercase-leading fragments after a colon are almost always
+ * prose ("Remember: foo, bar, and baz…").
+ */
+function itemLooksLikeListPhrase(item: string): boolean {
+  return /^[A-Z0-9]/.test(item.trim());
+}
+
+function looksLikeListItems(items: string[]): boolean {
+  if (items.length < 2) return false;
+  if (items.some((item) => item.includes("→"))) return false;
+  if (items.some((item) => itemLooksLikeProseClause(item))) return false;
+  if (items.some((item) => wordCount(item) > MAX_LIST_ITEM_WORDS)) return false;
+  if (!items.every((item) => itemLooksLikeListPhrase(item))) return false;
+  return true;
+}
+
+/** Contrast mini-lists are often lowercase verb phrases ("waits for instructions"). */
+function looksLikeContrastItems(items: string[]): boolean {
+  if (items.length < 2) return false;
+  if (items.some((item) => item.includes("→"))) return false;
+  if (items.some((item) => itemLooksLikeProseClause(item))) return false;
+  if (items.some((item) => wordCount(item) > MAX_LIST_ITEM_WORDS)) return false;
+  return true;
+}
+
+/**
+ * Peel trailing prose after a list that ends with ". ".
+ * Uses depth-aware awareness so periods inside parentheses don't cut early.
+ */
+function peelListAndOutro(
+  afterColon: string
+): { listPortion: string; outro?: string } | null {
+  const trimmed = afterColon.trim();
+  if (!trimmed) return null;
+
+  let depth = 0;
+  let inDoubleQuote = false;
+
+  for (let i = 0; i < trimmed.length; i++) {
+    const ch = trimmed[i];
+
+    if (inDoubleQuote) {
+      if (ch === '"' && trimmed[i - 1] !== "\\") inDoubleQuote = false;
+      continue;
+    }
+    if (ch === '"') {
+      inDoubleQuote = true;
+      continue;
+    }
+    if (ch === "(" || ch === "[") {
+      depth += 1;
+      continue;
+    }
+    if (ch === ")" || ch === "]") {
+      depth = Math.max(0, depth - 1);
+      continue;
+    }
+
+    if (
+      depth === 0 &&
+      ch === "." &&
+      (i === trimmed.length - 1 || /\s/.test(trimmed[i + 1]))
+    ) {
+      const listPortion = trimmed.slice(0, i).trim();
+      const outro = trimmed.slice(i + 1).trim() || undefined;
+      if (listPortion) return { listPortion, outro };
+    }
+  }
+
+  return { listPortion: trimmed };
 }
 
 export function detectWeekTimeline(text: string): FormattedWeekTimeline | null {
@@ -155,28 +338,89 @@ export function detectEnumeration(text: string): FormattedEnumeration | null {
   };
 }
 
+/**
+ * Two+ labelled mini-lists in one body, e.g.
+ * "… Student Identity: a, b, c. Pre-Professional Identity: x, y, z."
+ */
+export function detectContrastGroups(
+  text: string
+): FormattedContrastGroups | null {
+  // Labels like "Student Identity:" / "Pre-Professional Identity:" after a
+  // sentence boundary (or start). Keeps simple "Intro: a, b, c." out.
+  const labelPattern = /(?:^|[.!?]\s+)([A-Z][A-Za-z0-9 /&-]{1,40}):\s*/g;
+  const labels = [...text.matchAll(labelPattern)];
+  if (labels.length < 2) return null;
+
+  const groups: { label: string; items: string[] }[] = [];
+
+  for (let i = 0; i < labels.length; i++) {
+    const label = labels[i][1].trim();
+    const contentStart = (labels[i].index ?? 0) + labels[i][0].length;
+    const contentEnd =
+      i + 1 < labels.length
+        ? labels[i + 1].index ?? text.length
+        : text.length;
+    let content = text.slice(contentStart, contentEnd).trim();
+
+    if (i < labels.length - 1) {
+      // Stop before the ". Pre-Professional…" that prefixes the next label
+      content = content.replace(/[.!?]?\s*$/, "").trim();
+    } else {
+      const peeled = peelListAndOutro(content);
+      if (peeled) content = peeled.listPortion;
+    }
+
+    const items = splitTopLevel(content, ",")
+      .map((item) => item.replace(/\.\s*$/, "").trim())
+      .filter(Boolean);
+
+    if (!looksLikeContrastItems(items)) return null;
+    groups.push({ label, items });
+  }
+
+  const firstLabelIdx = labels[0].index ?? 0;
+  const before = text.slice(0, firstLabelIdx);
+  const intro = before.replace(/[.!?]?\s*$/, "").trim() || undefined;
+
+  const lastLabel = labels[labels.length - 1];
+  const afterLastLabel = text.slice(
+    (lastLabel.index ?? 0) + lastLabel[0].length
+  );
+  const outro = peelListAndOutro(afterLastLabel)?.outro;
+
+  return {
+    type: "contrast_groups",
+    intro,
+    groups,
+    outro,
+  };
+}
+
 export function detectColonList(text: string): FormattedColonList | null {
   const colonIdx = text.indexOf(":");
   if (colonIdx === -1) return null;
 
+  // Don't steal multi-label contrasts — those have their own detector.
+  // (detectContrastGroups is tried first in formatWorkbookBody.)
   const intro = text.slice(0, colonIdx).trim();
   const afterColon = text.slice(colonIdx + 1);
 
-  const listMatch = afterColon.match(
-    /^\s*((?:[^,]+,\s*)+[^,.]+)\.\s*([\s\S]*)$/
-  );
-  if (!listMatch) return null;
+  if (!intro || !afterColon.trim()) return null;
 
-  const items = listMatch[1]
-    .split(/,\s*/)
+  // Quoted message templates / long quotes → prose
+  if (isPredominantlyQuoted(afterColon)) return null;
+
+  const peeled = peelListAndOutro(afterColon);
+  if (!peeled) return null;
+
+  const items = splitTopLevel(peeled.listPortion, ",")
     .map((item) => item.trim())
     .filter(Boolean);
 
-  if (items.length < 2) return null;
-  if (items.some((item) => item.includes("→"))) return null;
+  if (!looksLikeListItems(items)) return null;
 
   const useChips = items.every((item) => wordCount(item) <= 4);
-  const outro = listMatch[2]?.trim() || undefined;
+  const outro = peeled.outro;
 
   return { type: "colon_list", intro, items, outro, useChips };
 }
@@ -186,20 +430,24 @@ export function formatWorkbookBody(text: string): FormattedBody {
   const trimmed = text.trim();
   if (!trimmed) return { type: "prose", text: "" };
 
+  // Specific detectors first — colon list is the most generic and must not win early.
   const weekTimeline = detectWeekTimeline(trimmed);
   if (weekTimeline) return weekTimeline;
-
-  const colonList = detectColonList(trimmed);
-  if (colonList) return colonList;
-
-  const arrowChain = detectArrowChain(trimmed);
-  if (arrowChain) return arrowChain;
 
   const signalRewrite = detectSignalRewrite(trimmed);
   if (signalRewrite) return signalRewrite;
 
+  const arrowChain = detectArrowChain(trimmed);
+  if (arrowChain) return arrowChain;
+
   const enumeration = detectEnumeration(trimmed);
   if (enumeration) return enumeration;
+
+  const contrastGroups = detectContrastGroups(trimmed);
+  if (contrastGroups) return contrastGroups;
+
+  const colonList = detectColonList(trimmed);
+  if (colonList) return colonList;
 
   return { type: "prose", text: trimmed };
 }

@@ -8,13 +8,19 @@ import {
   renderNarrativeOrBody,
 } from "@/components/modules/v2/narrative-card";
 import { CompletionCheckV2 } from "@/components/modules/v2/completion-check";
-import { formatWorkbookBody } from "@/lib/workbook-format";
+import { formatWorkbookBody, splitTopLevel } from "@/lib/workbook-format";
 
 type WorkbookBlocksV2Props = {
   overview?: string;
   blocks: WorkbookBlock[];
   completionCheck?: string[];
 };
+
+const APPLICATION_HEADING = "Real-World Application";
+
+function normalizeHeading(text: string): string {
+  return text.trim().toLowerCase().replace(/\s+/g, " ");
+}
 
 function emphasizeInlineLabels(text: string) {
   const parts = text.split(/([A-Z][A-Za-z /-]+:)/g);
@@ -34,8 +40,7 @@ function tryRenderQualityList(body: string) {
   const match = body.match(/^(.+?:)\s*([\s\S]+?)\.\s+(Managers[\s\S]+)$/i);
   if (!match) return null;
 
-  const items = match[2]
-    .split(/,\s*(?=[A-Z])/)
+  const items = splitTopLevel(match[2], ",")
     .map((item) => item.trim())
     .filter(Boolean);
 
@@ -128,7 +133,17 @@ export function WorkbookBlocksV2({
 
       {otherBlocks.map((block, index) => {
         switch (block.type) {
-          case "heading":
+          case "heading": {
+            // Application section supplies its own heading — skip a duplicate
+            // immediately preceding heading with the same title.
+            const next = otherBlocks[index + 1];
+            if (
+              next?.type === "application" &&
+              normalizeHeading(block.text) ===
+                normalizeHeading(APPLICATION_HEADING)
+            ) {
+              return null;
+            }
             return block.level === 2 ? (
               <h2
                 key={`${block.text}-${index}`}
@@ -144,10 +159,13 @@ export function WorkbookBlocksV2({
                 {block.text}
               </h3>
             );
+          }
 
           case "paragraph":
             if (isNarrativeText(block.text)) {
-              return <NarrativeCard key={`${index}-narrative`} text={block.text} />;
+              return (
+                <NarrativeCard key={`${index}-narrative`} text={block.text} />
+              );
             }
             return (
               <p
@@ -164,7 +182,9 @@ export function WorkbookBlocksV2({
                 key={`${block.title}-${index}`}
                 className="lift-card rounded-2xl border border-border/80 bg-muted/40 p-5 md:p-6"
               >
-                <p className="text-base font-semibold text-foreground">{block.title}</p>
+                <p className="text-base font-semibold text-foreground">
+                  {block.title}
+                </p>
                 <div className="mt-3">{renderNarrativeOrBody(block.body)}</div>
               </div>
             );
@@ -173,7 +193,9 @@ export function WorkbookBlocksV2({
             return (
               <div key={`${block.title}-${index}`} className="lift-framework">
                 <div className="border-b border-lift/15 bg-lift-muted/60 px-6 py-4">
-                  <p className="text-lg font-bold text-foreground">{block.title}</p>
+                  <p className="text-lg font-bold text-foreground">
+                    {block.title}
+                  </p>
                 </div>
                 <div className="p-6 md:p-7">
                   <WorkbookBodyContent body={block.body} />
@@ -185,12 +207,18 @@ export function WorkbookBlocksV2({
             return (
               <section key={`application-${index}`} className="space-y-5">
                 <h2 className="border-b border-lift/20 pb-2 text-xl font-bold text-foreground md:text-2xl">
-                  Real-World Application
+                  {APPLICATION_HEADING}
                 </h2>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {block.items.map((item) => {
                     if (isNarrativeText(item)) {
-                      return <NarrativeCard key={item} text={item} className="sm:col-span-2" />;
+                      return (
+                        <NarrativeCard
+                          key={item}
+                          text={item}
+                          className="sm:col-span-2"
+                        />
+                      );
                     }
                     const parsed = parseApplicationItem(item);
                     return (
@@ -201,7 +229,9 @@ export function WorkbookBlocksV2({
                         <p className="text-xs font-bold uppercase tracking-widest text-lift">
                           {parsed.label}
                         </p>
-                        <p className="lift-body mt-3 text-muted-foreground">{parsed.body}</p>
+                        <p className="lift-body mt-3 text-muted-foreground">
+                          {parsed.body}
+                        </p>
                       </div>
                     );
                   })}

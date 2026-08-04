@@ -365,3 +365,71 @@ Append-only chronological history. Every entry begins with an explicit update st
 
 - Next step (the single concrete next action):
   Oscar runs P1.1 prompt in Cursor → build → push → Vercel Ready → Cowork: stress-test P11 (Week-timeline detector, Maya NarrativeCard, six-qualities list, exercises/quiz function), re-check P1 refinements, confirm P2 isolation → report for rollout-to-all verdict.
+
+---
+
+=== LOG UPDATED: 2026-08-02 21:30 (America/Detroit) — LOG GAP CLOSED (~1 month). E1 P1.1 + P11 stress-tested in production: MOSTLY PASS, 2 formatter regressions found. ROLLOUT NOT RECOMMENDED until fixed ===
+
+- Context / why this was done:
+  Project paused ~2026-07-06 right after commit 96c8be1 ("feat: refine P1 experience lift and enable P11") — pushed but never verified; BUILD-LOG ended mid-flow ("awaiting run"). This entry closes that gap. Ground truth = live site + git tip, per Oscar's kickoff instruction.
+
+- Session blockers resolved before testing (both worth remembering):
+  1. Claude-in-Chrome extension was signed out — Oscar re-signed in.
+  2. SUPABASE PROJECT WAS AUTO-PAUSED (free tier pauses after ~1 week idle; we were idle ~4 weeks). Symptom: login "Failed to fetch", app hangs; /rest/v1/ and /auth/v1/health returned empty instead of the normal "No API key" error. Oscar restored it from the dashboard; site recovered fully, all data intact. NEW STANDING ITEM: the project MUST be on a paid plan before real students/institutions onboard — an auto-pause during a cohort would take the academy offline. Track alongside the service_role key roll.
+
+- Verification performed (live, as student@test.com, commit 96c8be1):
+  P11 — "The 10-Week Audition" (primary test):
+  1. 10-Week Audition renders as a STRUCTURED WEEK TIMELINE (indigo dot rail, WEEK 1…WEEK 10 eyebrows, each week's text on its own row) — NOT one paragraph. PASS ✓
+  2. "Maya's summer audition" renders as the NarrativeCard (avatar chip, story styling) WITH a week mini-timeline. PASS (with cosmetic defects, below) ✓
+  3. "Six qualities of the rising star narrative" render as a STRUCTURED LIST (one card per quality). PASS in structure — FAIL in fidelity (see R1) ⚠
+  4. Exercises SAVE: typed into P11 Exercise 1 ("Build Your Internship Strategy Plan") → "Saved ✓" chip + "Last updated Aug 2, 2026, 9:20 PM". Pass 2 functionality intact under the lift. PASS ✓
+  5. Quiz renders in lift styling (card options, 2-col grid, hover/selected states) and options are selectable. PASS ✓
+  6. Station hero/nav/progress ("2 / 4 stations"), slim video strip, Completion Check with "0 of 7" counter: all present. PASS ✓
+  P1 — refinement check (P1.1):
+  7. Visibly larger type, wider content column, more vertical air, stronger indigo, station header check-badges echoing the hero. Refinements ARE live. PASS ✓
+  P2 — isolation check:
+  8. P2 renders the LEGACY UI (old header, full black video player, old workbook cards, no station nav). Gate isolation holding; lift did NOT leak. PASS ✓
+
+- REGRESSIONS FOUND (both are formatter over-eagerness introduced/exposed by the P1.1 pass — presentation-only, no data impact):
+  R1. COLON-LIST OVER-SPLITTING (both modules). The detector splits on commas inside parenthetical phrases, shattering single items:
+      - P11 six qualities → "Coachability (do you listen" / "adjust" / "grow?)" as three separate cards (should be one card per quality, 6 total).
+      - P1 Identity Gap → the two-identity contrast becomes 7 cards, and "communicates reactively. Pre-Professional Identity: takes initiative" merges two different identities into one card.
+      - P11 networking message template → the quoted "Hey ___ / I'm interning with the ___ team…" template is split into 2 cards mid-sentence.
+      Root cause (hypothesis, code not yet inspected this session): lib/workbook-format.ts colon-list detector splits on ALL commas without respecting parentheses/quotes, and fires on prose sentences that merely contain a colon.
+  R2. DUPLICATE "Real-World Application" HEADING on P11 — the heading renders twice in a row (once from the heading block, once from the application-section wrapper). Cosmetic.
+  R3 (minor, cosmetic): NarrativeCard title shows "M's story" instead of "Maya's story" — persona name truncated to its first character.
+
+- Decisions made: NONE affecting code. Recommendation to Oscar: fix R1–R3 BEFORE rolling to the remaining 12 modules — the formatter runs on every module, so rolling now would multiply the same defects across the program. Rollout gate stays at ["P1","P11"] pending his verdict.
+
+- Open questions / things needing Oscar's input:
+  1. Approve a small E1.2 fix pass (formatter parenthesis/quote-aware splitting + stricter colon-list heuristic + duplicate-heading fix + persona-name fix), then roll to all 14?
+  2. Or roll to all 14 now and fix formatter defects in place afterward (faster, but ships known defects program-wide)?
+  3. Supabase paid-plan decision (new standing item) — timing before institution onboarding.
+
+- Next step (the single concrete next action):
+  Oscar answers Q1/Q2. If E1.2 approved: Cowork drafts the fix Cursor prompt (formatter-only, still presentation-only), Oscar runs it, Cowork re-verifies P1+P11, THEN the rollout flip of the remaining 12 module codes.
+
+---
+
+=== LOG UPDATED: 2026-08-02 21:45 (America/Detroit) — Oscar chose "A then B": fix formatter first, then roll to all 14. E1.2 fix prompt drafted (root causes confirmed in code) ===
+
+- Context / why this was done:
+  Oscar's verdict on the stress-test regressions: "A then B" — run the E1.2 fix pass, then the full 14-module rollout.
+
+- Root causes CONFIRMED by reading the code this session (not hypothesis anymore):
+  R1 lib/workbook-format.ts → detectColonList(): splits post-colon text with `.split(/,\s*/)` — no parenthesis/quote awareness (shatters "Coachability (do you listen, adjust, grow?)"), and its match regex is loose enough that ordinary prose containing a colon qualifies (P1 Identity Gap two-part contrast becomes one flat 7-item list; P11 quoted message template splits mid-sentence). Compounding factor: formatWorkbookBody() runs detectColonList BEFORE the more specific arrow/signal/enumeration detectors, so a stray colon wins first.
+  R2 duplicate "Real-World Application": heading block + application-section wrapper both emit the heading.
+  R3 components/modules/v2/narrative-card.tsx → extractPersona() returns `match?.[1]?.charAt(0)`, so the card title renders "M's story"; the full name is needed for the title, the initial only for the avatar.
+
+- What was attempted (specific):
+  Drafted CURSOR-PROMPT-E1.2-formatter-fixes.md (delivered via Cowork). Fix spec: depth-aware splitTopLevel() helper (ignores separators inside parens/brackets/quotes); bail to prose when post-colon content is predominantly a quoted template; tighten the list trigger (reject items containing sentence-end + capitalized word, reject >~12-word items); handle two-part "Label: …" contrasts either via a new contrast_groups type or prose fallback (Cursor to state which); re-order formatWorkbookBody so specific detectors run before the generic colon list; de-dupe the application heading; return full persona name for the title. Mandatory test additions: the three real failing strings + a genuine list that must still format + prose-with-colon that must stay prose.
+
+- Files changed: BUILD-LOG.md only. Build/deploy/migration: none this entry.
+- Verification performed: n/a (drafting entry; verification of the fix comes post-deploy).
+
+- Decisions made: rollout stays gated at ["P1","P11"] until E1.2 verifies. Rollout list for step B is explicit: add P2–P10, P12, P13, P14.
+
+- Open questions / things needing Oscar's input: none blocking — run the E1.2 prompt. (Standing: Supabase paid-plan timing before institution onboarding.)
+
+- Next step (the single concrete next action):
+  Oscar runs CURSOR-PROMPT-E1.2-formatter-fixes.md in Cursor → npm run build (+ formatter tests) → commit/push → Vercel Ready → Cowork re-verifies P1 + P11 (six qualities = 6 items, Identity Gap not fragmented, template intact, single Real-World Application heading, "Maya's story") → on pass, flip the remaining 12 codes and deploy the full rollout.

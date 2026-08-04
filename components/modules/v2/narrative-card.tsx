@@ -27,9 +27,12 @@ function detectWeekBeatsLoose(text: string): WeekBeat[] | null {
   return beats.length >= 3 ? beats : null;
 }
 
-function extractPersona(text: string): string {
+function extractPersona(text: string): { name: string; initial: string } {
   const match = text.trim().match(/^([A-Za-z]+)/);
-  return match?.[1]?.charAt(0).toUpperCase() ?? "M";
+  if (!match?.[1]) return { name: "Maya", initial: "M" };
+  const raw = match[1];
+  const name = raw.charAt(0).toUpperCase() + raw.slice(1);
+  return { name, initial: name.charAt(0) };
 }
 
 function resolveWeekTimeline(text: string) {
@@ -62,9 +65,11 @@ export function NarrativeCard({ text, className }: NarrativeCardProps) {
     >
       <div className="mb-4 flex items-center gap-3">
         <div className="flex size-11 items-center justify-center rounded-full bg-stone-200 text-base font-bold text-stone-700">
-          {persona}
+          {persona.initial}
         </div>
-        <p className="text-base font-semibold text-stone-800">{persona}&apos;s story</p>
+        <p className="text-base font-semibold text-stone-800">
+          {persona.name}&apos;s story
+        </p>
       </div>
       {timeline ? (
         <div className="space-y-4">

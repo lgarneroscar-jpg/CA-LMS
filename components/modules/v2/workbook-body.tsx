@@ -104,6 +104,40 @@ function FormattedBodyView({ formatted }: { formatted: FormattedBody }) {
         </div>
       );
 
+    case "contrast_groups":
+      return (
+        <div className="space-y-5">
+          {formatted.intro ? (
+            <p className="lift-prose lift-body text-muted-foreground">{formatted.intro}</p>
+          ) : null}
+          <div className="grid gap-5 sm:grid-cols-2">
+            {formatted.groups.map((group) => (
+              <div
+                key={group.label}
+                className="lift-card rounded-2xl border border-lift/20 bg-lift-muted/20 p-5"
+              >
+                <p className="text-xs font-bold uppercase tracking-widest text-lift">
+                  {group.label}
+                </p>
+                <ul className="mt-3 space-y-2">
+                  {group.items.map((item) => (
+                    <li
+                      key={item}
+                      className="lift-body border-l-2 border-lift/30 pl-3 text-foreground"
+                    >
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          {formatted.outro ? (
+            <p className="lift-prose lift-body text-muted-foreground">{formatted.outro}</p>
+          ) : null}
+        </div>
+      );
+
     case "arrow_chain":
       return (
         <div className="space-y-4">

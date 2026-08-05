@@ -23,6 +23,15 @@ const IDENTITY_GAP =
 const MESSAGE_TEMPLATE =
   'Message template: "Hey ___, I\'m interning with the ___ team this summer and would love to learn more about what you do. Would you be open to a 10-minute chat sometime next week?" Goal: 10 meaningful conversations → 10x future clarity.';
 
+const IDENTITY_THROUGH_ACTION =
+  "Most students wait to feel confident before acting. Professionals act, then let confidence catch up. Small behavior → small win → small confidence → repeat. Identity does not come from self-belief. It comes from repetition.";
+
+const STUDENT_MODE_DETECTOR =
+  'You\'re signaling student mode when you: apologize before speaking, over-explain or ramble, wait for perfect clarity, do the minimum unless asked, treat meetings like lectures. Rewrite each behavior into a pre-professional alternative. Example: "I\'m not sure what to do." → "Here\'s my proposed next step, does that align?"';
+
+const IDENTITY_FLYWHEEL =
+  "Identity compounds through visibility: Clear behavior → Trust → Visible Execution → more responsibility → (repeat). The earlier this flywheel starts, the faster your career accelerates.";
+
 describe("splitTopLevel", () => {
   it("does not split inside parentheses", () => {
     const parts = splitTopLevel(
@@ -82,6 +91,15 @@ describe("detectColonList", () => {
   it("does not flatten a two-identity contrast into one list", () => {
     assert.equal(detectColonList(IDENTITY_GAP), null);
   });
+
+  it("parses Student-Mode Detector as a lowercase 5-item list", () => {
+    const result = detectColonList(STUDENT_MODE_DETECTOR);
+    assert.ok(result);
+    assert.equal(result!.items.length, 5);
+    assert.equal(result!.items[0], "apologize before speaking");
+    assert.equal(result!.items[4], "treat meetings like lectures");
+    assert.match(result!.outro ?? "", /Rewrite each behavior/i);
+  });
 });
 
 describe("detectContrastGroups", () => {
@@ -105,12 +123,27 @@ describe("detectContrastGroups", () => {
 
 describe("detectArrowChain", () => {
   it("parses Identity Flywheel steps", () => {
-    const result = detectArrowChain(
-      "Identity compounds through visibility: Clear behavior → Trust → Visible Execution → more responsibility → (repeat). The earlier this flywheel starts, the faster your career accelerates."
-    );
+    const result = detectArrowChain(IDENTITY_FLYWHEEL);
     assert.ok(result);
     assert.equal(result!.steps.length, 4);
     assert.match(result!.steps[0], /Clear behavior/i);
+    assert.match(result!.intro ?? "", /visibility/i);
+    assert.match(result!.outro ?? "", /earlier this flywheel/i);
+  });
+
+  it("clamps Key Idea 3 chain to sentence boundaries", () => {
+    const result = detectArrowChain(IDENTITY_THROUGH_ACTION);
+    assert.ok(result);
+    assert.equal(result!.steps.length, 4);
+    assert.deepEqual(result!.steps, [
+      "Small behavior",
+      "small win",
+      "small confidence",
+      "repeat",
+    ]);
+    assert.match(result!.intro ?? "", /Most students wait/i);
+    assert.match(result!.outro ?? "", /Identity does not come/i);
+    assert.ok(result!.steps.every((step) => !step.includes(".")));
   });
 
   it("does not match quoted signal rewrite only", () => {
@@ -218,9 +251,33 @@ describe("formatWorkbookBody", () => {
   });
 
   it("prefers arrow chain over colon list", () => {
-    const result = formatWorkbookBody(
-      "Identity compounds through visibility: Clear behavior → Trust → Visible Execution → more responsibility → (repeat). The earlier this flywheel starts, the faster your career accelerates."
-    );
+    const result = formatWorkbookBody(IDENTITY_FLYWHEEL);
     assert.equal(result.type, "arrow_chain");
+  });
+
+  it("formats Key Idea 3 as a clamped arrow chain", () => {
+    const result = formatWorkbookBody(IDENTITY_THROUGH_ACTION);
+    assert.equal(result.type, "arrow_chain");
+    if (result.type === "arrow_chain") {
+      assert.equal(result.steps.length, 4);
+      assert.deepEqual(result.steps, [
+        "Small behavior",
+        "small win",
+        "small confidence",
+        "repeat",
+      ]);
+      assert.ok(result.intro);
+      assert.ok(result.outro);
+      assert.ok(result.steps.every((step) => !step.includes(".")));
+    }
+  });
+
+  it("formats Student-Mode Detector as colon list with rewrite outro", () => {
+    const result = formatWorkbookBody(STUDENT_MODE_DETECTOR);
+    assert.equal(result.type, "colon_list");
+    if (result.type === "colon_list") {
+      assert.equal(result.items.length, 5);
+      assert.match(result.outro ?? "", /Rewrite each behavior/i);
+    }
   });
 });

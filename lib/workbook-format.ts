@@ -161,12 +161,23 @@ function itemLooksLikeProseClause(item: string): boolean {
 }
 
 /**
- * Real workbook lists are short noun/trait phrases that start with a capital
- * (or a digit). Lowercase-leading fragments after a colon are almost always
- * prose ("Remember: foo, bar, and baz…").
+ * Real workbook lists are short parallel phrases. Allow all-capital-led OR
+ * all-lowercase-led (Student-Mode Detector), but reject mixed casing and
+ * prose fragments glued with coordinating conjunctions.
  */
-function itemLooksLikeListPhrase(item: string): boolean {
-  return /^[A-Z0-9]/.test(item.trim());
+function itemsHaveConsistentLeadStyle(items: string[]): boolean {
+  const leads = items.map((item) => {
+    const ch = item.trim().charAt(0);
+    if (/[A-Z0-9]/.test(ch)) return "upper";
+    if (/[a-z]/.test(ch)) return "lower";
+    return "other";
+  });
+  if (leads.some((lead) => lead === "other")) return false;
+  return leads.every((lead) => lead === leads[0]);
+}
+
+function itemStartsWithConjunction(item: string): boolean {
+  return /^(and|or|but|nor|yet)\b/i.test(item.trim());
 }
 
 function looksLikeListItems(items: string[]): boolean {
@@ -174,7 +185,8 @@ function looksLikeListItems(items: string[]): boolean {
   if (items.some((item) => item.includes("→"))) return false;
   if (items.some((item) => itemLooksLikeProseClause(item))) return false;
   if (items.some((item) => wordCount(item) > MAX_LIST_ITEM_WORDS)) return false;
-  if (!items.every((item) => itemLooksLikeListPhrase(item))) return false;
+  if (items.some((item) => itemStartsWithConjunction(item))) return false;
+  if (!itemsHaveConsistentLeadStyle(items)) return false;
   return true;
 }
 
@@ -282,37 +294,68 @@ export function detectSignalRewrite(
 
 export function detectArrowChain(text: string): FormattedArrowChain | null {
   if (!text.includes("→")) return null;
-  if (/"\s*→\s*"/.test(text) && !/\w+\s+→\s+\w+/.test(text.replace(/"[^"]*"/g, ""))) {
+  // Pure quoted before→after pairs belong to detectSignalRewrite.
+  if (
+    /"\s*→\s*"/.test(text) &&
+    !/\w+\s+→\s+\w+/.test(text.replace(/"[^"]*"/g, ""))
+  ) {
     return null;
   }
 
-  let source = text;
-  let intro: string | undefined;
-  const colonIdx = text.indexOf(":");
-  if (colonIdx !== -1 && text.includes("→", colonIdx)) {
-    intro = text.slice(0, colonIdx + 1).trim();
-    source = text.slice(colonIdx + 1);
+  const arrows = [...text.matchAll(/→/g)];
+  if (arrows.length < 2) return null;
+
+  const firstArrow = arrows[0].index ?? 0;
+  const lastArrow = arrows[arrows.length - 1].index ?? 0;
+
+  // Clamp LEFT: nearest preceding sentence boundary, colon, or start.
+  const before = text.slice(0, firstArrow);
+  let clampStart = 0;
+  for (const match of before.matchAll(/[.!?]\s+(?=[A-Z])/g)) {
+    if (match.index !== undefined) {
+      clampStart = match.index + match[0].length;
+    }
+  }
+  const colonIdx = before.lastIndexOf(":");
+  if (colonIdx !== -1 && colonIdx + 1 > clampStart) {
+    clampStart = colonIdx + 1;
   }
 
-  const rawSteps = source
+  // Clamp RIGHT: nearest following sentence end before a new sentence (or EOS).
+  let clampEnd = text.length;
+  for (let i = lastArrow + 1; i < text.length; i++) {
+    const ch = text[i];
+    if (ch !== "." && ch !== "!" && ch !== "?") continue;
+    const rest = text.slice(i + 1);
+    if (rest.trim() === "" || /^\s+[A-Z]/.test(rest)) {
+      clampEnd = i;
+      break;
+    }
+  }
+
+  const intro = text.slice(0, clampStart).trim() || undefined;
+  const outro =
+    text
+      .slice(clampEnd)
+      .replace(/^[.!?]\s*/, "")
+      .trim() || undefined;
+
+  const chainSpan = text.slice(clampStart, clampEnd).trim();
+  const rawSteps = chainSpan
     .split(/\s*→\s*/)
-    .map((step) =>
-      step
-        .trim()
-        .replace(/\.\s*The earlier[\s\S]*$/i, "")
-        .replace(/\.\s*$/, "")
-        .replace(/\s*\(repeat\)\.?$/i, "")
-    )
-    .filter(Boolean);
+    .map((step) => step.trim().replace(/\.\s*$/, ""))
+    // Drop marker-only tokens like "(repeat)" — real word "repeat" stays.
+    .filter((step) => step && !/^\([^)]*\)$/.test(step));
 
   if (rawSteps.length < 3) return null;
+  // A step that still embeds a sentence boundary means clamping failed.
+  if (rawSteps.some((step) => itemLooksLikeProseClause(step))) return null;
 
-  const outroMatch = text.match(/The earlier[\s\S]+$/i);
   return {
     type: "arrow_chain",
     intro,
     steps: rawSteps,
-    outro: outroMatch?.[0]?.trim(),
+    outro,
   };
 }
 
@@ -400,8 +443,9 @@ export function detectColonList(text: string): FormattedColonList | null {
   const colonIdx = text.indexOf(":");
   if (colonIdx === -1) return null;
 
-  // Don't steal multi-label contrasts — those have their own detector.
-  // (detectContrastGroups is tried first in formatWorkbookBody.)
+  // Multi-label contrasts (Identity Gap) belong to detectContrastGroups.
+  if (detectContrastGroups(text)) return null;
+
   const intro = text.slice(0, colonIdx).trim();
   const afterColon = text.slice(colonIdx + 1);
 
@@ -434,6 +478,12 @@ export function formatWorkbookBody(text: string): FormattedBody {
   const weekTimeline = detectWeekTimeline(trimmed);
   if (weekTimeline) return weekTimeline;
 
+  // Prefer colon list when it owns a trailing signal-rewrite outro (e.g. Student-Mode Detector).
+  const colonList = detectColonList(trimmed);
+  if (colonList?.outro && detectSignalRewrite(colonList.outro)) {
+    return colonList;
+  }
+
   const signalRewrite = detectSignalRewrite(trimmed);
   if (signalRewrite) return signalRewrite;
 
@@ -446,7 +496,6 @@ export function formatWorkbookBody(text: string): FormattedBody {
   const contrastGroups = detectContrastGroups(trimmed);
   if (contrastGroups) return contrastGroups;
 
-  const colonList = detectColonList(trimmed);
   if (colonList) return colonList;
 
   return { type: "prose", text: trimmed };

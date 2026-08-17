@@ -36,6 +36,7 @@ export type ParsedQuiz = {
 export type ParsedWorkbookModule = {
   module_code: string;
   slug: string;
+  unlock_week: number;
   overview: string;
   concepts: { heading: string; body: string }[];
   frameworks: { name: string; body: string }[];
@@ -240,6 +241,9 @@ export function parseWorkbookSeedMarkdown(markdown: string): ParsedWorkbookModul
     const slugMatch = chunk.match(/\*\*slug:\*\*\s*`([^`]+)`/);
     if (!codeMatch || !slugMatch) continue;
 
+    const weekMatch = chunk.match(/\*\*unlock_week:\*\*\s*(\d+)/);
+    const unlock_week = weekMatch ? Number(weekMatch[1]) : 1;
+
     const overview = extractSection(chunk, "overview");
     const conceptsSection = extractSection(chunk, "concepts");
     const frameworksSection = extractSection(chunk, "frameworks");
@@ -268,6 +272,7 @@ export function parseWorkbookSeedMarkdown(markdown: string): ParsedWorkbookModul
     modules.push({
       module_code: codeMatch[1],
       slug: slugMatch[1],
+      unlock_week,
       overview,
       concepts,
       frameworks,

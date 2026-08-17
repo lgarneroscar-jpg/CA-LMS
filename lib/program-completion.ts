@@ -7,7 +7,6 @@ import { createNotification } from "@/lib/notifications";
 type DbClient = SupabaseClient<Database>;
 
 const CONTENT_MODULE_COUNT = 14;
-const LIVE_SESSION_COUNT = 5;
 
 export async function checkProgramCompletion(
   supabase: DbClient,
@@ -47,22 +46,12 @@ export async function checkProgramCompletion(
     (progress ?? []).filter((p) => p.is_complete).map((p) => p.module_id)
   );
 
-  const contentComplete = (allModules ?? [])
-    .filter((m) => !m.is_live_session)
-    .every((m) => completeSet.has(m.id));
+  const contentModules = (allModules ?? []).filter((m) => !m.is_live_session);
+  const contentComplete = contentModules.every((m) => completeSet.has(m.id));
 
-  const liveComplete = (allModules ?? [])
-    .filter((m) => m.is_live_session)
-    .every((m) => completeSet.has(m.id));
-
-  if (
-    !contentComplete ||
-    !liveComplete ||
-    (allModules ?? []).filter((m) => !m.is_live_session).length <
-      CONTENT_MODULE_COUNT ||
-    (allModules ?? []).filter((m) => m.is_live_session).length <
-      LIVE_SESSION_COUNT
-  ) {
+  // Live sessions are non-blocking: attendance is reported to the institution,
+  // but never required to complete the program or receive a certificate.
+  if (!contentComplete || contentModules.length < CONTENT_MODULE_COUNT) {
     return { justCompleted: false, completedAt: null };
   }
 

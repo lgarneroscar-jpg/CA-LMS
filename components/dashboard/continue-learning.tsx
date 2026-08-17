@@ -20,7 +20,9 @@ export function ContinueLearning({ nextModule }: ContinueLearningProps) {
     );
   }
 
-  const href = `/program/${nextModule.pillarSlug}/${nextModule.slug}`;
+  const href = nextModule.isLiveSession
+    ? `/program/live/${nextModule.slug}`
+    : `/program/${nextModule.pillarSlug}/${nextModule.slug}`;
 
   return (
     <Link

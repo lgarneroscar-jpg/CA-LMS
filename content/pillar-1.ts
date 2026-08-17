@@ -290,7 +290,7 @@ export const PILLAR_1_MODULES: ModuleSeed[] = [
     title: "Confidence & Belonging",
     slug: "confidence-and-belonging",
     pillar: 1,
-    unlock_week: 2,
+    unlock_week: 1,
     order_index: 1,
     description:
       "Build authentic confidence in professional spaces, manage imposter feelings, and practice belonging before you have the title.",

@@ -36,6 +36,7 @@ async function main() {
     const { error: updateError } = await admin
       .from("modules")
       .update({
+        unlock_week: module.unlock_week,
         workbook_content,
         exercises,
       })
@@ -65,7 +66,7 @@ async function main() {
 
     const overviewFirstLine = module.overview.split(/(?<=[.!?])\s+/)[0] ?? module.overview;
     console.log(
-      `${existing.slug} (${module.module_code})\n  overview: ${overviewFirstLine.slice(0, 90)}${overviewFirstLine.length > 90 ? "…" : ""}\n  frameworks: ${module.frameworks.length} | exercises: ${module.exercises.length} | quiz: ${module.quiz.length} | completion_check: ${module.completion_check.length}`
+      `${existing.slug} (${module.module_code}) week ${module.unlock_week}\n  overview: ${overviewFirstLine.slice(0, 90)}${overviewFirstLine.length > 90 ? "…" : ""}\n  frameworks: ${module.frameworks.length} | exercises: ${module.exercises.length} | quiz: ${module.quiz.length} | completion_check: ${module.completion_check.length}`
     );
   }
 

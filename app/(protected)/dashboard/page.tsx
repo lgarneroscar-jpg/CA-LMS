@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { buildProgramFeed, findNextModule, getProgressWeek } from "@/lib/program";
 import {
   getContentModuleCatalog,
+  getTimelineModuleCatalog,
   getStudentProgressMap,
 } from "@/lib/modules-queries";
 import { notifyBehindPaceIfNeeded } from "@/lib/behind-pace";
@@ -26,7 +27,7 @@ export default async function StudentDashboardPage() {
   const programStartedAt = profile.program_started_at ?? null;
   const diagnosticComplete = profile.diagnostic_complete || profile.is_demo;
 
-  const [institutionResult, modules, liveSessionsResult, progressMap, auth] =
+  const [institutionResult, contentModules, timelineModules, progressMap, auth] =
     await Promise.all([
       profile.institution_id
         ? createClient().then((supabase) =>
@@ -38,22 +39,15 @@ export default async function StudentDashboardPage() {
           )
         : Promise.resolve({ data: null }),
       getContentModuleCatalog(),
-      createClient().then((supabase) =>
-        supabase
-          .from("modules")
-          .select("id, module_code, title, slug, unlock_week")
-          .eq("is_live_session", true)
-          .order("unlock_week")
-      ),
+      getTimelineModuleCatalog(),
       getStudentProgressMap(profile.id),
       getAuthContext(),
     ]);
 
   const institution = institutionResult.data;
-  const liveSessions = liveSessionsResult.data;
 
   if (programStartedAt) {
-    const progressWeek = getProgressWeek(modules, progressMap);
+    const progressWeek = getProgressWeek(contentModules, progressMap);
     void notifyBehindPaceIfNeeded(await createClient(), {
       studentId: profile.id,
       studentEmail: auth.user?.email ?? null,
@@ -63,15 +57,16 @@ export default async function StudentDashboardPage() {
     });
   }
 
-  const completedCount = [...progressMap.values()].filter(
-    (p) => p.is_complete
+  const contentIds = new Set(contentModules.map((m) => m.id));
+  const completedCount = [...progressMap.entries()].filter(
+    ([id, p]) => contentIds.has(id) && p.is_complete
   ).length;
-  const totalModules = modules.length;
+  const totalModules = contentModules.length;
   const percentComplete =
     totalModules > 0 ? Math.round((completedCount / totalModules) * 100) : 0;
 
   const { currentWeek: feedWeek, weeks, maxWeek } = buildProgramFeed({
-    modules,
+    modules: timelineModules,
     progressByModuleId: progressMap,
     programStartedAt,
     diagnosticComplete,
@@ -179,7 +174,8 @@ export default async function StudentDashboardPage() {
           <CardTitle className="text-xl md:text-2xl">Your program</CardTitle>
           <CardDescription>
             Last week, this week, and next week — based on your progress, not the
-            calendar.
+            calendar. Live sessions appear as milestones and do not block
+            completion.
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
@@ -198,47 +194,6 @@ export default async function StudentDashboardPage() {
       </Card>
 
       {nextModule ? <ContinueLearning nextModule={nextModule} /> : null}
-
-      {(liveSessions ?? []).length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Live sessions</CardTitle>
-            <CardDescription>Cohort workshops — 50 XP each</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {(liveSessions ?? []).map((session) => {
-              const complete = progressMap.get(session.id)?.is_complete;
-              return (
-                <div
-                  key={session.id}
-                  className="flex flex-col gap-2 rounded-lg border p-3 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div>
-                    <span className="font-mono text-xs text-muted-foreground">
-                      {session.module_code}
-                    </span>
-                    <p className="font-medium">{session.title}</p>
-                  </div>
-                  {complete ? (
-                    <span className="text-sm text-muted-foreground">Complete</span>
-                  ) : diagnosticComplete ? (
-                    <Link
-                      href={`/program/live/${session.slug}`}
-                      className="inline-flex h-7 items-center rounded-lg bg-secondary px-2.5 text-sm font-medium text-secondary-foreground hover:bg-secondary/80"
-                    >
-                      Join
-                    </Link>
-                  ) : (
-                    <span className="text-sm text-muted-foreground">
-                      Complete diagnostic first
-                    </span>
-                  )}
-                </div>
-              );
-            })}
-          </CardContent>
-        </Card>
-      ) : null}
 
       <p className="text-center text-sm text-muted-foreground">
         <Link href="/program" className="underline hover:text-foreground">

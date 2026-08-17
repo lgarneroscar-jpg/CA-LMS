@@ -74,6 +74,7 @@ export type FeedModule = {
   isUnlocked: boolean;
   isComplete: boolean;
   xpEarned: number;
+  isLiveSession: boolean;
 };
 
 export type WeekFeed = {
@@ -92,6 +93,16 @@ export function getOrderedContentModules(modules: ModuleListRow[]): ModuleListRo
         (a.unlock_week ?? 1) - (b.unlock_week ?? 1) ||
         (a.order_index ?? 0) - (b.order_index ?? 0)
     );
+}
+
+/** Content + live sessions for the visual timeline, ordered by week. */
+export function getOrderedTimelineModules(modules: ModuleListRow[]): ModuleListRow[] {
+  return [...modules].sort(
+    (a, b) =>
+      (a.unlock_week ?? 1) - (b.unlock_week ?? 1) ||
+      Number(a.is_live_session) - Number(b.is_live_session) ||
+      (a.order_index ?? 0) - (b.order_index ?? 0)
+  );
 }
 
 export function getMaxProgramWeek(modules: ProgressModuleRef[]): number {
@@ -168,10 +179,10 @@ export function buildProgramFeed(params: {
       else weekLabels[w] = "This Week";
     }
 
-    const contentModules = getOrderedContentModules(params.modules);
+    const timelineModules = getOrderedTimelineModules(params.modules);
 
     const weeks: WeekFeed[] = weekNumbers.map((weekNumber) => {
-      const weekModules = contentModules
+      const weekModules = timelineModules
         .filter((m) => (m.unlock_week ?? 1) === weekNumber)
         .map((m) => {
           const progress = params.progressByModuleId.get(m.id);
@@ -188,6 +199,7 @@ export function buildProgramFeed(params: {
             isUnlocked: diagnosticComplete,
             isComplete: progress?.is_complete ?? false,
             xpEarned: progress?.xp_earned ?? 0,
+            isLiveSession: Boolean(m.is_live_session),
           };
         });
 
@@ -220,5 +232,5 @@ export function buildProgramFeed(params: {
 }
 
 export function findNextModule(feed: FeedModule[]): FeedModule | null {
-  return feed.find((m) => !m.isComplete) ?? null;
+  return feed.find((m) => !m.isLiveSession && !m.isComplete) ?? null;
 }

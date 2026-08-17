@@ -148,7 +148,7 @@ export const PILLAR_3_MODULES: ModuleSeed[] = [
     title: "Internship Momentum & Conversion",
     slug: "internship-momentum-conversion",
     pillar: 3,
-    unlock_week: 11,
+    unlock_week: 12,
     order_index: 1,
     description:
       "Turn internships into full-time offers through proactive performance, visibility, and relationship building.",

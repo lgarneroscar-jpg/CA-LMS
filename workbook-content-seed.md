@@ -111,7 +111,7 @@ Purpose is not a perfect answer, a dream job, or a guaranteed path. Purpose is a
 
 ## P3 — Confidence & Belonging
 **slug:** `confidence-and-belonging`
-**pillar:** 1 | **unlock_week:** 2
+**pillar:** 1 | **unlock_week:** 1
 
 ### overview
 A major early-career myth is "Confidence comes after you succeed." That's wrong. Students wait for permission to feel confident — an internship, an offer, a title. But confidence almost never arrives that way. Confidence is generated through action. Your job early is to stack reps and small wins until your presence becomes believable to you and legible to others. You play the game as if you already belong, then the evidence catches up.
@@ -453,7 +453,7 @@ This is the moment where everything starts to get real. Pillar 1 helped you defi
 
 ## P11 — Internship Momentum & Conversion
 **slug:** `internship-momentum-conversion`
-**pillar:** 3 | **unlock_week:** 11
+**pillar:** 3 | **unlock_week:** 12
 
 ### overview
 Everything you've built — identity, purpose, confidence, communication, social capital — now enters a real environment. This is where your preparation meets opportunity and people start forming judgments that matter. It doesn't matter whether your internship is Fortune 500, mid-market, small company, or nonprofit — every environment is a stage to demonstrate maturity, professionalism, consistency, coachability, initiative, and reliability. Treat the internship as an audition, not a temporary job. You're there to become someone worth betting on.

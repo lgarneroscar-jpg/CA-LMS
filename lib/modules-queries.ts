@@ -22,6 +22,18 @@ export const getContentModuleCatalog = cache(async (): Promise<ModuleListRow[]> 
   return (data ?? []) as ModuleListRow[];
 });
 
+/** Content modules + live sessions for the visual program timeline. */
+export const getTimelineModuleCatalog = cache(async (): Promise<ModuleListRow[]> => {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("modules")
+    .select(MODULE_CATALOG_SELECT)
+    .order("unlock_week")
+    .order("order_index");
+
+  return (data ?? []) as ModuleListRow[];
+});
+
 export const getStudentProgressMap = cache(
   async (studentId: string) => {
     const supabase = await createClient();

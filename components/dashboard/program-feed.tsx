@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CheckCircle2, Circle } from "lucide-react";
+import { CheckCircle2, Circle, Radio } from "lucide-react";
 import type { WeekFeed } from "@/lib/program";
 import { cn } from "@/lib/utils";
 
@@ -51,6 +51,59 @@ export function ProgramFeed({ weeks, currentWeek, maxWeek }: ProgramFeedProps) {
             ) : (
               <ul className="space-y-2">
                 {week.modules.map((mod) => {
+                  if (mod.isLiveSession) {
+                    const href = `/program/live/${mod.slug}`;
+                    return (
+                      <li key={mod.id}>
+                        <Link
+                          href={href}
+                          className={cn(
+                            "flex gap-3 rounded-xl border border-dashed p-3 transition-colors",
+                            "border-border/80 bg-muted/30 hover:border-border hover:bg-background",
+                            week.isCurrentWeek && "bg-background/60"
+                          )}
+                        >
+                          <div className="mt-0.5 shrink-0">
+                            {mod.isComplete ? (
+                              <CheckCircle2 className="size-5 text-accent" />
+                            ) : (
+                              <Radio
+                                className={cn(
+                                  "size-5",
+                                  week.isCurrentWeek
+                                    ? "text-accent"
+                                    : "text-muted-foreground"
+                                )}
+                              />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                              Live session · Week {mod.unlock_week}
+                            </p>
+                            <p className="mt-0.5 font-medium leading-snug">
+                              <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                                {mod.module_code}
+                              </span>
+                              {" · "}
+                              {mod.title}
+                            </p>
+                            {mod.isComplete ? (
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                Attendance recorded
+                                {mod.xpEarned > 0 ? ` · +${mod.xpEarned} XP` : ""}
+                              </p>
+                            ) : (
+                              <p className="mt-1 text-xs font-medium text-foreground/70">
+                                Join session →
+                              </p>
+                            )}
+                          </div>
+                        </Link>
+                      </li>
+                    );
+                  }
+
                   const href = `/program/${mod.pillarSlug}/${mod.slug}`;
 
                   return (

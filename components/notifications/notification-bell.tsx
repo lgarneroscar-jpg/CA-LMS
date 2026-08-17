@@ -41,12 +41,12 @@ export function NotificationBell({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        className="relative inline-flex size-8 items-center justify-center rounded-lg text-primary-foreground hover:bg-primary-foreground/10"
+        className="relative inline-flex size-9 items-center justify-center rounded-lg text-white/80 hover:bg-white/10 hover:text-white"
         aria-label="Notifications"
       >
         <Bell className="size-5" />
         {unreadCount > 0 ? (
-          <Badge className="absolute -right-1 -top-1 size-5 justify-center rounded-full p-0 text-[10px]">
+          <Badge className="absolute -right-1 -top-1 size-5 justify-center rounded-full bg-lift p-0 text-[10px] text-lift-foreground">
             {unreadCount > 9 ? "9+" : unreadCount}
           </Badge>
         ) : null}

@@ -27,13 +27,13 @@ export function ContinueLearning({ nextModule }: ContinueLearningProps) {
   return (
     <Link
       href={href}
-      className="lift-card-interactive group flex items-center justify-between rounded-2xl bg-lift px-6 py-5 text-lift-foreground shadow-md shadow-lift/20"
+      className="lift-card-interactive group flex min-w-0 items-center justify-between gap-4 rounded-2xl bg-lift px-6 py-5 text-lift-foreground shadow-md shadow-lift/20"
     >
-      <div>
+      <div className="min-w-0 flex-1">
         <p className="text-xs font-bold uppercase tracking-widest text-lift-foreground/70">
           Continue learning
         </p>
-        <p className="mt-1 text-lg font-semibold">{nextModule.title}</p>
+        <p className="mt-1 break-words text-lg font-semibold">{nextModule.title}</p>
         <p className="mt-0.5 text-sm text-lift-foreground/80">
           {nextModule.module_code} · Week {nextModule.unlock_week}
         </p>

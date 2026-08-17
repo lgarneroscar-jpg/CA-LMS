@@ -6,7 +6,7 @@ import { AppHeader } from "@/components/layout/app-header";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { LoginTracker } from "@/components/layout/login-tracker";
-import { getContentModuleCatalog } from "@/lib/modules-queries";
+import { getContentModuleCatalog, getStudentProgressMap } from "@/lib/modules-queries";
 import { buildProgramNavByPillar } from "@/lib/program-nav";
 import type { UserRole } from "@/types/index";
 
@@ -44,11 +44,14 @@ export default async function ProtectedLayout({
 
   const programNav =
     profile.role === "student"
-      ? buildProgramNavByPillar(await getContentModuleCatalog())
+      ? buildProgramNavByPillar(
+          await getContentModuleCatalog(),
+          await getStudentProgressMap(profile.id)
+        )
       : undefined;
 
   return (
-    <div className="flex min-h-full flex-col">
+    <div className="app-shell flex min-h-full flex-col">
       <LoginTracker />
       <AppHeader
         profile={profile}

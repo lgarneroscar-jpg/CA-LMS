@@ -81,14 +81,14 @@
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
-  --sidebar: #1b2a4a;
-  --sidebar-foreground: oklch(0.95 0.01 90);
-  --sidebar-primary: #c9a84c;
-  --sidebar-primary-foreground: #1b2a4a;
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: #162033;
+  --sidebar-foreground: #f1f5f9;
+  --sidebar-primary: #4f46e5;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #4f46e5;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgb(255 255 255 / 10%);
+  --sidebar-ring: #818cf8;
   --lift: #4f46e5;
   --lift-hover: #4338ca;
   --lift-foreground: #ffffff;
@@ -169,6 +169,10 @@
 
 .experience-lift .lift-progress-fill {
   @apply transition-all duration-500 ease-out;
+}
+
+.app-shell :where(button, a, input, textarea, select, [role="checkbox"], [role="radio"]) {
+  @apply focus-visible:ring-2 focus-visible:ring-lift/40 focus-visible:ring-offset-2;
 }
 
 .dark {

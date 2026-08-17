@@ -2,13 +2,6 @@ import Link from "next/link";
 import { BookOpen } from "lucide-react";
 import { AnswerDisplay } from "@/components/profile/answer-display";
 import { AnswerVisibilityControl } from "@/components/profile/answer-visibility-control";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { formatAnswerTimestamp } from "@/lib/exercise-answers";
 import type { WorkbookPortfolioPillar } from "@/lib/profile-workbook";
 
@@ -34,59 +27,73 @@ export function LivingWorkbookSection({
   const hasAnswers = pillars.length > 0;
 
   return (
-    <section className="space-y-4">
-      <div className="flex items-center gap-2">
-        <BookOpen className="size-5 text-primary" />
-        <div>
-          <h2 className="text-lg font-semibold">{sectionTitle}</h2>
-          <p className="text-sm text-muted-foreground">{sectionDescription}</p>
+    <section className="space-y-6">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg bg-lift-muted text-lift">
+          <BookOpen className="size-4" />
+        </div>
+        <div className="min-w-0">
+          <h2 className="text-xl font-bold tracking-tight">{sectionTitle}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{sectionDescription}</p>
         </div>
       </div>
 
       {!hasAnswers ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">{emptyTitle}</CardTitle>
-            <CardDescription>{emptyDescription}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {showEmptyProgramLink ? (
-              <Link
-                href="/program"
-                className="text-sm font-medium text-primary underline-offset-4 hover:underline"
-              >
-                Go to program
-              </Link>
-            ) : null}
-          </CardContent>
-        </Card>
+        <div className="lift-card rounded-2xl p-6">
+          <h3 className="font-semibold">{emptyTitle}</h3>
+          <p className="mt-1 text-sm text-muted-foreground">{emptyDescription}</p>
+          {showEmptyProgramLink ? (
+            <Link
+              href="/program"
+              className="mt-3 inline-block text-sm font-medium text-lift underline-offset-4 hover:underline"
+            >
+              Go to curriculum
+            </Link>
+          ) : null}
+        </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-10">
           {pillars.map((pillar) => (
-            <div key={pillar.pillar} className="space-y-4">
-              <h3 className="text-base font-semibold">{pillar.pillarLabel}</h3>
+            <section key={pillar.pillar} className="space-y-4">
+              <div className="border-b border-lift/15 pb-3">
+                <p className="text-xs font-bold uppercase tracking-widest text-lift">
+                  Pillar {pillar.pillar}
+                </p>
+                <h3 className="mt-1 text-lg font-bold tracking-tight">
+                  {pillar.pillarLabel}
+                </h3>
+              </div>
+
               {pillar.modules.map((module) => (
-                <Card key={module.moduleId}>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">
-                      <span className="font-mono text-xs text-muted-foreground">
-                        {module.moduleCode}
-                      </span>{" "}
-                      · {module.moduleTitle}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
+                <div key={module.moduleId} className="space-y-3">
+                  <div className="flex min-w-0 items-start gap-2">
+                    <span className="shrink-0 rounded-full bg-lift-muted px-2.5 py-0.5 font-mono text-[10px] font-bold text-lift">
+                      {module.moduleCode}
+                    </span>
+                    <p className="min-w-0 break-words text-sm font-semibold leading-snug">
+                      {module.moduleTitle}
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
                     {module.exercises.map((exercise) => (
                       <article
                         key={exercise.answerId}
-                        className="space-y-3 border-t border-border pt-4 first:border-t-0 first:pt-0"
+                        className="lift-card min-w-0 space-y-4 rounded-2xl p-5"
                       >
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                          <div className="space-y-1">
-                            <h4 className="font-medium">{exercise.title}</h4>
-                            <p className="text-xs text-muted-foreground">
-                              {exercise.moduleCode} · {exercise.moduleTitle}
-                            </p>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0 space-y-1.5">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="shrink-0 rounded-full bg-lift-muted px-2 py-0.5 font-mono text-[10px] font-bold text-lift">
+                                {exercise.moduleCode}
+                              </span>
+                              <span className="min-w-0 break-words text-xs text-muted-foreground">
+                                {exercise.moduleTitle}
+                              </span>
+                            </div>
+                            <h4 className="break-words font-semibold leading-snug">
+                              {exercise.title}
+                            </h4>
                           </div>
                           {showVisibilityControls ? (
                             <AnswerVisibilityControl
@@ -96,7 +103,11 @@ export function LivingWorkbookSection({
                               moduleSlug={exercise.moduleSlug}
                               initialIsPublic={exercise.isPublic}
                             />
-                          ) : null}
+                          ) : (
+                            <span className="shrink-0 rounded-full bg-lift px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-lift-foreground">
+                              Public
+                            </span>
+                          )}
                         </div>
 
                         <AnswerDisplay
@@ -111,10 +122,10 @@ export function LivingWorkbookSection({
                         </p>
                       </article>
                     ))}
-                  </CardContent>
-                </Card>
+                  </div>
+                </div>
               ))}
-            </div>
+            </section>
           ))}
         </div>
       )}

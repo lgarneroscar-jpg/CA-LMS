@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from "react";
 import { setAnswerVisibility } from "@/app/actions/exercise-answers";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -46,16 +45,23 @@ export function AnswerVisibilityControl({
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Badge variant={isPublic ? "default" : "secondary"}>
+      <span
+        className={cn(
+          "rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide",
+          isPublic
+            ? "bg-lift text-lift-foreground"
+            : "bg-muted text-muted-foreground"
+        )}
+      >
         {isPublic ? "Public" : "Private"}
-      </Badge>
+      </span>
       <Button
         type="button"
         variant="outline"
         size="sm"
         disabled={pending}
         onClick={handleToggle}
-        className={cn("h-7 text-xs")}
+        className="h-8 rounded-lg text-xs"
       >
         {pending ? "Saving…" : isPublic ? "Make private" : "Make public"}
       </Button>

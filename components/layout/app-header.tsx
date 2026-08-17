@@ -1,6 +1,5 @@
 import { BRAND } from "@/lib/constants";
 import { ROLE_LABELS, type Profile } from "@/types/index";
-import { Badge } from "@/components/ui/badge";
 import { SignOutButton } from "@/components/layout/sign-out-button";
 import { NotificationBellWrapper } from "@/components/notifications/notification-bell-wrapper";
 import type { NotificationItem } from "@/components/notifications/notification-bell";
@@ -20,41 +19,31 @@ export function AppHeader({
   const isDemo = profile.is_demo;
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-primary px-4 text-primary-foreground md:px-6">
-      <div className="flex items-center gap-3">
-        <div className="flex size-8 items-center justify-center rounded-md bg-accent font-bold text-accent-foreground">
+    <header className="flex h-14 shrink-0 items-center justify-between border-b border-white/10 bg-[#162033] px-4 text-white md:h-16 md:px-6">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-lift text-xs font-bold text-lift-foreground shadow-sm shadow-lift/20">
           CA
         </div>
-        <div>
-          <p className="text-sm font-semibold leading-none">{BRAND.productName}</p>
-          <p className="hidden text-xs text-primary-foreground/70 sm:block">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold leading-none">
+            {BRAND.productName}
+          </p>
+          <p className="mt-0.5 hidden truncate text-xs text-white/60 sm:block">
             {BRAND.tagline}
           </p>
         </div>
       </div>
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
         <NotificationBellWrapper
           userId={profile.id}
           role={profile.role}
           initialNotifications={notifications}
           unreadCount={unreadCount}
         />
-        {isDemo ? (
-          <Badge
-            variant="secondary"
-            className="hidden border-accent/30 bg-accent/20 text-primary-foreground sm:inline-flex"
-          >
-            Demo Preview
-          </Badge>
-        ) : (
-          <Badge
-            variant="secondary"
-            className="hidden border-accent/30 bg-accent/20 text-primary-foreground sm:inline-flex"
-          >
-            {ROLE_LABELS[role]}
-          </Badge>
-        )}
-        <span className="hidden max-w-[120px] truncate text-sm sm:inline md:max-w-none">
+        <span className="hidden rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-medium text-white/80 sm:inline-flex">
+          {isDemo ? "Demo Preview" : ROLE_LABELS[role]}
+        </span>
+        <span className="hidden max-w-[140px] truncate text-sm text-white/90 sm:inline">
           {profile.full_name ?? "User"}
         </span>
         <SignOutButton />

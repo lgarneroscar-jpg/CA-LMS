@@ -61,14 +61,16 @@ export default async function ProfilePage() {
 
   const workbookPillars = await fetchWorkbookPortfolio(supabase, profile.id);
 
+  const { data: institution } = profile.institution_id
+    ? await supabase
+        .from("institutions")
+        .select("name")
+        .eq("id", profile.institution_id)
+        .maybeSingle()
+    : { data: null };
+
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
-        <p className="text-muted-foreground">
-          Your progress, XP breakdown, and account settings.
-        </p>
-      </div>
+    <div className="experience-lift mx-auto max-w-3xl space-y-8 pb-12">
       <ProfileEditor
         profile={{
           full_name: profile.full_name,
@@ -81,6 +83,7 @@ export default async function ProfilePage() {
           rank: profile.rank,
           earned_badges: (profile.earned_badges as string[]) ?? [],
         }}
+        institutionName={institution?.name ?? null}
         streakHistory={streakHistory}
         xpLines={breakdown.lines}
         completedModules={completedModules}

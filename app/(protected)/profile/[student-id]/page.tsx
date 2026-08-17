@@ -42,19 +42,13 @@ export default async function StudentProfilePage({ params }: PageProps) {
   });
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Student profile</h1>
-        <p className="text-muted-foreground">
-          Public workbook entries shared by this student.
-        </p>
-      </div>
-
+    <div className="experience-lift mx-auto max-w-3xl space-y-8 pb-12">
       <ProfileIdentityHeader
         fullName={student.full_name}
         institutionName={institution?.name ?? null}
         profilePictureUrl={student.profile_picture_url}
         bio={student.bio}
+        eyebrow="Public profile"
       />
 
       <LivingWorkbookSection

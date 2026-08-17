@@ -32,7 +32,7 @@ export function ProgramFeed({ weeks, currentWeek, maxWeek }: ProgramFeedProps) {
           <section
             key={week.weekNumber}
             className={cn(
-              "rounded-2xl border p-4 md:p-5",
+              "min-w-0 overflow-hidden rounded-2xl border p-4 md:p-5",
               week.isCurrentWeek
                 ? "border-lift/30 bg-lift-muted/30 shadow-sm shadow-lift/5"
                 : "border-border/80 bg-card"
@@ -97,7 +97,7 @@ export function ProgramFeed({ weeks, currentWeek, maxWeek }: ProgramFeedProps) {
                                 Week {mod.unlock_week}
                               </span>
                             </div>
-                            <p className="font-medium leading-snug">{mod.title}</p>
+                            <p className="break-words font-medium leading-snug">{mod.title}</p>
                             <p
                               className={cn(
                                 "text-xs font-medium",
@@ -139,12 +139,12 @@ export function ProgramFeed({ weeks, currentWeek, maxWeek }: ProgramFeedProps) {
                             />
                           )}
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium leading-snug">
-                            <span className="rounded-full bg-lift-muted px-2 py-0.5 font-mono text-[10px] font-bold text-lift">
-                              {mod.module_code}
-                            </span>
-                            <span className="ml-2">{mod.title}</span>
+                        <div className="min-w-0 flex-1 space-y-1.5">
+                          <span className="inline-flex shrink-0 rounded-full bg-lift-muted px-2 py-0.5 font-mono text-[10px] font-bold text-lift">
+                            {mod.module_code}
+                          </span>
+                          <p className="break-words font-medium leading-snug">
+                            {mod.title}
                           </p>
                           {mod.description ? (
                             <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">

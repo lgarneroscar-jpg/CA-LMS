@@ -114,14 +114,14 @@ export default async function ProgramPage() {
                   const href = `/program/${slug}/${moduleSlug}`;
 
                   const card = (
-                    <div className="lift-card-interactive h-full rounded-2xl p-5">
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="rounded-full bg-lift-muted px-2.5 py-0.5 font-mono text-[10px] font-bold text-lift">
+                    <div className="lift-card-interactive h-full min-w-0 rounded-2xl p-5">
+                      <div className="flex min-w-0 items-start justify-between gap-2">
+                        <span className="shrink-0 rounded-full bg-lift-muted px-2.5 py-0.5 font-mono text-[10px] font-bold text-lift">
                           {m.module_code}
                         </span>
                         <span
                           className={cn(
-                            "rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide",
+                            "shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide",
                             complete
                               ? "bg-lift text-lift-foreground"
                               : "bg-muted text-muted-foreground"
@@ -130,9 +130,9 @@ export default async function ProgramPage() {
                           {status}
                         </span>
                       </div>
-                      <p className="mt-3 font-semibold leading-snug">{m.title}</p>
+                      <p className="mt-3 break-words font-semibold leading-snug">{m.title}</p>
                       {m.overviewLine ? (
-                        <p className="mt-2 text-sm text-muted-foreground">
+                        <p className="mt-2 break-words text-sm text-muted-foreground">
                           {m.overviewLine}
                         </p>
                       ) : null}

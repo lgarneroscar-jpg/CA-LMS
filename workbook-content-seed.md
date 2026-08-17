@@ -553,7 +553,9 @@ At this stage you've built identity, purpose, confidence, communication, social 
 ### exercises
 1. **Build Your Career Direction Map** | input_type: `reflection` | Clarify where you're heading — directionally, not permanently. | fields: What fields or problem areas do I find interesting?, What strengths or habits feel natural for me?, What do people consistently say I'm good at?
 2. **Direction Statement** | input_type: `fill_blank` | Write your direction statement for the next 12–24 months. | fields: "For my first role, I want to be somewhere that helps me grow in ___, learn ___, and contribute through ___."
-3. **Opportunity Comparison Table** | input_type: `scorecard` | Choose two roles you're considering. Rate them 1–5 using the Fit Table, then decide. | fields: Role A (5 criteria scored /25), Role B (5 criteria scored /25), Which direction does your future self choose and why?
+3. **Opportunity Comparison — Role A** | input_type: `scorecard` | Rate the first role you're considering 1–5 on each Fit Table metric. | fields: Manager Quality, Skill Development, Learning Velocity, Environment/Team Culture, Brand/Career Trajectory
+4. **Opportunity Comparison — Role B** | input_type: `scorecard` | Rate the second role you're considering 1–5 on each Fit Table metric. | fields: Manager Quality, Skill Development, Learning Velocity, Environment/Team Culture, Brand/Career Trajectory
+5. **Your Direction Decision** | input_type: `reflection` | Compare your two totals, then decide — remember Maya chose the 18 over the 15 for velocity and mentorship, not prestige. | fields: Which direction does your future self choose and why?
 
 ### application
 - Maya's long-term decision: Option A (Agency Internship → high velocity → 4-star, scores 18) vs. Option B (Corporate Brand Role → prestige → 3-star, scores 15). Maya chooses A even though B has the flashy name — because she's optimizing for skill, mentorship, velocity, and trajectory, not ego.

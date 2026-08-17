@@ -36,7 +36,7 @@ export function ProgramCompletionCelebration({
         <div className="space-y-2">
           <h1 className="text-3xl font-semibold">You did it, {studentName}!</h1>
           <p className="text-muted-foreground">
-            All 14 modules and 4 live sessions complete. You&apos;re Corporate
+            All 14 modules and 5 live sessions complete. You&apos;re Corporate
             Academy Certified.
           </p>
         </div>

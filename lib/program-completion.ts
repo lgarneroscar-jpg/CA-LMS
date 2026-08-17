@@ -7,7 +7,7 @@ import { createNotification } from "@/lib/notifications";
 type DbClient = SupabaseClient<Database>;
 
 const CONTENT_MODULE_COUNT = 14;
-const LIVE_SESSION_COUNT = 4;
+const LIVE_SESSION_COUNT = 5;
 
 export async function checkProgramCompletion(
   supabase: DbClient,

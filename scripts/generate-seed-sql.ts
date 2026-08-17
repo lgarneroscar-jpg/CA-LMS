@@ -16,7 +16,7 @@ function sqlJson(value: unknown) {
 }
 
 const statements: string[] = [
-  "-- Phase 3 full curriculum seed (14 modules + 4 live sessions)",
+  "-- Phase 3 full curriculum seed (14 modules + 5 live sessions)",
 ];
 
 for (const module of ALL_MODULES) {

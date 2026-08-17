@@ -38,11 +38,11 @@ export function ProfileIdentityHeader({
           {institutionName ? (
             <span className="lift-chip inline-flex">{institutionName}</span>
           ) : null}
-          <h1 className="break-words font-serif text-3xl font-semibold tracking-tight md:text-[2.4rem] md:leading-tight">
+          <h1 className="lift-text-wrap font-serif text-3xl font-semibold tracking-tight md:text-[2.4rem] md:leading-tight">
             {displayName}
           </h1>
           {bio ? (
-            <p className="break-words text-sm leading-relaxed text-muted-foreground">
+            <p className="lift-text-wrap text-sm leading-relaxed text-muted-foreground">
               {bio}
             </p>
           ) : null}

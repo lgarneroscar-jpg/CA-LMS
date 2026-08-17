@@ -215,7 +215,7 @@ export function ProfileEditor({
         <ul className="mt-4 space-y-2 text-sm">
           {xpLines.map((line) => (
             <li key={line.label} className="flex justify-between gap-4">
-              <span className="min-w-0 break-words">
+              <span className="min-w-0 lift-text-wrap">
                 {line.label}
                 {line.count ? ` (${line.count})` : ""}
               </span>
@@ -237,7 +237,7 @@ export function ProfileEditor({
                 key={entry.weeks}
                 className="flex items-center justify-between gap-3 py-2"
               >
-                <span className="min-w-0 break-words">
+                <span className="min-w-0 lift-text-wrap">
                   <span className="font-medium">{entry.weeks}-week streak</span>
                   {" · "}
                   {entry.badge}
@@ -282,7 +282,7 @@ export function ProfileEditor({
                   <span className="mr-2 inline-flex shrink-0 rounded-full bg-lift-muted px-2 py-0.5 font-mono text-[10px] font-bold text-lift">
                     {m.module_code}
                   </span>
-                  <span className="break-words">{m.title}</span>
+                  <span className="lift-text-wrap">{m.title}</span>
                 </span>
                 <span className="shrink-0 text-muted-foreground">
                   {m.quiz_total > 0

@@ -171,6 +171,14 @@
   @apply transition-all duration-500 ease-out;
 }
 
+/* Word-boundary wrapping for card titles — avoids mid-word breaks from narrow columns */
+.experience-lift .lift-text-wrap,
+.app-shell .lift-text-wrap {
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
 .app-shell :where(button, a, input, textarea, select, [role="checkbox"], [role="radio"]) {
   @apply focus-visible:ring-2 focus-visible:ring-lift/40 focus-visible:ring-offset-2;
 }

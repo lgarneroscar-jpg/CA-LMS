@@ -130,9 +130,9 @@ export default async function ProgramPage() {
                           {status}
                         </span>
                       </div>
-                      <p className="mt-3 break-words font-semibold leading-snug">{m.title}</p>
+                      <p className="mt-3 lift-text-wrap font-semibold leading-snug">{m.title}</p>
                       {m.overviewLine ? (
-                        <p className="mt-2 break-words text-sm text-muted-foreground">
+                        <p className="mt-2 lift-text-wrap text-sm text-muted-foreground">
                           {m.overviewLine}
                         </p>
                       ) : null}

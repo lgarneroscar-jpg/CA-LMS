@@ -70,7 +70,7 @@ export function LivingWorkbookSection({
                     <span className="shrink-0 rounded-full bg-lift-muted px-2.5 py-0.5 font-mono text-[10px] font-bold text-lift">
                       {module.moduleCode}
                     </span>
-                    <p className="min-w-0 break-words text-sm font-semibold leading-snug">
+                    <p className="min-w-0 lift-text-wrap text-sm font-semibold leading-snug">
                       {module.moduleTitle}
                     </p>
                   </div>
@@ -87,11 +87,11 @@ export function LivingWorkbookSection({
                               <span className="shrink-0 rounded-full bg-lift-muted px-2 py-0.5 font-mono text-[10px] font-bold text-lift">
                                 {exercise.moduleCode}
                               </span>
-                              <span className="min-w-0 break-words text-xs text-muted-foreground">
+                              <span className="min-w-0 lift-text-wrap text-xs text-muted-foreground">
                                 {exercise.moduleTitle}
                               </span>
                             </div>
-                            <h4 className="break-words font-semibold leading-snug">
+                            <h4 className="lift-text-wrap font-semibold leading-snug">
                               {exercise.title}
                             </h4>
                           </div>

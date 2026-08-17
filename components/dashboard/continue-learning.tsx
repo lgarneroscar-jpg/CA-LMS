@@ -33,7 +33,7 @@ export function ContinueLearning({ nextModule }: ContinueLearningProps) {
         <p className="text-xs font-bold uppercase tracking-widest text-lift-foreground/70">
           Continue learning
         </p>
-        <p className="mt-1 break-words text-lg font-semibold">{nextModule.title}</p>
+        <p className="mt-1 lift-text-wrap text-lg font-semibold">{nextModule.title}</p>
         <p className="mt-0.5 text-sm text-lift-foreground/80">
           {nextModule.module_code} · Week {nextModule.unlock_week}
         </p>

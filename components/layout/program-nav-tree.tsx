@@ -99,7 +99,7 @@ export function ProgramNavTree({ pillars }: ProgramNavTreeProps) {
                           >
                             {mod.moduleCode} · Week {mod.unlockWeek}
                           </span>
-                          <span className="mt-0.5 block break-words text-[13px] leading-snug">
+                          <span className="mt-0.5 block lift-text-wrap text-[13px] leading-snug">
                             {mod.title}
                           </span>
                         </span>

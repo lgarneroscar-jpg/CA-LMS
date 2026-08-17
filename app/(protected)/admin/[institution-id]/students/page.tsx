@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getCohortAnalytics } from "@/lib/cohort-analytics";
+import { LiveAttendanceIndicator } from "@/components/admin/live-attendance-indicator";
 import {
   Card,
   CardContent,
@@ -48,13 +49,14 @@ export default async function AdminStudentsPage({ params }: PageProps) {
         <CardContent>
           {students.length > 0 ? (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[640px] text-left text-sm">
+              <table className="w-full min-w-[720px] text-left text-sm">
                 <thead>
                   <tr className="border-b text-muted-foreground">
                     <th className="py-2 pr-4">Name</th>
                     <th className="py-2 pr-4">XP</th>
                     <th className="py-2 pr-4">Rank</th>
                     <th className="py-2 pr-4">Completion</th>
+                    <th className="py-2 pr-4">Live sessions</th>
                     <th className="py-2">Status</th>
                   </tr>
                 </thead>
@@ -81,6 +83,12 @@ export default async function AdminStudentsPage({ params }: PageProps) {
                         <td className="py-2 pr-4">{s.xp}</td>
                         <td className="py-2 pr-4">{s.rank ?? "—"}</td>
                         <td className="py-2 pr-4">{s.completionPercent}%</td>
+                        <td className="py-2 pr-4">
+                          <LiveAttendanceIndicator
+                            sessions={analytics?.liveSessions ?? []}
+                            attendedModuleIds={s.liveAttendance.attendedModuleIds}
+                          />
+                        </td>
                         <td className="py-2">
                           {s.hasFlag ? (
                             <Badge variant="destructive">Flagged</Badge>

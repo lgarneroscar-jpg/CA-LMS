@@ -78,6 +78,11 @@ export default async function AdminStudentDetailPage({ params }: PageProps) {
     (progress ?? []).map((p) => [p.module_id, p])
   );
 
+  const liveSessions = (modules ?? []).filter((m) => m.is_live_session);
+  const liveAttendedCount = liveSessions.filter(
+    (m) => progressByModule.get(m.id)?.is_complete
+  ).length;
+
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
@@ -93,6 +98,9 @@ export default async function AdminStudentDetailPage({ params }: PageProps) {
         <div className="mt-2 flex flex-wrap gap-2">
           <Badge variant="secondary">{student.xp} XP</Badge>
           <Badge variant="outline">Rank {student.rank ?? "—"}</Badge>
+          <Badge variant="outline">
+            Live sessions {liveAttendedCount} of {liveSessions.length}
+          </Badge>
           {flag ? <Badge variant="destructive">Flagged</Badge> : null}
         </div>
       </div>
@@ -139,13 +147,21 @@ export default async function AdminStudentDetailPage({ params }: PageProps) {
                     {mod.title}
                   </span>
                   <span className="text-muted-foreground">
-                    {row?.is_complete
-                      ? `Complete · ${row.completed_at ? new Date(row.completed_at).toLocaleDateString() : ""}${
-                          quizTotal > 0
-                            ? ` · Quiz ${row.quiz_score}/${quizTotal}`
-                            : ""
-                        }`
-                      : "Not complete"}
+                    {mod.is_live_session
+                      ? row?.is_complete
+                        ? `Attended${
+                            row.completed_at
+                              ? ` · ${new Date(row.completed_at).toLocaleDateString()}`
+                              : ""
+                          }`
+                        : "Not attended"
+                      : row?.is_complete
+                        ? `Complete · ${row.completed_at ? new Date(row.completed_at).toLocaleDateString() : ""}${
+                            quizTotal > 0
+                              ? ` · Quiz ${row.quiz_score}/${quizTotal}`
+                              : ""
+                          }`
+                        : "Not complete"}
                   </span>
                 </li>
               );

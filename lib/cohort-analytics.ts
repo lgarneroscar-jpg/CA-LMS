@@ -6,6 +6,13 @@ import { getProgressWeek, type ProgressModuleRef } from "@/lib/program";
 
 type DbClient = SupabaseClient<Database>;
 
+export type LiveSessionRef = {
+  id: string;
+  module_code: string;
+  title: string;
+  unlock_week: number;
+};
+
 export type CohortStudentMetrics = {
   id: string;
   full_name: string | null;
@@ -20,6 +27,11 @@ export type CohortStudentMetrics = {
   isBehindPace: boolean;
   hasFlag: boolean;
   flagNote: string | null;
+  liveAttendance: {
+    attendedModuleIds: string[];
+    attendedCount: number;
+    total: number;
+  };
 };
 
 export type CohortAnalytics = {
@@ -38,10 +50,19 @@ export type CohortAnalytics = {
     completedStudentIds: string[];
     incompleteStudentIds: string[];
   }[];
+  liveSessions: LiveSessionRef[];
   topStudents: CohortStudentMetrics[];
   bottomStudents: CohortStudentMetrics[];
   allStudents: CohortStudentMetrics[];
 };
+
+export function liveSessionExportHeader(session: LiveSessionRef): string {
+  return `${session.module_code} ${session.title} (Wk ${session.unlock_week})`;
+}
+
+export function liveAttendanceLabel(attended: boolean): string {
+  return attended ? "Attended" : "Not attended";
+}
 
 function isStudentBehindPace(
   programStartedAt: string | null,
@@ -99,6 +120,27 @@ export async function getCohortAnalytics(
     .order("unlock_week")
     .order("order_index");
 
+  const { data: liveSessionRows } = await supabase
+    .from("modules")
+    .select("id, module_code, title, unlock_week, order_index")
+    .eq("is_live_session", true)
+    .order("unlock_week")
+    .order("order_index");
+
+  const liveSessions: LiveSessionRef[] = [...(liveSessionRows ?? [])]
+    .sort(
+      (a, b) =>
+        (a.unlock_week ?? 1) - (b.unlock_week ?? 1) ||
+        (a.order_index ?? 0) - (b.order_index ?? 0) ||
+        a.module_code.localeCompare(b.module_code)
+    )
+    .map((row) => ({
+      id: row.id,
+      module_code: row.module_code,
+      title: row.title,
+      unlock_week: row.unlock_week ?? 1,
+    }));
+
   const { data: progress } = await supabase
     .from("student_progress")
     .select("student_id, module_id, is_complete, quiz_score")
@@ -141,6 +183,8 @@ export async function getCohortAnalytics(
   }
 
   const totalModules = modules?.length ?? 0;
+  const contentModuleIds = new Set((modules ?? []).map((m) => m.id));
+  const liveSessionIds = liveSessions.map((s) => s.id);
   const targetModules =
     modules?.filter((m) => m.unlock_week <= targetWeek) ?? [];
   const targetModuleIds = new Set(targetModules.map((m) => m.id));
@@ -189,9 +233,14 @@ export async function getCohortAnalytics(
     const studentProgress = (progress ?? []).filter(
       (p) => p.student_id === student.id && p.is_complete
     );
-    const completedCount = studentProgress.length;
+    const completedCount = studentProgress.filter((p) =>
+      contentModuleIds.has(p.module_id)
+    ).length;
     const completionPercent =
       totalModules > 0 ? Math.round((completedCount / totalModules) * 100) : 0;
+    const attendedModuleIds = liveSessionIds.filter((moduleId) =>
+      studentProgress.some((p) => p.module_id === moduleId)
+    );
 
     let quizSum = 0;
     let quizCount = 0;
@@ -227,6 +276,11 @@ export async function getCohortAnalytics(
       ),
       hasFlag: flagByStudent.has(student.id),
       flagNote: flagByStudent.get(student.id) ?? null,
+      liveAttendance: {
+        attendedModuleIds,
+        attendedCount: attendedModuleIds.length,
+        total: liveSessions.length,
+      },
     };
   });
 
@@ -273,6 +327,7 @@ export async function getCohortAnalytics(
     averageXp,
     weeklyEngagementScore,
     moduleCompletionRates,
+    liveSessions,
     topStudents,
     bottomStudents,
     allStudents,

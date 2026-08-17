@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getCohortAnalytics } from "@/lib/cohort-analytics";
+import {
+  getCohortAnalytics,
+  liveAttendanceLabel,
+  liveSessionExportHeader,
+} from "@/lib/cohort-analytics";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 type RouteParams = { params: Promise<{ "institution-id": string }> };
@@ -49,6 +53,14 @@ export async function GET(_request: Request, { params }: RouteParams) {
     emailMap.set(student.id, data.user?.email ?? "");
   }
 
+  const liveSessions = analytics.liveSessions;
+  const attendedIdsByStudent = new Map(
+    analytics.allStudents.map((s) => [
+      s.id,
+      new Set(s.liveAttendance.attendedModuleIds),
+    ])
+  );
+
   const header = [
     "name",
     "email",
@@ -58,18 +70,27 @@ export async function GET(_request: Request, { params }: RouteParams) {
     "quiz_average",
     "last_login",
     "flag_status",
+    ...liveSessions.map(liveSessionExportHeader),
+    "Live sessions attended",
   ];
 
-  const rows = analytics.allStudents.map((s) => [
-    s.full_name ?? "",
-    emailMap.get(s.id) ?? "",
-    String(s.completionPercent),
-    String(s.xp),
-    s.rank != null ? String(s.rank) : "",
-    String(s.quizAverage),
-    s.last_login ?? "",
-    s.hasFlag ? "flagged" : "",
-  ]);
+  const rows = analytics.allStudents.map((s) => {
+    const attended = attendedIdsByStudent.get(s.id) ?? new Set<string>();
+    return [
+      s.full_name ?? "",
+      emailMap.get(s.id) ?? "",
+      String(s.completionPercent),
+      String(s.xp),
+      s.rank != null ? String(s.rank) : "",
+      String(s.quizAverage),
+      s.last_login ?? "",
+      s.hasFlag ? "flagged" : "",
+      ...liveSessions.map((session) =>
+        liveAttendanceLabel(attended.has(session.id))
+      ),
+      `${s.liveAttendance.attendedCount} of ${s.liveAttendance.total}`,
+    ];
+  });
 
   const csv = [header, ...rows]
     .map((row) =>

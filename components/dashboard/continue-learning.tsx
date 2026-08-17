@@ -9,12 +9,12 @@ type ContinueLearningProps = {
 export function ContinueLearning({ nextModule }: ContinueLearningProps) {
   if (!nextModule) {
     return (
-      <div className="rounded-xl border border-accent/30 bg-accent/5 p-6 text-center">
+      <div className="lift-card rounded-2xl border border-lift/20 bg-lift-muted/30 p-6 text-center">
         <p className="font-medium text-foreground">
-          You&apos;re all caught up on unlocked modules.
+          You&apos;re all caught up on modules.
         </p>
         <p className="mt-1 text-sm text-muted-foreground">
-          Check back when the next week unlocks on your cohort schedule.
+          Live sessions stay on the timeline as optional milestones.
         </p>
       </div>
     );
@@ -27,14 +27,14 @@ export function ContinueLearning({ nextModule }: ContinueLearningProps) {
   return (
     <Link
       href={href}
-      className="group flex items-center justify-between rounded-xl bg-primary px-6 py-5 text-primary-foreground shadow-md transition-shadow hover:shadow-lg"
+      className="lift-card-interactive group flex items-center justify-between rounded-2xl bg-lift px-6 py-5 text-lift-foreground shadow-md shadow-lift/20"
     >
       <div>
-        <p className="text-xs font-medium uppercase tracking-wide text-primary-foreground/70">
+        <p className="text-xs font-bold uppercase tracking-widest text-lift-foreground/70">
           Continue learning
         </p>
         <p className="mt-1 text-lg font-semibold">{nextModule.title}</p>
-        <p className="mt-0.5 text-sm text-primary-foreground/80">
+        <p className="mt-0.5 text-sm text-lift-foreground/80">
           {nextModule.module_code} · Week {nextModule.unlock_week}
         </p>
       </div>

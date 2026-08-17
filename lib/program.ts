@@ -1,6 +1,7 @@
 import type { Tables } from "@/types/database";
 import { PILLARS, type PillarNumber, type WorkbookContent } from "@/types/modules";
 import { normalizeWorkbookBlock } from "@/lib/content-normalize";
+import { parseModuleNumber } from "@/lib/program-nav";
 
 export type ModuleRow = Tables<"modules">;
 
@@ -33,6 +34,14 @@ export function getPillarFromSlug(slug: string): PillarNumber | null {
 
 export function getPillarLabel(pillar: number): string {
   return PILLARS[pillar as PillarNumber]?.label ?? `Pillar ${pillar}`;
+}
+
+export function getPillarWeeks(pillar: number): string {
+  return PILLARS[pillar as PillarNumber]?.weeks ?? "";
+}
+
+export function getPillarDescription(pillar: number): string | null {
+  return PILLARS[pillar as PillarNumber]?.description ?? null;
 }
 
 export function parseWorkbookContent(raw: unknown): WorkbookContent {
@@ -75,6 +84,7 @@ export type FeedModule = {
   isComplete: boolean;
   xpEarned: number;
   isLiveSession: boolean;
+  liveStatus?: LiveSessionStatus;
 };
 
 export type WeekFeed = {
@@ -95,14 +105,48 @@ export function getOrderedContentModules(modules: ModuleListRow[]): ModuleListRo
     );
 }
 
-/** Content + live sessions for the visual timeline, ordered by week. */
+function compareTimelineItems(a: ModuleListRow, b: ModuleListRow): number {
+  const weekDiff = (a.unlock_week ?? 1) - (b.unlock_week ?? 1);
+  if (weekDiff !== 0) return weekDiff;
+  // Live sessions stay after content modules in the same week.
+  if (Boolean(a.is_live_session) !== Boolean(b.is_live_session)) {
+    return a.is_live_session ? 1 : -1;
+  }
+  if (a.is_live_session) {
+    return (a.order_index ?? 0) - (b.order_index ?? 0);
+  }
+  return parseModuleNumber(a.module_code) - parseModuleNumber(b.module_code);
+}
+
+/** Content + live sessions for the visual timeline, ordered by week then P-number. */
 export function getOrderedTimelineModules(modules: ModuleListRow[]): ModuleListRow[] {
-  return [...modules].sort(
-    (a, b) =>
-      (a.unlock_week ?? 1) - (b.unlock_week ?? 1) ||
-      Number(a.is_live_session) - Number(b.is_live_session) ||
-      (a.order_index ?? 0) - (b.order_index ?? 0)
-  );
+  return [...modules].sort(compareTimelineItems);
+}
+
+export type LiveSessionStatus = "upcoming" | "available" | "past";
+
+/** Display-only: where a live session sits relative to the student's progress week. */
+export function getLiveSessionStatus(
+  unlockWeek: number,
+  progressWeek: number
+): LiveSessionStatus {
+  if (unlockWeek < progressWeek) return "past";
+  if (unlockWeek === progressWeek) return "available";
+  return "upcoming";
+}
+
+export function firstOverviewSentence(
+  overview: string | null | undefined,
+  maxChars = 120
+): string | null {
+  if (!overview) return null;
+  const trimmed = overview.trim();
+  if (!trimmed) return null;
+  const sentenceMatch = trimmed.match(/^(.+?[.!?])(?:\s|$)/);
+  const sentence = (sentenceMatch?.[1] ?? trimmed).trim();
+  if (sentence.length <= maxChars) return sentence;
+  const clipped = sentence.slice(0, maxChars).replace(/\s+\S*$/, "").trim();
+  return `${clipped}…`;
 }
 
 export function getMaxProgramWeek(modules: ProgressModuleRef[]): number {
@@ -200,6 +244,9 @@ export function buildProgramFeed(params: {
             isComplete: progress?.is_complete ?? false,
             xpEarned: progress?.xp_earned ?? 0,
             isLiveSession: Boolean(m.is_live_session),
+            liveStatus: m.is_live_session
+              ? getLiveSessionStatus(m.unlock_week ?? 1, progressWeek)
+              : undefined,
           };
         });
 

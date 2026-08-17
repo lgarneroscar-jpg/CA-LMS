@@ -3,13 +3,6 @@
 import { useState, useTransition } from "react";
 import { markLiveSessionComplete } from "@/app/actions/module-progress";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 
 type LiveSessionAttendanceProps = {
   moduleId: string;
@@ -36,38 +29,42 @@ export function LiveSessionAttendance({
 
   if (done) {
     return (
-      <Card className="border-accent/30 bg-accent/5">
-        <CardHeader>
-          <CardTitle>Thanks for attending!</CardTitle>
-          <CardDescription>+50 XP added to your total.</CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="lift-card rounded-2xl border-lift/25 bg-lift-muted/40 p-6">
+        <h2 className="text-lg font-semibold">Thanks for attending</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          +50 XP added to your total.
+        </p>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Join the session</CardTitle>
-        <CardDescription>
+    <div className="lift-card space-y-5 rounded-2xl p-6 md:p-7">
+      <div>
+        <h2 className="text-lg font-semibold">Join the session</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
           Watch or attend the live session, then confirm attendance below.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {streamUrl ? (
-          <a
-            href={streamUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-sm font-medium text-accent underline"
-          >
-            Open live stream
-          </a>
-        ) : null}
-        <Button onClick={handleMarkAttended} disabled={pending}>
-          {pending ? "Saving..." : "Mark attendance (+50 XP)"}
-        </Button>
-      </CardContent>
-    </Card>
+          Attendance is recorded for your institution — it does not block
+          certification.
+        </p>
+      </div>
+      {streamUrl ? (
+        <a
+          href={streamUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="lift-btn inline-flex items-center"
+        >
+          Open live stream
+        </a>
+      ) : null}
+      <Button
+        onClick={handleMarkAttended}
+        disabled={pending}
+        className="lift-btn"
+      >
+        {pending ? "Saving..." : "Mark attendance (+50 XP)"}
+      </Button>
+    </div>
   );
 }

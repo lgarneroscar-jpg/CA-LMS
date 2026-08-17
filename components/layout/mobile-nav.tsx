@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 const STUDENT_NAV = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-  { href: "/program", label: "Program", icon: GraduationCap },
+  { href: "/program", label: "Curriculum", icon: GraduationCap },
   { href: "/profile", label: "Profile", icon: Settings },
 ] as const;
 

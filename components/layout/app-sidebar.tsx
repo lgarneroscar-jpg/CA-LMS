@@ -54,7 +54,7 @@ function getNavItems(
     case "student": {
       const studentItems: NavItem[] = [
         { href: "/dashboard", label: "Home", icon: LayoutDashboard },
-        { href: "/program", label: "Program", icon: GraduationCap },
+        { href: "/program", label: "Curriculum", icon: GraduationCap },
         { href: "/profile", label: "Profile", icon: Settings },
       ];
 

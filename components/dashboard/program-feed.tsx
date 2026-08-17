@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { CheckCircle2, Circle, Radio } from "lucide-react";
-import type { WeekFeed } from "@/lib/program";
+import type { LiveSessionStatus, WeekFeed } from "@/lib/program";
 import { cn } from "@/lib/utils";
 
 type ProgramFeedProps = {
@@ -9,11 +9,17 @@ type ProgramFeedProps = {
   maxWeek: number;
 };
 
+const LIVE_STATUS_LABEL: Record<LiveSessionStatus, string> = {
+  upcoming: "Upcoming",
+  available: "Available now",
+  past: "Past",
+};
+
 export function ProgramFeed({ weeks, currentWeek, maxWeek }: ProgramFeedProps) {
   return (
     <div className="space-y-6">
-      <div className="flex items-baseline justify-between border-b border-border pb-4">
-        <h2 className="text-xl font-semibold tracking-tight md:text-2xl">
+      <div className="flex items-baseline justify-between border-b border-lift/15 pb-4">
+        <h2 className="lift-section-title text-xl font-bold tracking-tight md:text-2xl">
           Your timeline
         </h2>
         <span className="text-sm text-muted-foreground">
@@ -28,15 +34,15 @@ export function ProgramFeed({ weeks, currentWeek, maxWeek }: ProgramFeedProps) {
             className={cn(
               "rounded-2xl border p-4 md:p-5",
               week.isCurrentWeek
-                ? "border-accent/50 bg-accent/5 shadow-sm ring-1 ring-accent/20"
-                : "border-border bg-card/50"
+                ? "border-lift/30 bg-lift-muted/30 shadow-sm shadow-lift/5"
+                : "border-border/80 bg-card"
             )}
           >
             <div className="mb-4">
               <p
                 className={cn(
                   "text-xs font-bold uppercase tracking-widest",
-                  week.isCurrentWeek ? "text-accent" : "text-muted-foreground"
+                  week.isCurrentWeek ? "text-lift" : "text-muted-foreground"
                 )}
               >
                 {week.label}
@@ -49,55 +55,62 @@ export function ProgramFeed({ weeks, currentWeek, maxWeek }: ProgramFeedProps) {
                 No modules in this week.
               </p>
             ) : (
-              <ul className="space-y-2">
+              <ul className="space-y-2.5">
                 {week.modules.map((mod) => {
                   if (mod.isLiveSession) {
                     const href = `/program/live/${mod.slug}`;
+                    const liveStatus = mod.liveStatus ?? "upcoming";
                     return (
                       <li key={mod.id}>
                         <Link
                           href={href}
                           className={cn(
-                            "flex gap-3 rounded-xl border border-dashed p-3 transition-colors",
-                            "border-border/80 bg-muted/30 hover:border-border hover:bg-background",
-                            week.isCurrentWeek && "bg-background/60"
+                            "lift-card-interactive flex gap-3 rounded-2xl border-dashed p-3.5",
+                            liveStatus === "available" &&
+                              "border-lift/35 bg-lift-muted/40",
+                            liveStatus === "upcoming" && "opacity-80"
                           )}
                         >
                           <div className="mt-0.5 shrink-0">
                             {mod.isComplete ? (
-                              <CheckCircle2 className="size-5 text-accent" />
+                              <CheckCircle2 className="size-5 text-lift" />
                             ) : (
                               <Radio
                                 className={cn(
                                   "size-5",
-                                  week.isCurrentWeek
-                                    ? "text-accent"
+                                  liveStatus === "available"
+                                    ? "text-lift"
                                     : "text-muted-foreground"
                                 )}
                               />
                             )}
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                              Live session · Week {mod.unlock_week}
-                            </p>
-                            <p className="mt-0.5 font-medium leading-snug">
-                              <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                          <div className="min-w-0 flex-1 space-y-1.5">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span className="rounded-full bg-muted px-2 py-0.5 font-mono text-[10px] font-bold text-muted-foreground">
                                 {mod.module_code}
                               </span>
-                              {" · "}
-                              {mod.title}
+                              <span className="lift-chip border-0 px-2 py-0.5 text-[10px]">
+                                Live session
+                              </span>
+                              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                                Week {mod.unlock_week}
+                              </span>
+                            </div>
+                            <p className="font-medium leading-snug">{mod.title}</p>
+                            <p
+                              className={cn(
+                                "text-xs font-medium",
+                                liveStatus === "available"
+                                  ? "text-lift"
+                                  : "text-muted-foreground"
+                              )}
+                            >
+                              {mod.isComplete
+                                ? "Attendance recorded"
+                                : LIVE_STATUS_LABEL[liveStatus]}
+                              {!mod.isComplete ? " · Join →" : ""}
                             </p>
-                            {mod.isComplete ? (
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                Attendance recorded
-                                {mod.xpEarned > 0 ? ` · +${mod.xpEarned} XP` : ""}
-                              </p>
-                            ) : (
-                              <p className="mt-1 text-xs font-medium text-foreground/70">
-                                Join session →
-                              </p>
-                            )}
                           </div>
                         </Link>
                       </li>
@@ -110,20 +123,17 @@ export function ProgramFeed({ weeks, currentWeek, maxWeek }: ProgramFeedProps) {
                     <li key={mod.id}>
                       <Link
                         href={href}
-                        className={cn(
-                          "flex gap-3 rounded-xl border border-transparent p-3 transition-colors hover:border-border hover:bg-background",
-                          week.isCurrentWeek && "bg-background/80"
-                        )}
+                        className="lift-card-interactive flex gap-3 rounded-2xl p-3.5"
                       >
                         <div className="mt-0.5 shrink-0">
                           {mod.isComplete ? (
-                            <CheckCircle2 className="size-5 text-accent" />
+                            <CheckCircle2 className="size-5 text-lift" />
                           ) : (
                             <Circle
                               className={cn(
                                 "size-5",
                                 week.isCurrentWeek
-                                  ? "text-accent"
+                                  ? "text-lift"
                                   : "text-muted-foreground"
                               )}
                             />
@@ -131,11 +141,10 @@ export function ProgramFeed({ weeks, currentWeek, maxWeek }: ProgramFeedProps) {
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="font-medium leading-snug">
-                            <span className="font-mono text-xs text-muted-foreground">
+                            <span className="rounded-full bg-lift-muted px-2 py-0.5 font-mono text-[10px] font-bold text-lift">
                               {mod.module_code}
                             </span>
-                            {" · "}
-                            {mod.title}
+                            <span className="ml-2">{mod.title}</span>
                           </p>
                           {mod.description ? (
                             <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">

@@ -52,13 +52,32 @@ export function weeksBehind(
 export function formatPaceLabel(status: PaceStatus): string {
   switch (status) {
     case "ahead":
-      return "Ahead of pace";
+      return "Ahead of the week";
     case "behind":
-      return "Behind pace";
+      return "Pick up where you left off";
     case "on_pace":
       return "On pace";
     default:
       return "Not started";
+  }
+}
+
+export function formatPaceHeadline(
+  status: PaceStatus,
+  progressWeek: number,
+  expectedWeek: number | null
+): string {
+  if (status === "not_started" || expectedWeek == null) {
+    return "Your program clock starts when you click Go";
+  }
+  const base = `Week ${progressWeek} of ${expectedWeek}`;
+  switch (status) {
+    case "behind":
+      return `${base} · pick up where you left off`;
+    case "ahead":
+      return `${base} · you're ahead of the calendar`;
+    default:
+      return `${base} · keep going`;
   }
 }
 

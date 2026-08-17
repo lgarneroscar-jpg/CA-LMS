@@ -1,14 +1,43 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
 import {
+  firstOverviewSentence,
   getOrderedContentModules,
   getPillarSlug,
+  parseWorkbookContent,
   type ModuleListRow,
 } from "@/lib/program";
+import { parseModuleNumber } from "@/lib/program-nav";
 
 /** Columns needed for lists, feeds, and navigation — excludes heavy JSON blobs. */
 export const MODULE_CATALOG_SELECT =
   "id, module_code, title, description, slug, pillar, unlock_week, order_index, is_live_session";
+
+export type CurriculumModuleRow = ModuleListRow & {
+  overviewLine: string | null;
+};
+
+/** Content catalog plus stored workbook overview for Curriculum one-liners. */
+export const getCurriculumModuleCatalog = cache(
+  async (): Promise<CurriculumModuleRow[]> => {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from("modules")
+      .select(`${MODULE_CATALOG_SELECT}, workbook_content`)
+      .eq("is_live_session", false)
+      .order("unlock_week")
+      .order("order_index");
+
+    return (data ?? []).map((row) => {
+      const { workbook_content, ...rest } = row;
+      const overview = parseWorkbookContent(workbook_content).overview;
+      return {
+        ...(rest as ModuleListRow),
+        overviewLine: firstOverviewSentence(overview),
+      };
+    });
+  }
+);
 
 export const getContentModuleCatalog = cache(async (): Promise<ModuleListRow[]> => {
   const supabase = await createClient();

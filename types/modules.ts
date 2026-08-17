@@ -88,16 +88,22 @@ export const PILLARS = {
     slug: "identity-brand-building",
     label: "Identity & Brand Building",
     weeks: "Weeks 1–4",
+    description:
+      "Careers start with identity. Purpose is a filter. Confidence is generated through action. Your resume and LinkedIn are where that identity becomes visible.",
   },
   2: {
     slug: "executive-communication",
     label: "Executive Communication & Social Capital",
     weeks: "Weeks 5–8",
+    description:
+      "How you communicate determines whether people take you seriously. Networking is a system: consistency, intentionality, and visibility over time.",
   },
   3: {
     slug: "career-navigation",
     label: "Career Navigation Strategy & Execution",
     weeks: "Weeks 9–12",
+    description:
+      "Recruiting is strategic positioning. Treat internships as an audition. Direction is a frame for evaluating opportunities — not a five-year prophecy.",
   },
 } as const;
 

@@ -14,18 +14,12 @@ import { ContinueLearning } from "@/components/dashboard/continue-learning";
 import { ProgramCompletionBanner } from "@/components/dashboard/program-completion-banner";
 import { StartProgramButton } from "@/components/dashboard/start-program-button";
 import { PaceIndicator } from "@/components/dashboard/pace-indicator";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 
 export default async function StudentDashboardPage() {
   const profile = await requireRole(["student"]);
   const programStartedAt = profile.program_started_at ?? null;
   const diagnosticComplete = profile.diagnostic_complete || profile.is_demo;
+  const firstName = profile.full_name?.split(" ")[0] ?? null;
 
   const [institutionResult, contentModules, timelineModules, progressMap, auth] =
     await Promise.all([
@@ -76,88 +70,92 @@ export default async function StudentDashboardPage() {
   const nextModule = diagnosticComplete ? findNextModule(flatModules) : null;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 md:space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight md:text-2xl">
-            Welcome back
-            {profile.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}
-          </h1>
-          <p className="text-sm text-muted-foreground md:text-base">
-            {institution?.name ?? "Your program"} · Built for Career Success
-          </p>
+    <div className="experience-lift mx-auto max-w-5xl space-y-10 pb-12">
+      <header className="lift-framework space-y-6 rounded-3xl p-7 md:p-8">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="space-y-3">
+            {institution?.name ? (
+              <span className="lift-chip inline-flex">{institution.name}</span>
+            ) : (
+              <span className="lift-chip inline-flex">Your program</span>
+            )}
+            <h1 className="font-serif text-3xl font-semibold tracking-tight md:text-[2.5rem] md:leading-tight">
+              {firstName ? firstName : "Welcome back"}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Built for Career Success
+            </p>
+          </div>
+          {!programStartedAt && diagnosticComplete ? (
+            <StartProgramButton />
+          ) : null}
         </div>
-        {!programStartedAt && diagnosticComplete ? (
-          <StartProgramButton />
-        ) : null}
-      </div>
+
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Program progress</span>
+            <span>
+              {completedCount} of {totalModules} modules complete
+            </span>
+          </div>
+          <div className="relative h-2.5 overflow-hidden rounded-full bg-muted">
+            <div
+              className="lift-progress-fill absolute inset-y-0 left-0 rounded-full bg-lift"
+              style={{ width: `${percentComplete}%` }}
+            />
+          </div>
+        </div>
+      </header>
 
       {profile.program_completed_at ? (
         <ProgramCompletionBanner studentId={profile.id} />
       ) : null}
 
       {!profile.institution_id && (
-        <Card className="border-accent/40 bg-accent/5">
-          <CardContent className="pt-6 text-sm">
-            Link your account to an institution in Supabase to enable cohort
-            features.
-          </CardContent>
-        </Card>
+        <div className="lift-card rounded-2xl p-5 text-sm">
+          Link your account to an institution in Supabase to enable cohort
+          features.
+        </div>
       )}
 
       {!programStartedAt && diagnosticComplete ? (
-        <Card className="border-primary/30 bg-primary/5">
-          <CardHeader>
-            <CardTitle>Ready to begin?</CardTitle>
-            <CardDescription>
-              Click Go when you&apos;re ready. Your program clock starts then —
-              all modules are open, and your timeline advances as you complete
-              work.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <StartProgramButton />
-          </CardContent>
-        </Card>
+        <div className="lift-card space-y-3 rounded-2xl border-lift/20 p-6">
+          <h2 className="text-lg font-semibold">Ready to begin?</h2>
+          <p className="text-sm text-muted-foreground">
+            Click Go when you&apos;re ready. Your program clock starts then —
+            all modules are open, and your timeline advances as you complete
+            work.
+          </p>
+          <StartProgramButton />
+        </div>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Progress</CardDescription>
-            <CardTitle className="text-2xl md:text-3xl">{percentComplete}%</CardTitle>
-          </CardHeader>
-          <CardContent className="text-xs text-muted-foreground">
-            {completedCount} of {totalModules} modules
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total XP</CardDescription>
-            <CardTitle className="text-2xl text-accent md:text-3xl">
-              {profile.xp}
-            </CardTitle>
-          </CardHeader>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Streak</CardDescription>
-            <CardTitle className="text-2xl md:text-3xl">
-              {profile.streak_days}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-xs text-muted-foreground">weeks</CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Rank</CardDescription>
-            <CardTitle className="text-sm font-semibold leading-snug md:text-base">
-              {profile.rank
-                ? formatRankMessage(profile.rank)
-                : "Complete modules to rank"}
-            </CardTitle>
-          </CardHeader>
-        </Card>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+        <div className="lift-card rounded-2xl p-5">
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            Total XP
+          </p>
+          <p className="mt-2 text-3xl font-semibold text-accent">{profile.xp}</p>
+        </div>
+        <div className="lift-card rounded-2xl p-5">
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            Streak
+          </p>
+          <p className="mt-2 text-3xl font-semibold text-lift">
+            {profile.streak_days}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">weeks</p>
+        </div>
+        <div className="lift-card rounded-2xl p-5">
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            Rank
+          </p>
+          <p className="mt-2 text-base font-semibold leading-snug text-accent">
+            {profile.rank
+              ? formatRankMessage(profile.rank)
+              : "Complete modules to rank"}
+          </p>
+        </div>
       </div>
 
       {programStartedAt ? (
@@ -168,36 +166,35 @@ export default async function StudentDashboardPage() {
         />
       ) : null}
 
-      {/* Central timeline — heart of the dashboard */}
-      <Card className="overflow-hidden border-2 border-primary/10 shadow-md">
-        <CardHeader className="bg-muted/40 pb-4">
-          <CardTitle className="text-xl md:text-2xl">Your program</CardTitle>
-          <CardDescription>
+      <section className="lift-framework rounded-3xl p-6 md:p-7">
+        <div className="mb-6">
+          <h2 className="text-xl font-bold tracking-tight md:text-2xl">
+            Your program
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
             Last week, this week, and next week — based on your progress, not the
             calendar. Live sessions appear as milestones and do not block
             completion.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-6">
-          {diagnosticComplete ? (
-            <ProgramFeed weeks={weeks} currentWeek={feedWeek} maxWeek={maxWeek} />
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Complete the{" "}
-              <Link href="/diagnostic" className="underline">
-                entry diagnostic
-              </Link>{" "}
-              to view your timeline.
-            </p>
-          )}
-        </CardContent>
-      </Card>
+          </p>
+        </div>
+        {diagnosticComplete ? (
+          <ProgramFeed weeks={weeks} currentWeek={feedWeek} maxWeek={maxWeek} />
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Complete the{" "}
+            <Link href="/diagnostic" className="underline">
+              entry diagnostic
+            </Link>{" "}
+            to view your timeline.
+          </p>
+        )}
+      </section>
 
       {nextModule ? <ContinueLearning nextModule={nextModule} /> : null}
 
       <p className="text-center text-sm text-muted-foreground">
         <Link href="/program" className="underline hover:text-foreground">
-          View full program overview
+          View full curriculum
         </Link>
       </p>
     </div>

@@ -168,41 +168,121 @@ function parseExerciseLine(line: string): ParsedExercise | null {
   };
 }
 
-function parseQuizLine(line: string): ParsedQuiz | null {
-  const parts = line.split(/\s*\|\s*/);
-  if (parts.length < 3) return null;
+function normalizeQuizLabel(value: string): string {
+  return value.trim().replace(/\s+/g, " ");
+}
 
-  const question = parts[0].replace(/^\d+\.\s*/, "").trim();
-  const optionsRaw = parts[1].trim();
-  const correctRaw = parts[2].trim();
+function resolveCorrectOption(
+  options: { id: string; label: string }[],
+  correctLabel: string,
+  context: { moduleCode: string; questionNumber: number }
+): { id: string; label: string } {
+  const exact = options.find((o) => o.label === correctLabel);
+  if (exact) return exact;
 
-  if (!optionsRaw.startsWith("[") || !optionsRaw.endsWith("]")) return null;
+  const normalizedKey = normalizeQuizLabel(correctLabel).toLowerCase();
+  const normalized = options.find(
+    (o) => normalizeQuizLabel(o.label).toLowerCase() === normalizedKey
+  );
+  if (normalized) return normalized;
 
-  const correctMatch = correctRaw.match(/^correct:\s*(.+)$/i);
-  if (!correctMatch) return null;
+  throw new Error(
+    `${context.moduleCode} Q${context.questionNumber}: correct answer "${correctLabel}" does not match any option (${options.map((o) => `"${o.label}"`).join(", ")})`
+  );
+}
 
-  const correctLabel = correctMatch[1].trim();
+function parseQuizLine(
+  line: string,
+  context: { moduleCode: string; questionNumber: number }
+): ParsedQuiz {
+  const questionNumberMatch = line.match(/^(\d+)\.\s*(.+)$/);
+  if (!questionNumberMatch) {
+    throw new Error(
+      `${context.moduleCode} Q${context.questionNumber}: quiz line must start with a number`
+    );
+  }
+
+  const rest = questionNumberMatch[2];
+  const bracketStart = rest.indexOf("[");
+  const bracketEnd = rest.lastIndexOf("]");
+  if (bracketStart === -1 || bracketEnd === -1 || bracketEnd <= bracketStart) {
+    throw new Error(
+      `${context.moduleCode} Q${context.questionNumber}: quiz line is missing a bracketed option list`
+    );
+  }
+
+  const question = rest
+    .slice(0, bracketStart)
+    .replace(/\s*\|\s*$/, "")
+    .trim();
+  const optionsRaw = rest.slice(bracketStart + 1, bracketEnd);
+  const afterBracket = rest.slice(bracketEnd + 1).trim();
+  const correctMatch = afterBracket.match(/^\|\s*correct:\s*(.+)$/i);
+  if (!correctMatch) {
+    throw new Error(
+      `${context.moduleCode} Q${context.questionNumber}: quiz line is missing "| correct: ..."`
+    );
+  }
+
   const optionLabels = optionsRaw
-    .slice(1, -1)
-    .split(",")
-    .map((o) => o.trim());
+    .split("|")
+    .map((option) => option.trim())
+    .filter(Boolean);
+
+  if (optionLabels.length !== 4) {
+    throw new Error(
+      `${context.moduleCode} Q${context.questionNumber}: expected 4 options, got ${optionLabels.length}`
+    );
+  }
 
   const options = optionLabels.map((label, index) => ({
     id: String(index),
     label,
   }));
 
-  const correctOption =
-    options.find((o) => o.label === correctLabel) ??
-    options.find((o) =>
-      o.label.toLowerCase().includes(correctLabel.toLowerCase())
-    );
+  const correctLabel = correctMatch[1].trim();
+  const correctOption = resolveCorrectOption(options, correctLabel, {
+    moduleCode: context.moduleCode,
+    questionNumber: Number(questionNumberMatch[1]) || context.questionNumber,
+  });
 
   return {
     question,
     options,
-    correct_answer: correctOption?.id ?? "0",
+    correct_answer: correctOption.id,
   };
+}
+
+export function assertQuizBank(modules: ParsedWorkbookModule[]): void {
+  if (modules.length !== 14) {
+    throw new Error(`Expected 14 modules, parsed ${modules.length}`);
+  }
+
+  let totalQuestions = 0;
+  for (const module of modules) {
+    for (const [index, question] of module.quiz.entries()) {
+      totalQuestions += 1;
+      const questionNumber = index + 1;
+      if (question.options.length !== 4) {
+        throw new Error(
+          `${module.module_code} Q${questionNumber}: expected 4 options, got ${question.options.length}`
+        );
+      }
+
+      const correctOption = question.options.find(
+        (option) => option.id === question.correct_answer
+      );
+      if (!correctOption) {
+        throw new Error(
+          `${module.module_code} Q${questionNumber}: correct_answer id "${question.correct_answer}" is invalid`
+        );
+      }
+    }
+  }
+
+  if (totalQuestions !== 56) {
+    throw new Error(`Expected 56 quiz questions, parsed ${totalQuestions}`);
+  }
 }
 
 function extractSection(body: string, name: string): string {
@@ -265,9 +345,13 @@ export function parseWorkbookSeedMarkdown(markdown: string): ParsedWorkbookModul
       .map(parseExerciseLine)
       .filter((e): e is ParsedExercise => e !== null);
 
-    const quiz = parseNumberedLines(quizSection)
-      .map(parseQuizLine)
-      .filter((q): q is ParsedQuiz => q !== null);
+    const quizLines = parseNumberedLines(quizSection);
+    const quiz = quizLines.map((line, index) =>
+      parseQuizLine(line, {
+        moduleCode: codeMatch[1],
+        questionNumber: index + 1,
+      })
+    );
 
     modules.push({
       module_code: codeMatch[1],
@@ -341,5 +425,7 @@ export function loadWorkbookSeedFromFile(
   filePath = join(process.cwd(), "workbook-content-seed.md")
 ): ParsedWorkbookModule[] {
   const markdown = readFileSync(filePath, "utf8");
-  return parseWorkbookSeedMarkdown(markdown);
+  const modules = parseWorkbookSeedMarkdown(markdown);
+  assertQuizBank(modules);
+  return modules;
 }

@@ -16,7 +16,7 @@ Each module has these structured sections:
   - optional `options:` segment (comma-separated) for `anchor_select` chip choices
 - **application** — real-world application bullets
 - **completion_check[]** — yes/no self-confirmation items (the authentic workbook closer)
-- **quiz[]** — 3-4 derived comprehension questions, each `{question, options[], correct}`
+- **quiz[]** — 4 derived comprehension questions per module, each `{question, options[], correct}`. Options inside `[` `]` are separated by ` | ` (pipe). Example: `1. Question text | [Option A | Option B | Option C | Option D] | correct: Option B`
 
 ---
 
@@ -60,10 +60,10 @@ Most students think careers start with skills. They don't — they start with id
 - I see why this module is the foundation of the entire program
 
 ### quiz
-1. According to the module, what do careers actually start with? | [Skills, Identity, Connections, A degree] | correct: Identity
-2. What is the "Identity Gap"? | [The gap between your GPA and your goals, The gap between student identity and pre-professional identity, The gap between you and your competition, The gap in your resume] | correct: The gap between student identity and pre-professional identity
-3. How is identity built, according to the module? | [Through self-belief, Through repetition and action, Through credentials, Through waiting to feel confident] | correct: Through repetition and action
-4. Which is a pre-professional signal rather than a student-mode behavior? | [Apologizing before speaking, Waiting for perfect clarity, Proactive clarity and closing loops, Doing the minimum unless asked] | correct: Proactive clarity and closing loops
+1. According to the module, what do careers actually start with? | [Skills | Identity | Connections | A degree] | correct: Identity
+2. What is the "Identity Gap"? | [The gap between your GPA and your goals | The gap between student identity and pre-professional identity | The gap between you and your competition | The gap in your resume] | correct: The gap between student identity and pre-professional identity
+3. How is identity built, according to the module? | [Through self-belief | Through repetition and action | Through credentials | Through waiting to feel confident] | correct: Through repetition and action
+4. Which is a pre-professional signal rather than a student-mode behavior? | [Apologizing before speaking | Waiting for perfect clarity | Proactive clarity and closing loops | Doing the minimum unless asked] | correct: Proactive clarity and closing loops
 
 ---
 
@@ -102,10 +102,10 @@ Purpose is not a perfect answer, a dream job, or a guaranteed path. Purpose is a
 - I no longer feel pressured to match someone else's path
 
 ### quiz
-1. What is purpose best understood as, according to the module? | [A dream job, A guaranteed path, A filter for decisions, A 10-year plan] | correct: A filter for decisions
-2. What is the time horizon purpose is meant to guide? | [The next 12–18 months, The next 10 years, Your entire life, This semester only] | correct: The next 12–18 months
-3. Which is a sign of "fake purpose"? | [Adaptive direction, Choosing a path on salary alone, A clear theme, Evaluating fit] | correct: Choosing a path on salary alone
-4. The Purpose Builder combines what three elements? | [Salary, title, location, What you care about + how you show up + who you impact, GPA, major, school, Skills, experience, network] | correct: What you care about + how you show up + who you impact
+1. What is purpose best understood as, according to the module? | [A dream job | A guaranteed path | A filter for decisions | A 10-year plan] | correct: A filter for decisions
+2. What is the time horizon purpose is meant to guide? | [The next 12–18 months | The next 10 years | Your entire life | This semester only] | correct: The next 12–18 months
+3. Which is a sign of "fake purpose"? | [Adaptive direction | Choosing a path on salary alone | A clear theme | Evaluating fit] | correct: Choosing a path on salary alone
+4. The Purpose Builder combines what three elements? | [Salary, title, location | What you care about + how you show up + who you impact | GPA, major, school | Skills, experience, network] | correct: What you care about + how you show up + who you impact
 
 ---
 
@@ -143,10 +143,10 @@ A major early-career myth is "Confidence comes after you succeed." That's wrong.
 - I can explain belonging as a decision, not a feeling
 
 ### quiz
-1. According to the module, how is confidence generated? | [Through success first, Through action and reps, Through natural personality, Through getting a title] | correct: Through action and reps
-2. Belonging is described as what? | [A feeling you wait for, A decision you make, Something others grant you, A personality trait] | correct: A decision you make
-3. Against whom should you measure your progress? | [Your most successful peer, Industry leaders, Who you were last week, Your classmates] | correct: Who you were last week
-4. What are the 3 Sources of Early Confidence? | [Talent, luck, timing, Reps, wins, identity, Money, brand, network, Grades, awards, titles] | correct: Reps, wins, identity
+1. According to the module, how is confidence generated? | [Through success first | Through action and reps | Through natural personality | Through getting a title] | correct: Through action and reps
+2. Belonging is described as what? | [A feeling you wait for | A decision you make | Something others grant you | A personality trait] | correct: A decision you make
+3. Against whom should you measure your progress? | [Your most successful peer | Industry leaders | Who you were last week | Your classmates] | correct: Who you were last week
+4. What are the 3 Sources of Early Confidence? | [Talent, luck, timing | Reps, wins, identity | Money, brand, network | Grades, awards, titles] | correct: Reps, wins, identity
 
 ---
 
@@ -186,10 +186,10 @@ Having the right identity, purpose, and confidence won't matter if your packagin
 - My digital presence feels closer to "pre-professional" than "student"
 
 ### quiz
-1. What does a strong resume signal versus a weak one? | ["I participated" vs "I contributed", More words vs fewer words, Experience vs no experience, GPA vs no GPA] | correct: "I participated" vs "I contributed" (reverse: strong = "I contributed")
-2. What does STAR stand for in bullet writing? | [Situation, Task, Action, Result, Skills, Tasks, Awards, References, Story, Theme, Angle, Result, Summary, Tone, Action, Recap] | correct: Situation, Task, Action, Result
-3. According to the module, what is LinkedIn often the first place someone decides? | [Your salary, Whether to talk to you / bet on you, Your GPA, Your major] | correct: Whether to talk to you / bet on you
-4. When should you include GPA on your resume? | [Always, Never, If above 3.3, Only if asked] | correct: If above 3.3
+1. What does a strong resume signal versus a weak one? | ["I contributed" vs "I participated" | More words vs fewer words | Experience vs no experience | GPA vs no GPA] | correct: "I contributed" vs "I participated"
+2. What does STAR stand for in bullet writing? | [Situation, Task, Action, Result | Skills, Tasks, Awards, References | Story, Theme, Angle, Result | Summary, Tone, Action, Recap] | correct: Situation, Task, Action, Result
+3. According to the module, what is LinkedIn often the first place someone decides? | [Your salary | Whether to talk to you / bet on you | Your GPA | Your major] | correct: Whether to talk to you / bet on you
+4. When should you include GPA on your resume? | [Always | Never | If above 3.3 | Only if asked] | correct: If above 3.3
 
 ---
 
@@ -228,10 +228,10 @@ Now you must be seen. Your online presence is your first public proof of who you
 - I believe visibility is a skill, not a personality type
 
 ### quiz
-1. What is a "win" evidence of? | [Talent, Ownership, responsibility, reliability, growth, A high GPA, Connections] | correct: Ownership, responsibility, reliability, growth
-2. What are the 4 Types of Wins you can post? | [Execution, Learning, Community, Professional Development, Big, medium, small, micro, Work, school, social, personal, Posts, comments, articles, DMs] | correct: Execution, Learning, Community, Professional Development
-3. According to the module, visibility is described as what? | [Bragging, Clout-chasing, Signaling momentum, A personality type] | correct: Signaling momentum
-4. In the Visibility Flywheel, what comes right after doing a small win? | [Attract opportunities, Document it, Be consistent, Repeat] | correct: Document it
+1. What is a "win" evidence of? | [Building a large professional network | Ownership, responsibility, reliability, growth | Securing an executive board position | Ranking near the top of your class] | correct: Ownership, responsibility, reliability, growth
+2. What are the 4 Types of Wins you can post? | [Execution, Learning, Community, Professional Development | Big, medium, small, micro | Work, school, social, personal | Posts, comments, articles, DMs] | correct: Execution, Learning, Community, Professional Development
+3. According to the module, visibility is described as what? | [Bragging | Clout-chasing | Signaling momentum | A personality type] | correct: Signaling momentum
+4. In the Visibility Flywheel, what comes right after doing a small win? | [Attract opportunities | Document it | Be consistent | Repeat] | correct: Document it
 
 ---
 
@@ -277,10 +277,10 @@ How you communicate determines whether people take you seriously. Before skills 
 - I can apply the One-Scroll Rule to emails and outreach
 
 ### quiz
-1. What does "measured > verbose" mean in this module? | [Talk more to sound smart, Concise communication beats talking too much, Measure your words by length, Verbose is professional] | correct: Concise communication beats talking too much
-2. What are the three parts of the Clean Update? | [Context, Progress, Next Step, Intro, Body, Conclusion, Who, What, When, Problem, Solution, Result] | correct: Context, Progress, Next Step
-3. What is the One-Scroll Rule? | [Scroll once before sending, Your message should fit one phone screen, Read it once, Send within one scroll of time] | correct: Your message should fit one phone screen
-4. What percentage of your impression is tone, according to the module? | [50%, 80%, 100%, 20%] | correct: 80%
+1. What does "measured > verbose" mean in this module? | [Talk more to sound smart | Concise communication beats talking too much | Measure your words by length | Verbose is professional] | correct: Concise communication beats talking too much
+2. What are the three parts of the Clean Update? | [Context, Progress, Next Step | Intro, Body, Conclusion | Who, What, When | Problem, Solution, Result] | correct: Context, Progress, Next Step
+3. What is the One-Scroll Rule? | [Scroll once before sending | Your message should fit one phone screen | Read it once | Send within one scroll of time] | correct: Your message should fit one phone screen
+4. What percentage of your impression is tone, according to the module? | [50% | 80% | 100% | 20%] | correct: 80%
 
 ---
 
@@ -319,10 +319,10 @@ Most students think an interview begins when the Zoom call starts. Wrong. It sta
 - I understand that interviews start long before the interview
 
 ### quiz
-1. When does an interview actually start? | [When the Zoom call starts, The moment someone forms an impression of you, When you submit your resume, When you shake hands] | correct: The moment someone forms an impression of you
-2. What does TMAY stand for in this module? | [Tell Me About Yesterday, Tell Me About Yourself, Talk More About You, Total Momentum And Yield] | correct: Tell Me About Yourself
-3. In STAR, where do most students fail? | [Too much on Action, Too little on Action and Result, Too little on Situation, Too much on Result] | correct: Too little on Action and Result
-4. What is the silent question behind every interview? | ["Are they qualified?", "Will they make me look dumb if I recommend them?", "Do they have a degree?", "Can they start now?"] | correct: "Will they make me look dumb if I recommend them?"
+1. When does an interview actually start? | [When the Zoom call starts | The moment someone forms an impression of you | When you submit your resume | When you shake hands] | correct: The moment someone forms an impression of you
+2. What does TMAY stand for in this module? | [Tell Me About Yesterday | Tell Me About Yourself | Talk More About You | Total Momentum And Yield] | correct: Tell Me About Yourself
+3. In STAR, where do most students fail? | [Too much on Action | Too little on Action and Result | Too little on Situation | Too much on Result] | correct: Too little on Action and Result
+4. What is the silent question behind every interview? | ["Are they qualified?" | "Will they make me look dumb if I recommend them?" | "Do they have a degree?" | "Can they start now?"] | correct: "Will they make me look dumb if I recommend them?"
 
 ---
 
@@ -359,10 +359,10 @@ Now you need people. Career momentum doesn't come from job boards — it comes f
 - I know what positive social credit behaviors look like
 
 ### quiz
-1. Where does real career momentum come from, according to the module? | [Job boards, Other humans choosing to help you, Cold applications, A strong resume alone] | correct: Other humans choosing to help you
-2. Who are Tier 1 "Near-Peer Accelerators"? | [Professors and deans, Seniors, recent grads, and students with offers, Recruiters and alumni, Career center staff] | correct: Seniors, recent grads, and students with offers
-3. What makes your "social credit score" rise? | [Being the loudest, Adding value unprompted and following through, Asking for favors often, Networking only when you need something] | correct: Adding value unprompted and following through
-4. Why do introverts often win at social capital? | [They talk the most, They're intentional, consistent, and good listeners, They know more people, They attend more events] | correct: They're intentional, consistent, and good listeners
+1. Where does real career momentum come from, according to the module? | [Job boards | Other humans choosing to help you | Cold applications | A strong resume alone] | correct: Other humans choosing to help you
+2. Who are Tier 1 "Near-Peer Accelerators"? | [Professors and deans | Seniors, recent grads, and students with offers | Recruiters and alumni | Career center staff] | correct: Seniors, recent grads, and students with offers
+3. What makes your "social credit score" rise? | [Being the loudest | Adding value unprompted and following through | Asking for favors often | Networking only when you need something] | correct: Adding value unprompted and following through
+4. Why do introverts often win at social capital? | [People are naturally drawn to them | They're intentional, consistent, and good listeners | They understand hiring psychology better | They attend more networking events] | correct: They're intentional, consistent, and good listeners
 
 ---
 
@@ -400,10 +400,10 @@ Networking is a system, not a personality trait. Students think networking is be
 - I understand that consistency > charisma
 
 ### quiz
-1. Networking is best described as what? | [A personality trait, A system of consistency + intentionality + visibility, Cold emailing, Being charismatic] | correct: A system of consistency + intentionality + visibility
-2. What are the 3 filters for identifying the right people? | [Proximity, Credibility, Chemistry, Status, Money, Power, Age, Title, Company, GPA, School, Major] | correct: Proximity, Credibility, Chemistry
-3. What does "being outside" actually mean? | [Dominating conversations, Showing up consistently and being a familiar face, Asking many questions at panels, Trying to impress] | correct: Showing up consistently and being a familiar face
-4. What is the recommended cadence for Tier 3 (professionals)? | [Weekly, Every 3–4 weeks, Quarterly, Daily] | correct: Quarterly
+1. Networking is best described as what? | [A personality trait | A system of consistency + intentionality + visibility | Cold emailing | Being charismatic] | correct: A system of consistency + intentionality + visibility
+2. What are the 3 filters for identifying the right people? | [Proximity, Credibility, Chemistry | Status, Money, Power | Age, Title, Company | GPA, School, Major] | correct: Proximity, Credibility, Chemistry
+3. What does "being outside" actually mean? | [Dominating conversations | Showing up consistently and being a familiar face | Asking many questions at panels | Trying to impress] | correct: Showing up consistently and being a familiar face
+4. What is the recommended cadence for Tier 3 (professionals)? | [Weekly | Every 3–4 weeks | Quarterly | Daily] | correct: Quarterly
 
 ---
 
@@ -444,10 +444,10 @@ This is the moment where everything starts to get real. Pillar 1 helped you defi
 - I understand that 3–4 star roles are a win
 
 ### quiz
-1. What is the realistic goal when evaluating opportunities? | [Only pursue 5-star roles, Get 3 of the 5 fit metrics right, Maximize salary, Chase the biggest brand] | correct: Get 3 of the 5 fit metrics right
-2. What are the 5 Fit Metrics? | [Salary, title, location, brand, hours, Manager quality, skill development, learning velocity, environment, brand/trajectory, GPA, school, major, network, luck, Prestige, pay, perks, people, place] | correct: Manager quality, skill development, learning velocity, environment, brand/trajectory
-3. What does this program teach instead of prestige? | [Progress, Popularity, Perfection, Pay] | correct: Progress
-4. A role rated 1-star is described as what? | [A solid fit, A stepping stone, A resume trap to avoid, A gift] | correct: A resume trap to avoid
+1. What is the realistic goal when evaluating opportunities? | [Only pursue 5-star roles | Get 3 of the 5 fit metrics right | Maximize salary | Chase the biggest brand] | correct: Get 3 of the 5 fit metrics right
+2. What are the 5 Fit Metrics? | [Salary, title, location, brand, hours | Manager quality, skill development, learning velocity, environment, brand/trajectory | GPA, school, major, network, luck | Prestige, pay, perks, people, place] | correct: Manager quality, skill development, learning velocity, environment, brand/trajectory
+3. What does this program teach instead of prestige? | [Progress | Popularity | Perfection | Pay] | correct: Progress
+4. A role rated 1-star is described as what? | [A solid fit | A stepping stone | A resume trap to avoid | A gift] | correct: A resume trap to avoid
 
 ---
 
@@ -484,10 +484,10 @@ Everything you've built — identity, purpose, confidence, communication, social
 - I am prepared to convert an internship into a full-time offer
 
 ### quiz
-1. How do employers actually see an internship? | [A casual learning experience, A 10-week audition for future trust, A resume filler, A trial with no stakes] | correct: A 10-week audition for future trust
-2. What six qualities create the "rising star narrative"? | [Coachability, initiative, communication, reliability, team compatibility, learning velocity, GPA, prestige, connections, money, luck, timing, Speed, talent, charisma, looks, confidence, humor, Hours worked, tasks done, meetings attended, emails sent, awards, titles] | correct: Coachability, initiative, communication, reliability, team compatibility, learning velocity
-3. What is your job during the internship, according to the module? | [To be perfect, To be coachable, consistent, and visible, To make friends, To do the minimum] | correct: To be coachable, consistent, and visible
-4. When handling ambiguity, what is the first step? | [Start working immediately, Clarify the goal, Ask for more time, Wait for instructions] | correct: Clarify the goal
+1. How do employers actually see an internship? | [A casual learning experience | A 10-week audition for future trust | A resume filler | A trial with no stakes] | correct: A 10-week audition for future trust
+2. What six qualities create the "rising star narrative"? | [Coachability, initiative, communication, reliability, team compatibility, learning velocity | GPA, prestige, connections, money, luck, timing | Speed, talent, charisma, looks, confidence, humor | Hours worked, tasks done, meetings attended, emails sent, awards, titles] | correct: Coachability, initiative, communication, reliability, team compatibility, learning velocity
+3. What is your job during the internship, according to the module? | [To fulfill the job description exactly as written | To be coachable, consistent, and visible | To build a network across the company | To prove how much you already know] | correct: To be coachable, consistent, and visible
+4. When handling ambiguity, what is the first step? | [Start working immediately | Clarify the goal | Ask for more time | Wait for instructions] | correct: Clarify the goal
 
 ---
 
@@ -529,10 +529,10 @@ Everything you've built has been preparation. This module is where preparation b
 - I feel prepared to operate inside real professional systems
 
 ### quiz
-1. At this stage, what are you evaluated on? | [Your potential, How you operate inside real systems, Your GPA, Your resume] | correct: How you operate inside real systems
-2. What is the real evaluation in the first 90 days? | [Effort, Self-management, Intelligence, Hours worked] | correct: Self-management
-3. What is the goal level on the Ownership Ladder in the first 90 days? | [Levels 1–2, Levels 3–4, Level 5 only, Level 1] | correct: Levels 3–4
-4. What are the four phases of the first 90 days? | [Observe, stabilize, contribute, capture value, Learn, earn, return, depart, Watch, wait, work, win, Plan, do, check, act] | correct: Observe, stabilize, contribute, capture value
+1. At this stage, what are you evaluated on? | [Your potential | How you operate inside real systems | Your GPA | Your resume] | correct: How you operate inside real systems
+2. What is the real evaluation in the first 90 days? | [Effort | Self-management | Intelligence | Hours worked] | correct: Self-management
+3. What is the goal level on the Ownership Ladder in the first 90 days? | [Levels 1–2 | Levels 3–4 | Level 5 only | Level 1] | correct: Levels 3–4
+4. What are the four phases of the first 90 days? | [Observe, stabilize, contribute, capture value | Learn, earn, return, depart | Watch, wait, work, win | Plan, do, check, act] | correct: Observe, stabilize, contribute, capture value
 
 ---
 
@@ -569,10 +569,10 @@ At this stage you've built identity, purpose, confidence, communication, social 
 - I know how to apply the Opportunity Mapping filters
 
 ### quiz
-1. What does a realistic early-career win look like across the 5 factors? | [5 out of 5, 3 out of 5, 1 out of 5, 0 out of 5] | correct: 3 out of 5
-2. Which secondary factors do most students wrongly prioritize? | [Manager, skills, velocity, Salary, brand name, location, Direction, environment, fit, Culture, growth, trajectory] | correct: Salary, brand name, location
-3. In the 5 Filters, what matters more than company name? | [Salary, Manager fit (who you'll learn from), Location, Prestige] | correct: Manager fit (who you'll learn from)
-4. What three things does direction remove? | [Panic, noise, comparison, Money, time, effort, Skills, growth, options, Risk, reward, choice] | correct: Panic, noise, comparison
+1. What does a realistic early-career win look like across the 5 factors? | [5 out of 5 | 3 out of 5 | 1 out of 5 | 0 out of 5] | correct: 3 out of 5
+2. Which secondary factors do most students wrongly prioritize? | [Manager, skills, velocity | Salary, brand name, location | Direction, environment, fit | Culture, growth, trajectory] | correct: Salary, brand name, location
+3. In the 5 Filters, what matters more than company name? | [Salary | Manager fit (who you'll learn from) | Location | Prestige] | correct: Manager fit (who you'll learn from)
+4. What three things does direction remove? | [Panic, noise, comparison | Money, time, effort | Skills, growth, options | Risk, reward, choice] | correct: Panic, noise, comparison
 
 ---
 
@@ -607,7 +607,7 @@ Students think jobs come from LinkedIn postings, Handshake, career fairs, and co
 - I know how to create my own luck through consistency and visibility
 
 ### quiz
-1. Approximately what share of early-career roles are filled before being posted? | [Up to 20%, Up to 50%, Up to 70%, Up to 100%] | correct: Up to 70%
-2. What is the "strongest signal" backdoor pipeline? | [Recruiters, Near-Peer Advocates, Alumni, Job boards] | correct: Near-Peer Advocates
-3. What three silent questions does every hiring manager ask? | [Can they learn fast? Will they reduce work? Will I regret recommending them?, What's their GPA? Where did they go to school? Who do they know?, Can they start now? Will they stay? Are they cheap?, Do they fit? Are they smart? Are they nice?] | correct: Can they learn fast? Will they reduce work? Will I regret recommending them?
-4. According to the module, why is a job posting "already too late"? | [The role is filled, You're filtering against hundreds, not competing, The deadline passed, The company changed plans] | correct: You're filtering against hundreds, not competing
+1. Approximately what share of early-career roles are filled before being posted? | [Up to 20% | Up to 50% | Up to 70% | Up to 100%] | correct: Up to 70%
+2. What is the "strongest signal" backdoor pipeline? | [Recruiters | Near-Peer Advocates | Alumni | Job boards] | correct: Near-Peer Advocates
+3. What three silent questions does every hiring manager ask? | [Can they learn fast? Will they reduce work? Will I regret recommending them? | What's their GPA? Where did they go to school? Who do they know? | Can they start now? Will they stay? Are they cheap? | Do they fit? Are they smart? Are they nice?] | correct: Can they learn fast? Will they reduce work? Will I regret recommending them?
+4. According to the module, why is a job posting "already too late"? | [Recruiters stop reading applications after the first few days | You're filtering against hundreds, not competing | Applicant systems screen you out on keywords before a human sees it | The salary band is locked before the posting goes live] | correct: You're filtering against hundreds, not competing

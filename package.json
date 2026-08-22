@@ -11,7 +11,8 @@
     "lint": "eslint",
     "seed:workbook": "tsx --env-file=.env.local scripts/seed-workbook-content.ts",
     "seed:live": "tsx --env-file=.env.local scripts/seed-live-sessions.ts",
-    "test:workbook-format": "tsx --test lib/workbook-format.test.ts"
+    "test:workbook-format": "tsx --test lib/workbook-format.test.ts",
+    "test:workbook-seed": "tsx --test lib/workbook-seed-parser.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

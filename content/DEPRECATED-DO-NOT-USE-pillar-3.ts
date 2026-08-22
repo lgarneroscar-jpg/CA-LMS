@@ -1,3 +1,10 @@
+/**
+ * ⚠️ DEPRECATED — DO NOT USE. DO NOT EDIT. DO NOT SEED FROM THIS FILE.
+ * Pre-Pass-1 AI-generated approximations of the module content, superseded by
+ * workbook-content-seed.md (the real workbook). Kept only for historical
+ * reference. Seeding from this file overwrites real curriculum content.
+ * Source of truth for module bodies: `npm run seed:workbook`.
+ */
 import type { ModuleSeed } from "./types";
 
 const YOUTUBE_PLACEHOLDER = "https://www.youtube.com/watch?v=Z7dXDfqy0e8";

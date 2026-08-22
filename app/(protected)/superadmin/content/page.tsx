@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { getModuleContentStatus } from "@/lib/seed-to-db";
+import { getModuleContentStatus } from "@/lib/module-content-status";
 import { PILLARS } from "@/types/modules";
 import { Badge } from "@/components/ui/badge";
 import {

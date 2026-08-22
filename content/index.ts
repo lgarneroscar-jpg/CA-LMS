@@ -1,8 +1,8 @@
 import type { ExerciseField } from "@/types/modules";
 import type { ExerciseSeed, ModuleSeed } from "./types";
-import { PILLAR_1_MODULES } from "./pillar-1";
-import { PILLAR_2_MODULES } from "./pillar-2";
-import { PILLAR_3_MODULES } from "./pillar-3";
+import { PILLAR_1_MODULES } from "./DEPRECATED-DO-NOT-USE-pillar-1";
+import { PILLAR_2_MODULES } from "./DEPRECATED-DO-NOT-USE-pillar-2";
+import { PILLAR_3_MODULES } from "./DEPRECATED-DO-NOT-USE-pillar-3";
 import { LIVE_SESSIONS } from "./live-sessions";
 
 export type {
@@ -13,9 +13,9 @@ export type {
   LiveSessionSeed,
 } from "./types";
 
-export { PILLAR_1_MODULES } from "./pillar-1";
-export { PILLAR_2_MODULES } from "./pillar-2";
-export { PILLAR_3_MODULES } from "./pillar-3";
+export { PILLAR_1_MODULES } from "./DEPRECATED-DO-NOT-USE-pillar-1";
+export { PILLAR_2_MODULES } from "./DEPRECATED-DO-NOT-USE-pillar-2";
+export { PILLAR_3_MODULES } from "./DEPRECATED-DO-NOT-USE-pillar-3";
 export { LIVE_SESSIONS } from "./live-sessions";
 
 export const ALL_MODULES: ModuleSeed[] = [

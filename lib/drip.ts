@@ -3,6 +3,23 @@
  * Student content access is no longer gated by calendar week.
  */
 
+/** Fixed program length. Do not use to clamp getProgramWeek() — drip/end logic needs the raw value. */
+export const PROGRAM_LENGTH_WEEKS = 12;
+
+/** Clamped week for display labels only (never above program length). */
+export function getDisplayProgramWeek(currentWeek: number): number {
+  if (currentWeek <= 0) return 1;
+  return Math.min(currentWeek, PROGRAM_LENGTH_WEEKS);
+}
+
+/** Admin "Cohort Week N" / "Week N of 12" label. Past-end cohorts read as complete. */
+export function formatCohortWeekLabel(currentWeek: number): string {
+  if (currentWeek > PROGRAM_LENGTH_WEEKS) {
+    return `Week ${PROGRAM_LENGTH_WEEKS} of ${PROGRAM_LENGTH_WEEKS} · program complete`;
+  }
+  return `Week ${getDisplayProgramWeek(currentWeek)} of ${PROGRAM_LENGTH_WEEKS}`;
+}
+
 export function getProgramWeek(
   anchorDate: string | null,
   now: Date = new Date()

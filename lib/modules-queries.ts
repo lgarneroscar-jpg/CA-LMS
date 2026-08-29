@@ -1,13 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
-import {
-  firstOverviewSentence,
-  getOrderedContentModules,
-  getPillarSlug,
-  parseWorkbookContent,
-  type ModuleListRow,
-} from "@/lib/program";
-import { parseModuleNumber } from "@/lib/program-nav";
+import { firstOverviewSentence, getOrderedContentModules, getPillarSlug, parseWorkbookContent, type ModuleListRow } from "@/lib/program";
 
 /** Columns needed for lists, feeds, and navigation — excludes heavy JSON blobs. */
 export const MODULE_CATALOG_SELECT =

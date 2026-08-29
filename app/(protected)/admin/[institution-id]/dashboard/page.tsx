@@ -60,8 +60,7 @@ export default async function AdminDashboardPage({ params }: PageProps) {
             {institution?.name ?? "Institution"} Dashboard
           </h1>
           <p className="text-muted-foreground">
-            Cohort Week {analytics.currentWeek} ·{" "}
-            {analytics.allStudents.length} students
+            {analytics.cohortWeekLabel} · {analytics.allStudents.length} students
           </p>
         </div>
         <a

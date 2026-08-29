@@ -37,6 +37,7 @@ export type ParsedWorkbookModule = {
   module_code: string;
   slug: string;
   unlock_week: number;
+  order_index: number;
   overview: string;
   concepts: { heading: string; body: string }[];
   frameworks: { name: string; body: string }[];
@@ -253,6 +254,22 @@ function parseQuizLine(
   };
 }
 
+export function assertOrderIndexUniqueness(
+  modules: ParsedWorkbookModule[]
+): void {
+  const seen = new Map<string, string>();
+  for (const module of modules) {
+    const key = `${module.unlock_week}:${module.order_index}`;
+    const prior = seen.get(key);
+    if (prior) {
+      throw new Error(
+        `Duplicate (unlock_week, order_index)=(${module.unlock_week}, ${module.order_index}) for ${prior} and ${module.module_code}`
+      );
+    }
+    seen.set(key, module.module_code);
+  }
+}
+
 export function assertQuizBank(modules: ParsedWorkbookModule[]): void {
   if (modules.length !== 14) {
     throw new Error(`Expected 14 modules, parsed ${modules.length}`);
@@ -323,6 +340,18 @@ export function parseWorkbookSeedMarkdown(markdown: string): ParsedWorkbookModul
 
     const weekMatch = chunk.match(/\*\*unlock_week:\*\*\s*(\d+)/);
     const unlock_week = weekMatch ? Number(weekMatch[1]) : 1;
+    const orderMatch = chunk.match(/\*\*order_index:\*\*\s*(\d+)/);
+    if (!orderMatch) {
+      throw new Error(
+        `${codeMatch[1]}: missing **order_index:** in seed header`
+      );
+    }
+    const order_index = Number(orderMatch[1]);
+    if (!Number.isFinite(order_index) || order_index < 1) {
+      throw new Error(
+        `${codeMatch[1]}: invalid order_index "${orderMatch[1]}"`
+      );
+    }
 
     const overview = extractSection(chunk, "overview");
     const conceptsSection = extractSection(chunk, "concepts");
@@ -357,6 +386,7 @@ export function parseWorkbookSeedMarkdown(markdown: string): ParsedWorkbookModul
       module_code: codeMatch[1],
       slug: slugMatch[1],
       unlock_week,
+      order_index,
       overview,
       concepts,
       frameworks,
@@ -427,5 +457,6 @@ export function loadWorkbookSeedFromFile(
   const markdown = readFileSync(filePath, "utf8");
   const modules = parseWorkbookSeedMarkdown(markdown);
   assertQuizBank(modules);
+  assertOrderIndexUniqueness(modules);
   return modules;
 }

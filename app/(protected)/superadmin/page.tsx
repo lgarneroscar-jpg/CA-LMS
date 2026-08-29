@@ -24,7 +24,8 @@ export default async function SuperAdminPage() {
   const { count: studentCount } = await supabase
     .from("profiles")
     .select("*", { count: "exact", head: true })
-    .eq("role", "student");
+    .eq("role", "student")
+    .eq("is_demo", false);
 
   const { data: institutions } = await supabase
     .from("institutions")

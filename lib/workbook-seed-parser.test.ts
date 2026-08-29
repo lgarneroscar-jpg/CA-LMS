@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import {
+  assertOrderIndexUniqueness,
   assertQuizBank,
   loadWorkbookSeedFromFile,
   parseWorkbookSeedMarkdown,
@@ -26,7 +27,7 @@ describe("parseWorkbookSeedMarkdown quiz parsing", () => {
     const markdown = `
 ## P99 — Test Module
 **slug:** \`test-module\`
-**pillar:** 1 | **unlock_week:** 1
+**pillar:** 1 | **unlock_week:** 1 | **order_index:** 1
 
 ### overview
 Test
@@ -52,6 +53,24 @@ Test
     assert.throws(
       () => parseWorkbookSeedMarkdown(markdown),
       /P99 Q1: correct answer "Missing option" does not match any option/
+    );
+  });
+});
+
+describe("assertOrderIndexUniqueness", () => {
+  it("parses order_index from the seed and rejects duplicate week/order pairs", () => {
+    const modules = loadWorkbookSeedFromFile(SEED_PATH);
+    assert.equal(modules.find((m) => m.module_code === "P14")?.order_index, 2);
+    assert.equal(modules.find((m) => m.module_code === "P14")?.unlock_week, 9);
+    assert.equal(modules.find((m) => m.module_code === "P10")?.order_index, 1);
+
+    const markdown = readFileSync(SEED_PATH, "utf8").replace(
+      "**pillar:** 1 | **unlock_week:** 1 | **order_index:** 2",
+      "**pillar:** 1 | **unlock_week:** 1 | **order_index:** 1"
+    );
+    assert.throws(
+      () => assertOrderIndexUniqueness(parseWorkbookSeedMarkdown(markdown)),
+      /Duplicate \(unlock_week, order_index\)=\(1, 1\)/
     );
   });
 });

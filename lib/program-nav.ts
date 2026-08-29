@@ -21,23 +21,42 @@ export type ProgramNavPillar = {
   modules: ProgramNavModule[];
 };
 
-/** Numeric P-code from module_code (e.g. P14 → 14) for ascending sort. */
+/** Numeric P-code from module_code (e.g. P14 → 14) — final tie-break only. */
 export function parseModuleNumber(moduleCode: string): number {
   const match = moduleCode.match(/^P(\d+)$/i);
   return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
 }
 
+type CurriculumSortable = {
+  unlock_week?: number | null;
+  order_index?: number | null;
+  module_code: string;
+};
+
+/**
+ * Curriculum sequence: unlock_week, then order_index, then P-number as tie-break.
+ * Module numbers do not track the calendar (P14 is week 9; P11/P12 are week 12).
+ */
+export function compareCurriculumOrder(
+  a: CurriculumSortable,
+  b: CurriculumSortable
+): number {
+  return (
+    (a.unlock_week ?? 1) - (b.unlock_week ?? 1) ||
+    (a.order_index ?? 0) - (b.order_index ?? 0) ||
+    parseModuleNumber(a.module_code) - parseModuleNumber(b.module_code)
+  );
+}
+
 /**
  * Groups catalog modules by pillar for navigation.
- * Uses the same pillar slugs/labels as the Program page; modules sort by P-number ASC.
+ * Uses the same pillar slugs/labels as the Program page; modules sort by curriculum week.
  */
 export function buildProgramNavByPillar(
   modules: ModuleListRow[],
   progressByModuleId?: Map<string, { is_complete: boolean }>
 ): ProgramNavPillar[] {
-  const ordered = [...modules].sort(
-    (a, b) => parseModuleNumber(a.module_code) - parseModuleNumber(b.module_code)
-  );
+  const ordered = [...modules].sort(compareCurriculumOrder);
   const nextIncompleteId = ordered.find(
     (m) => !progressByModuleId?.get(m.id)?.is_complete
   )?.id;
@@ -47,10 +66,7 @@ export function buildProgramNavByPillar(
 
     const pillarModules = modules
       .filter((m) => m.pillar === pillar)
-      .sort(
-        (a, b) =>
-          parseModuleNumber(a.module_code) - parseModuleNumber(b.module_code)
-      )
+      .sort(compareCurriculumOrder)
       .map((m) => {
         const complete = Boolean(progressByModuleId?.get(m.id)?.is_complete);
         const status: ProgramNavModule["status"] = complete

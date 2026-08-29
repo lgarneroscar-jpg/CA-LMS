@@ -7,6 +7,7 @@ This file is the canonical content for re-seeding the CA-LMS. Every concept, fra
 
 Each module has these structured sections:
 - **slug** — the existing URL slug (do not change)
+- **pillar** / **unlock_week** / **order_index** — curriculum placement; within a week, ascending order_index (P-number order). `(unlock_week, order_index)` must be unique across content modules.
 - **overview** — module intro / why it matters
 - **concepts[]** — core concepts, each `{heading, body}`
 - **frameworks[]** — named frameworks, each `{name, body}` (render as callout cards)
@@ -28,7 +29,7 @@ Pillar narrative: "You Cannot Outperform a Weak Identity." Identity gives direct
 
 ## P1 — Student → Pre-Professional Identity Shift
 **slug:** `student-pre-professional-identity-shift`
-**pillar:** 1 | **unlock_week:** 1
+**pillar:** 1 | **unlock_week:** 1 | **order_index:** 1
 
 ### overview
 Most students think careers start with skills. They don't — they start with identity. Long before anyone reviews your résumé, people form judgments based on how you speak, follow up, show up, and carry responsibility. The common myth is "Once I get the role, I'll start acting like a professional." That's backwards. You act like a professional first, then opportunities follow. This module closes the gap between student mode and pre-professional mode through behavior, not personality.
@@ -69,7 +70,7 @@ Most students think careers start with skills. They don't — they start with id
 
 ## P2 — Purpose & Your Why
 **slug:** `purpose-and-your-why`
-**pillar:** 1 | **unlock_week:** 1
+**pillar:** 1 | **unlock_week:** 1 | **order_index:** 2
 
 ### overview
 Purpose is not a perfect answer, a dream job, or a guaranteed path. Purpose is a filter — a usable decision tool for the next 12–18 months. It turns "What should I do?" into "What's the right next step?" Most students think purpose means knowing their dream job or having a 10-year plan. Real purpose is adaptive direction, not a fixed destination.
@@ -111,7 +112,7 @@ Purpose is not a perfect answer, a dream job, or a guaranteed path. Purpose is a
 
 ## P3 — Confidence & Belonging
 **slug:** `confidence-and-belonging`
-**pillar:** 1 | **unlock_week:** 1
+**pillar:** 1 | **unlock_week:** 1 | **order_index:** 3
 
 ### overview
 A major early-career myth is "Confidence comes after you succeed." That's wrong. Students wait for permission to feel confident — an internship, an offer, a title. But confidence almost never arrives that way. Confidence is generated through action. Your job early is to stack reps and small wins until your presence becomes believable to you and legible to others. You play the game as if you already belong, then the evidence catches up.
@@ -152,7 +153,7 @@ A major early-career myth is "Confidence comes after you succeed." That's wrong.
 
 ## P4 — Student Resume + Early LinkedIn Kit
 **slug:** `student-resume-early-linkedin-kit`
-**pillar:** 1 | **unlock_week:** 3
+**pillar:** 1 | **unlock_week:** 3 | **order_index:** 1
 
 ### overview
 Having the right identity, purpose, and confidence won't matter if your packaging tells a different story. Students often believe they can "win in spite of" their resume or LinkedIn. They can't. Your resume and LinkedIn are the first (and sometimes only) places your identity becomes visible. Professionals decide your potential by how you package your past. Your goal is to package your story so it reads as credible even with limited experience.
@@ -195,7 +196,7 @@ Having the right identity, purpose, and confidence won't matter if your packagin
 
 ## P5 — Online Presence & Wins Portfolio
 **slug:** `online-presence-wins-portfolio`
-**pillar:** 1 | **unlock_week:** 3
+**pillar:** 1 | **unlock_week:** 3 | **order_index:** 2
 
 ### overview
 Now you must be seen. Your online presence is your first public proof of who you are becoming. This is where early momentum becomes visible and people begin to notice patterns: "They always show up." "They put thought into their work." "They're growing." Visibility isn't about clout — it's about momentum you can prove. Your wins portfolio is the evidence behind the identity you are building.
@@ -243,7 +244,7 @@ Pillar narrative: "Your Communication Is Your Reputation." Communication turns i
 
 ## P6 — Communication That Builds Real Professional Relationships
 **slug:** `communication-that-builds-real-professional-relationships`
-**pillar:** 2 | **unlock_week:** 5
+**pillar:** 2 | **unlock_week:** 5 | **order_index:** 1
 
 ### overview
 How you communicate determines whether people take you seriously. Before skills matter, communication decides if people even want to work with you. Professionals judge communication everywhere — networking events, office hours, org meetings, classroom discussions, emails, coffee chats, career fairs. Communication is not about talent. It's about discipline, clarity, and intention.
@@ -286,7 +287,7 @@ How you communicate determines whether people take you seriously. Before skills 
 
 ## P7 — Interview & Review Essentials
 **slug:** `interview-review-essentials`
-**pillar:** 2 | **unlock_week:** 5
+**pillar:** 2 | **unlock_week:** 5 | **order_index:** 2
 
 ### overview
 Most students think an interview begins when the Zoom call starts. Wrong. It starts the moment someone forms an impression of you — career fairs, office hours, panels, coffee chats, intro emails, even LinkedIn comments. By the time you sit in a real interview, someone has already evaluated your maturity, clarity, confidence, preparedness, emotional intelligence, and ability to communicate.
@@ -328,7 +329,7 @@ Most students think an interview begins when the Zoom call starts. Wrong. It sta
 
 ## P8 — Social Capital Foundations for Students
 **slug:** `social-capital-foundations-for-students`
-**pillar:** 2 | **unlock_week:** 7
+**pillar:** 2 | **unlock_week:** 7 | **order_index:** 1
 
 ### overview
 Now you need people. Career momentum doesn't come from job boards — it comes from other humans choosing to help you. Especially for students at non-target schools, social capital is the great equalizer. It compensates for limited exposure, limited recruiting pipelines, and limited "name brand" halo effect. Your résumé might get ignored, your application might never be opened — but if someone says your name behind closed doors, everything changes.
@@ -368,7 +369,7 @@ Now you need people. Career momentum doesn't come from job boards — it comes f
 
 ## P9 — Networking Systems & Relationship Capital
 **slug:** `networking-systems-relationship-capital`
-**pillar:** 2 | **unlock_week:** 7
+**pillar:** 2 | **unlock_week:** 7 | **order_index:** 2
 
 ### overview
 Networking is a system, not a personality trait. Students think networking is being extroverted, charismatic, talking a lot, working rooms, or cold emails. All wrong. Networking is: consistency + intentionality + visibility → over time → creates opportunity. You don't need to be the loudest voice in the room. You just need to be the one who shows up consistently and adds value. Introverts often outperform extroverts because they're more intentional.
@@ -415,7 +416,7 @@ Pillar narrative: "You Built the Foundation. Now You Must Deliver." If Pillars 1
 
 ## P10 — Recruiting Strategy Playbook
 **slug:** `recruiting-strategy-playbook`
-**pillar:** 3 | **unlock_week:** 9
+**pillar:** 3 | **unlock_week:** 9 | **order_index:** 1
 
 ### overview
 This is the moment where everything starts to get real. Pillar 1 helped you define who you are; Pillar 2 helped you express it and build people around it. Now opportunities appear, conversations get real, direction starts to matter, and decisions carry weight. Recruiting is not simply applying to jobs — it's strategic positioning + pattern recognition + momentum management. You are not just landing a job; you are constructing the opening chapter of your career.
@@ -453,7 +454,7 @@ This is the moment where everything starts to get real. Pillar 1 helped you defi
 
 ## P11 — Internship Momentum & Conversion
 **slug:** `internship-momentum-conversion`
-**pillar:** 3 | **unlock_week:** 12
+**pillar:** 3 | **unlock_week:** 12 | **order_index:** 1
 
 ### overview
 Everything you've built — identity, purpose, confidence, communication, social capital — now enters a real environment. This is where your preparation meets opportunity and people start forming judgments that matter. It doesn't matter whether your internship is Fortune 500, mid-market, small company, or nonprofit — every environment is a stage to demonstrate maturity, professionalism, consistency, coachability, initiative, and reliability. Treat the internship as an audition, not a temporary job. You're there to become someone worth betting on.
@@ -493,7 +494,7 @@ Everything you've built — identity, purpose, confidence, communication, social
 
 ## P12 — The First 90-Day Professional Playbook
 **slug:** `the-first-90-day-professional-playbook`
-**pillar:** 3 | **unlock_week:** 12
+**pillar:** 3 | **unlock_week:** 12 | **order_index:** 2
 
 ### overview
 Everything you've built has been preparation. This module is where preparation becomes performance. The first 90 days of any internship, job, or serious leadership role quietly determine how quickly people trust you, whether managers advocate for you, whether peers respect you, whether you're given stretch opportunities, and whether a return offer is considered. At this stage, you are no longer evaluated on potential — you are evaluated on how you operate inside real systems.
@@ -538,7 +539,7 @@ Everything you've built has been preparation. This module is where preparation b
 
 ## P13 — Opportunity Mapping & Direction Setting
 **slug:** `opportunity-mapping-direction-setting`
-**pillar:** 3 | **unlock_week:** 11
+**pillar:** 3 | **unlock_week:** 11 | **order_index:** 1
 
 ### overview
 At this stage you've built identity, purpose, confidence, communication, social capital, recruiting strategy, internship momentum, and professional thinking. Now you need direction — not a perfect plan, not a five-year prophecy, but a clear frame for evaluating opportunities. The biggest reason students struggle is that they make decisions emotionally, reactively, and comparatively, not strategically. Without structure you get paralysis, comparison, FOMO, and anxiety. Direction removes panic. Clarity removes noise. Structure removes comparison. Your goal is not perfection — it's alignment.
@@ -578,7 +579,7 @@ At this stage you've built identity, purpose, confidence, communication, social 
 
 ## P14 — Hidden Job Market Strategy
 **slug:** `hidden-job-market-strategy`
-**pillar:** 3 | **unlock_week:** 9
+**pillar:** 3 | **unlock_week:** 9 | **order_index:** 2
 
 ### overview
 Students think jobs come from LinkedIn postings, Handshake, career fairs, and company websites. The reality: up to 70% of early-career roles are filled quietly, before they're ever posted — through internal referrals, managers who need help soon, returning interns, someone leaving unexpectedly, a recruiter remembering your name, a near-peer mentioning you in a meeting. These are "weak signal" opportunities, invisible unless you know how to catch them. This strategy is often the difference-maker for non-target students.

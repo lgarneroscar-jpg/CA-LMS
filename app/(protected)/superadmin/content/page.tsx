@@ -1,7 +1,10 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { getModuleContentStatus } from "@/lib/module-content-status";
+import {
+  getModuleContentStatus,
+  QUIZ_QUESTIONS_PER_MODULE,
+} from "@/lib/module-content-status";
 import { PILLARS } from "@/types/modules";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -114,7 +117,7 @@ export default async function ContentAdminPage() {
                         <StatusDot ok={status.hasWorkbook} label="Workbook" />
                         <StatusDot ok={status.hasExercises} label="Exercises" />
                         <StatusDot
-                          ok={status.quizCount >= 5}
+                          ok={status.quizCount >= QUIZ_QUESTIONS_PER_MODULE}
                           label={`Quiz (${status.quizCount})`}
                         />
                       </div>

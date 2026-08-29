@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
-import { getProgramWeek } from "@/lib/drip";
+import {
+  formatCohortWeekLabel,
+  getDisplayProgramWeek,
+  getProgramWeek,
+  PROGRAM_LENGTH_WEEKS,
+} from "@/lib/drip";
 import { getPaceStatus } from "@/lib/pace";
 import { getProgressWeek, type ProgressModuleRef } from "@/lib/program";
 
@@ -35,7 +40,14 @@ export type CohortStudentMetrics = {
 };
 
 export type CohortAnalytics = {
+  /** Raw calendar week from cohort start — may exceed program length. */
   currentWeek: number;
+  /** Clamped to PROGRAM_LENGTH_WEEKS for labels. */
+  displayWeek: number;
+  /** True when currentWeek is past the program end. */
+  programComplete: boolean;
+  /** Label for "Cohort Week N" / "Week N of 12 · program complete". */
+  cohortWeekLabel: string;
   targetWeek: number;
   pacePercent: number;
   overallCompletionRate: number;
@@ -87,22 +99,34 @@ function getStudentProgressWeek(
   return getProgressWeek(modules, progressMap);
 }
 
+function failQuery(label: string, message: string): never {
+  console.error(`[cohort-analytics] ${label}: ${message}`);
+  throw new Error(`cohort-analytics ${label}: ${message}`);
+}
+
 export async function getCohortAnalytics(
   supabase: DbClient,
   institutionId: string
 ): Promise<CohortAnalytics | null> {
-  const { data: institution } = await supabase
+  const { data: institution, error: institutionError } = await supabase
     .from("institutions")
     .select("cohort_start_date")
     .eq("id", institutionId)
     .single();
 
+  if (institutionError) {
+    failQuery("institutions", institutionError.message);
+  }
   if (!institution) return null;
 
   const currentWeek = getProgramWeek(institution.cohort_start_date);
-  const targetWeek = Math.max(1, currentWeek);
+  const displayWeek = getDisplayProgramWeek(currentWeek);
+  const programComplete = currentWeek > PROGRAM_LENGTH_WEEKS;
+  const cohortWeekLabel = formatCohortWeekLabel(currentWeek);
+  // Clamp for clarity; unlock_week max is 12 so pace math is unchanged either way.
+  const targetWeek = Math.min(Math.max(1, currentWeek), PROGRAM_LENGTH_WEEKS);
 
-  const { data: students } = await supabase
+  const { data: students, error: studentsError } = await supabase
     .from("profiles")
     .select(
       "id, full_name, xp, rank, last_login, last_active_date, diagnostic_complete, program_started_at"
@@ -110,22 +134,35 @@ export async function getCohortAnalytics(
     .eq("institution_id", institutionId)
     .eq("role", "student");
 
+  if (studentsError) {
+    failQuery("students", studentsError.message);
+  }
+
   const studentIds = (students ?? []).map((s) => s.id);
   const cohortSize = studentIds.length || 1;
+  const emptyStudentFilter = ["00000000-0000-0000-0000-000000000000"];
 
-  const { data: modules } = await supabase
+  const { data: modules, error: modulesError } = await supabase
     .from("modules")
     .select("id, module_code, title, unlock_week, is_live_session, order_index")
     .eq("is_live_session", false)
     .order("unlock_week")
     .order("order_index");
 
-  const { data: liveSessionRows } = await supabase
+  if (modulesError) {
+    failQuery("content modules", modulesError.message);
+  }
+
+  const { data: liveSessionRows, error: liveSessionsError } = await supabase
     .from("modules")
     .select("id, module_code, title, unlock_week, order_index")
     .eq("is_live_session", true)
     .order("unlock_week")
     .order("order_index");
+
+  if (liveSessionsError) {
+    failQuery("live sessions", liveSessionsError.message);
+  }
 
   const liveSessions: LiveSessionRef[] = [...(liveSessionRows ?? [])]
     .sort(
@@ -141,14 +178,22 @@ export async function getCohortAnalytics(
       unlock_week: row.unlock_week ?? 1,
     }));
 
-  const { data: progress } = await supabase
+  const { data: progress, error: progressError } = await supabase
     .from("student_progress")
     .select("student_id, module_id, is_complete, quiz_score")
-    .in("student_id", studentIds.length ? studentIds : ["00000000-0000-0000-0000-000000000000"]);
+    .in("student_id", studentIds.length ? studentIds : emptyStudentFilter);
 
-  const { data: quizCounts } = await supabase
+  if (progressError) {
+    failQuery("student_progress", progressError.message);
+  }
+
+  const { data: quizCounts, error: quizCountsError } = await supabase
     .from("quiz_questions")
     .select("module_id");
+
+  if (quizCountsError) {
+    failQuery("quiz_questions", quizCountsError.message);
+  }
 
   const quizTotalByModule = new Map<string, number>();
   (quizCounts ?? []).forEach((q) => {
@@ -158,21 +203,29 @@ export async function getCohortAnalytics(
     );
   });
 
-  const { data: flags } = await supabase
+  const { data: flags, error: flagsError } = await supabase
     .from("flags")
     .select("student_id, note")
-    .in("student_id", studentIds.length ? studentIds : ["00000000-0000-0000-0000-000000000000"]);
+    .in("student_id", studentIds.length ? studentIds : emptyStudentFilter);
+
+  if (flagsError) {
+    failQuery("flags", flagsError.message);
+  }
 
   const flagByStudent = new Map(
     (flags ?? []).map((f) => [f.student_id, f.note])
   );
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: recentLogins } = await supabase
+  const { data: recentLogins, error: recentLoginsError } = await supabase
     .from("login_events")
     .select("user_id")
-    .in("user_id", studentIds.length ? studentIds : ["00000000-0000-0000-0000-000000000000"])
+    .in("user_id", studentIds.length ? studentIds : emptyStudentFilter)
     .gte("logged_in_at", sevenDaysAgo);
+
+  if (recentLoginsError) {
+    failQuery("login_events", recentLoginsError.message);
+  }
 
   const activeUsers = new Set((recentLogins ?? []).map((l) => l.user_id));
 
@@ -320,6 +373,9 @@ export async function getCohortAnalytics(
 
   return {
     currentWeek,
+    displayWeek,
+    programComplete,
+    cohortWeekLabel,
     targetWeek,
     pacePercent,
     overallCompletionRate,

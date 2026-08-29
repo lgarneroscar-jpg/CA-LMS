@@ -37,6 +37,7 @@ async function main() {
       .from("modules")
       .update({
         unlock_week: module.unlock_week,
+        order_index: module.order_index,
         workbook_content,
         exercises,
       })
@@ -66,7 +67,7 @@ async function main() {
 
     const overviewFirstLine = module.overview.split(/(?<=[.!?])\s+/)[0] ?? module.overview;
     console.log(
-      `${existing.slug} (${module.module_code}) week ${module.unlock_week}\n  overview: ${overviewFirstLine.slice(0, 90)}${overviewFirstLine.length > 90 ? "…" : ""}\n  frameworks: ${module.frameworks.length} | exercises: ${module.exercises.length} | quiz: ${module.quiz.length} | completion_check: ${module.completion_check.length}`
+      `${existing.slug} (${module.module_code}) week ${module.unlock_week} order ${module.order_index}\n  overview: ${overviewFirstLine.slice(0, 90)}${overviewFirstLine.length > 90 ? "…" : ""}\n  frameworks: ${module.frameworks.length} | exercises: ${module.exercises.length} | quiz: ${module.quiz.length} | completion_check: ${module.completion_check.length}`
     );
   }
 

@@ -8,7 +8,7 @@ import {
   getPillarWeeks,
   getProgressWeek,
 } from "@/lib/program";
-import { parseModuleNumber } from "@/lib/program-nav";
+import { compareCurriculumOrder } from "@/lib/program-nav";
 import {
   getCurriculumModuleCatalog,
   getStudentProgressMap,
@@ -37,10 +37,7 @@ export default async function ProgramPage() {
   const diagnosticComplete = profile.diagnostic_complete || profile.is_demo;
 
   const nextIncompleteId = [...modules]
-    .sort(
-      (a, b) =>
-        parseModuleNumber(a.module_code) - parseModuleNumber(b.module_code)
-    )
+    .sort(compareCurriculumOrder)
     .find((m) => !progressMap.get(m.id)?.is_complete)?.id;
 
   const byPillar = [1, 2, 3].map((pillar) => ({
@@ -51,10 +48,7 @@ export default async function ProgramPage() {
     slug: getPillarSlug(pillar) ?? "program",
     modules: modules
       .filter((m) => m.pillar === pillar)
-      .sort(
-        (a, b) =>
-          parseModuleNumber(a.module_code) - parseModuleNumber(b.module_code)
-      ),
+      .sort(compareCurriculumOrder),
   }));
 
   return (

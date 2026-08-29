@@ -1,3 +1,6 @@
+/** Canonized in the Q1 quiz pass: 56 questions ÷ 14 modules. */
+export const QUIZ_QUESTIONS_PER_MODULE = 4;
+
 export function getModuleContentStatus(module: {
   video_url: string | null;
   stream_url?: string | null;

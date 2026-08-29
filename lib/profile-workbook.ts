@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { normalizeExerciseField } from "@/lib/content-normalize";
 import { parseAnswerData, type ExerciseAnswerData } from "@/lib/exercise-answers";
 import { getPillarLabel, getPillarSlug } from "@/lib/program";
-import { parseModuleNumber } from "@/lib/program-nav";
+import { compareCurriculumOrder } from "@/lib/program-nav";
 import type { Database } from "@/types/database";
 import type { ExerciseFieldPrompt, ExerciseInputType } from "@/types/modules";
 import { isStructuredExercise } from "@/types/modules";
@@ -46,6 +46,8 @@ type ModuleRow = {
   title: string;
   slug: string | null;
   pillar: number;
+  unlock_week?: number | null;
+  order_index?: number | null;
   exercises: unknown;
 };
 
@@ -86,10 +88,7 @@ export function buildWorkbookPortfolio(
   for (const pillar of [1, 2, 3] as const) {
     const pillarModules = modules
       .filter((module) => module.pillar === pillar && answersByModule.has(module.id))
-      .sort(
-        (a, b) =>
-          parseModuleNumber(a.module_code) - parseModuleNumber(b.module_code)
-      );
+      .sort(compareCurriculumOrder);
 
     const portfolioModules: WorkbookPortfolioModule[] = [];
 
@@ -172,7 +171,7 @@ export async function fetchWorkbookPortfolio(
       answersQuery,
       supabase
         .from("modules")
-        .select("id, module_code, title, slug, pillar, exercises")
+        .select("id, module_code, title, slug, pillar, unlock_week, order_index, exercises")
         .eq("is_live_session", false),
     ]);
 

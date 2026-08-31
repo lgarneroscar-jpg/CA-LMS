@@ -453,6 +453,8 @@ export type Database = {
       };
       student_progress: {
         Row: {
+          attendance_confirmed_by: string | null;
+          attendance_source: string | null;
           completed_at: string | null;
           created_at: string;
           exercises_submitted: boolean;
@@ -466,6 +468,8 @@ export type Database = {
           xp_earned: number;
         };
         Insert: {
+          attendance_confirmed_by?: string | null;
+          attendance_source?: string | null;
           completed_at?: string | null;
           created_at?: string;
           exercises_submitted?: boolean;
@@ -479,6 +483,8 @@ export type Database = {
           xp_earned?: number;
         };
         Update: {
+          attendance_confirmed_by?: string | null;
+          attendance_source?: string | null;
           completed_at?: string | null;
           created_at?: string;
           exercises_submitted?: boolean;

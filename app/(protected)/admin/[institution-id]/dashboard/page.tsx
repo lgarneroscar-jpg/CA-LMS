@@ -2,15 +2,16 @@ import Link from "next/link";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getCohortAnalytics } from "@/lib/cohort-analytics";
-import { formatAverageQuizScoreLabel } from "@/lib/admin-reporting";
+import { formatAverageQuizScoreLabel, pluralize } from "@/lib/admin-reporting";
+import { moduleCompletionExplainer } from "@/lib/module-gates";
 import { maybeGenerateReportSnapshot } from "@/lib/reports";
 import { PaceGauge } from "@/components/admin/pace-gauge";
 import {
-  CohortRankingsList,
-  ModuleCompletionDonut,
-} from "@/components/admin/admin-dashboard-client";
+  AdminDashboardReporting,
+  DiagnosticSummary,
+  ModuleCompletionBarList,
+} from "@/components/admin/admin-dashboard-reporting";
 import { LiveSessionAttendanceSummary } from "@/components/admin/live-session-attendance-summary";
-import { WorkbookActivityLabel } from "@/components/admin/reporting-labels";
 import {
   Card,
   CardContent,
@@ -54,6 +55,7 @@ export default async function AdminDashboardPage({ params }: PageProps) {
   const studentNames = Object.fromEntries(
     analytics.allStudents.map((s) => [s.id, s.full_name ?? "Unnamed"])
   );
+  const studentCount = analytics.allStudents.length;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -63,7 +65,8 @@ export default async function AdminDashboardPage({ params }: PageProps) {
             {institution?.name ?? "Institution"} Dashboard
           </h1>
           <p className="text-muted-foreground">
-            {analytics.cohortWeekLabel} · {analytics.allStudents.length} students
+            {analytics.cohortWeekLabel} · {studentCount}{" "}
+            {pluralize(studentCount, "student")}
           </p>
         </div>
         <a
@@ -91,11 +94,12 @@ export default async function AdminDashboardPage({ params }: PageProps) {
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Cohort health</CardTitle>
+            <CardDescription>{moduleCompletionExplainer()}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
               <HealthCard
-                label="Overall completion"
+                label="Modules passed (avg)"
                 value={`${analytics.overallCompletionRate}%`}
               />
               <HealthCard
@@ -112,7 +116,7 @@ export default async function AdminDashboardPage({ params }: PageProps) {
               />
               <HealthCard
                 label="No workbook activity"
-                value={`${analytics.studentsWithZeroWorkbookActivity} students`}
+                value={`${analytics.studentsWithZeroWorkbookActivity} ${pluralize(analytics.studentsWithZeroWorkbookActivity, "student")}`}
               />
               <HealthCard label="Avg XP" value={`${analytics.averageXp}`} />
               <HealthCard
@@ -126,13 +130,31 @@ export default async function AdminDashboardPage({ params }: PageProps) {
 
       <Card>
         <CardHeader>
+          <CardTitle>Week-1 diagnostic</CardTitle>
+          <CardDescription>
+            Completion counts only — individual answers are not shown to admins
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <DiagnosticSummary
+            institutionId={institutionId}
+            diagnostic={analytics.diagnostic}
+            totalStudents={studentCount}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Live session attendance</CardTitle>
           <CardDescription>
-            Attendance is tracked separately from module completion
+            Tracked separately from module completion · admin-confirmed vs
+            self-reported
           </CardDescription>
         </CardHeader>
         <CardContent>
           <LiveSessionAttendanceSummary
+            institutionId={institutionId}
             rates={analytics.liveSessionAttendanceRates}
           />
         </CardContent>
@@ -140,16 +162,16 @@ export default async function AdminDashboardPage({ params }: PageProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Cohort rankings</CardTitle>
+          <CardTitle>Cohort rankings &amp; roster</CardTitle>
           <CardDescription>
-            Top performers and students more than one week behind pace
+            Filter by attention reason · {moduleCompletionExplainer()}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <CohortRankingsList
+          <AdminDashboardReporting
             institutionId={institutionId}
-            topStudents={analytics.topStudents}
-            bottomStudents={analytics.bottomStudents}
+            analytics={analytics}
+            studentNames={studentNames}
           />
         </CardContent>
       </Card>
@@ -158,11 +180,11 @@ export default async function AdminDashboardPage({ params }: PageProps) {
         <CardHeader>
           <CardTitle>Module completion breakdown</CardTitle>
           <CardDescription>
-            Click a module slice to see who completed it
+            Quiz-passed modules in curriculum order · click a row to expand
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ModuleCompletionDonut
+          <ModuleCompletionBarList
             institutionId={institutionId}
             modules={analytics.moduleCompletionRates}
             studentNames={studentNames}
@@ -170,65 +192,14 @@ export default async function AdminDashboardPage({ params }: PageProps) {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Student roster</CardTitle>
-          <CardDescription>
-            <Link
-              href={`/admin/${institutionId}/students`}
-              className="underline hover:text-foreground"
-            >
-              View full roster with flags →
-            </Link>
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-left text-sm">
-              <thead>
-                <tr className="border-b text-muted-foreground">
-                  <th className="py-2 pr-4">Name</th>
-                  <th className="py-2 pr-4">Completion</th>
-                  <th className="py-2 pr-4">Workbook</th>
-                  <th className="py-2 pr-4">Live sessions</th>
-                  <th className="py-2 pr-4">XP</th>
-                  <th className="py-2 pr-4">Rank</th>
-                  <th className="py-2">Flag</th>
-                </tr>
-              </thead>
-              <tbody>
-                {analytics.allStudents.map((s) => (
-                  <tr key={s.id} className="border-b border-border/60">
-                    <td className="py-2 pr-4">
-                      <Link
-                        href={`/admin/${institutionId}/students/${s.id}`}
-                        className={
-                          s.hasFlag
-                            ? "font-medium text-amber-700 underline"
-                            : "hover:underline"
-                        }
-                      >
-                        {s.full_name ?? "Unnamed"}
-                      </Link>
-                    </td>
-                    <td className="py-2 pr-4">{s.completionPercent}%</td>
-                    <td className="py-2 pr-4">
-                      <WorkbookActivityLabel student={s} />
-                    </td>
-                    <td className="py-2 pr-4">
-                      {s.liveAttendance.attendedCount} of{" "}
-                      {s.liveAttendance.total}
-                    </td>
-                    <td className="py-2 pr-4">{s.xp}</td>
-                    <td className="py-2 pr-4">{s.rank ?? "—"}</td>
-                    <td className="py-2">{s.hasFlag ? "Flagged" : "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+      <p className="text-center text-sm">
+        <Link
+          href={`/admin/${institutionId}/students`}
+          className="underline hover:text-foreground"
+        >
+          View full student roster →
+        </Link>
+      </p>
     </div>
   );
 }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import {
+  countPlaceholderVideos,
   getModuleContentStatus,
   QUIZ_QUESTIONS_PER_MODULE,
 } from "@/lib/module-content-status";
@@ -14,6 +15,23 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+
+function VideoStatus({
+  videoIsPlaceholder,
+}: {
+  videoIsPlaceholder: boolean;
+}) {
+  if (videoIsPlaceholder) {
+    return (
+      <span className="text-xs font-medium text-amber-700">
+        Video: placeholder
+      </span>
+    );
+  }
+  return (
+    <span className="text-xs font-medium text-emerald-700">Video: ✓</span>
+  );
+}
 
 function StatusDot({ ok, label }: { ok: boolean; label: string }) {
   return (
@@ -44,6 +62,10 @@ export default async function ContentAdminPage() {
 
   const moduleIds = (modules ?? []).map((m) => m.id);
   const quizCounts = new Map<string, number>();
+  const allVideoUrls = (modules ?? []).map((m) => m.video_url);
+  const { placeholderCount, totalContentModules } = countPlaceholderVideos(
+    modules ?? []
+  );
 
   if (moduleIds.length > 0) {
     const { data: quizRows } = await supabase
@@ -75,6 +97,13 @@ export default async function ContentAdminPage() {
         </Link>
       </div>
 
+      {totalContentModules > 0 && placeholderCount === totalContentModules ? (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          {placeholderCount} of {totalContentModules} modules using placeholder
+          video.
+        </div>
+      ) : null}
+
       <Card>
         <CardHeader>
           <CardTitle>Modules ({modules?.length ?? 0})</CardTitle>
@@ -93,6 +122,7 @@ export default async function ContentAdminPage() {
                 const status = getModuleContentStatus({
                   ...module,
                   quiz_count: quizCounts.get(module.id) ?? 0,
+                  all_module_video_urls: allVideoUrls,
                 });
                 const pillarLabel =
                   PILLARS[module.pillar as keyof typeof PILLARS]?.label ??
@@ -113,7 +143,9 @@ export default async function ContentAdminPage() {
                       </div>
                       <p className="font-medium">{module.title}</p>
                       <div className="flex flex-wrap gap-3">
-                        <StatusDot ok={status.hasVideo} label="Video" />
+                        <VideoStatus
+                          videoIsPlaceholder={status.videoIsPlaceholder}
+                        />
                         <StatusDot ok={status.hasWorkbook} label="Workbook" />
                         <StatusDot ok={status.hasExercises} label="Exercises" />
                         <StatusDot

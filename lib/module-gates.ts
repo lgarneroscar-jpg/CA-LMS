@@ -11,6 +11,20 @@ export const VIDEO_GATE_ENABLED = false;
 /** Set to true when the quiz should require exercises to be submitted first. */
 export const EXERCISE_SUBMIT_GATE_ENABLED = false;
 
+/**
+ * Changes whenever VIDEO_GATE_ENABLED or EXERCISE_SUBMIT_GATE_ENABLED changes.
+ * Stage 2 report snapshots store this so "since last report" deltas stay comparable
+ * when the definition of is_complete shifts mid-programme — existing rows stay
+ * true but new prerequisites would change what "complete" means going forward.
+ */
+export const COMPLETION_DEFINITION_VERSION = (() => {
+  const parts: string[] = [];
+  if (VIDEO_GATE_ENABLED) parts.push("video");
+  if (EXERCISE_SUBMIT_GATE_ENABLED) parts.push("exercises");
+  parts.push("quiz");
+  return parts.join("+");
+})();
+
 export function isExercisesLocked(videoWatched: boolean): boolean {
   return VIDEO_GATE_ENABLED && !videoWatched;
 }
@@ -43,4 +57,9 @@ export function moduleCompletionPrerequisitesMet(progress: {
   const exercisesOk =
     !EXERCISE_SUBMIT_GATE_ENABLED || progress.exercises_submitted;
   return videoOk && exercisesOk && progress.quiz_completed;
+}
+
+/** Short label for admin UI explaining what "modules passed" means today. */
+export function moduleCompletionExplainer(): string {
+  return "A module counts as complete when its quiz is passed.";
 }

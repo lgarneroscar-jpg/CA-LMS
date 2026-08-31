@@ -173,6 +173,10 @@ export async function markLiveSessionAttended(params: {
     return { completed: false, xpEarned: progress.xp_earned };
   }
 
+  if (progress.attendance_source === "admin_confirmed") {
+    return { completed: false, xpEarned: progress.xp_earned };
+  }
+
   const xpEarned = XP_REWARDS.liveSessionAttendance;
 
   await supabase
@@ -182,6 +186,7 @@ export async function markLiveSessionAttended(params: {
       completed_at: new Date().toISOString(),
       xp_earned: xpEarned,
       video_watched: true,
+      attendance_source: "self_reported",
     })
     .eq("id", progress.id);
 

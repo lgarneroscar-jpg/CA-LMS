@@ -1,8 +1,13 @@
+"use client";
+
+import Link from "next/link";
 import type { LiveSessionAttendanceRate } from "@/lib/cohort-analytics";
 
 export function LiveSessionAttendanceSummary({
+  institutionId,
   rates,
 }: {
+  institutionId: string;
   rates: LiveSessionAttendanceRate[];
 }) {
   if (rates.length === 0) {
@@ -13,6 +18,9 @@ export function LiveSessionAttendanceSummary({
 
   return (
     <div className="space-y-3">
+      <p className="text-xs text-muted-foreground">
+        Self-reported attendance is shown separately and is not verified.
+      </p>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {rates.map((session) => (
           <div
@@ -22,10 +30,13 @@ export function LiveSessionAttendanceSummary({
             <p className="font-medium">
               {session.moduleCode} · {session.title}
             </p>
-            <p className="mt-1 text-muted-foreground">
-              {session.attendedCount} of {session.totalStudents} students (
-              {session.rate}%)
-            </p>
+            <p className="mt-1 text-muted-foreground">{session.summaryLabel}</p>
+            <Link
+              href={`/admin/${institutionId}/attendance/${session.sessionId}`}
+              className="mt-2 inline-block text-xs underline"
+            >
+              Manage attendance →
+            </Link>
           </div>
         ))}
       </div>

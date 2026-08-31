@@ -8,6 +8,14 @@ export type AttentionReason =
   | "diagnostic_incomplete"
   | "low_quiz";
 
+export const ATTENTION_REASONS: AttentionReason[] = [
+  "no_workbook",
+  "inactive",
+  "behind_pace",
+  "diagnostic_incomplete",
+  "low_quiz",
+];
+
 export function buildAttentionReasons(
   student: Pick<
     CohortStudentMetrics,
@@ -97,6 +105,84 @@ export function formatAverageQuizScoreLabel(
     return "—";
   }
   return `${averageQuizScore}% · ${quizScoreStudentCount} of ${totalStudents} students`;
+}
+
+export function countAttentionReasons(
+  students: Pick<CohortStudentMetrics, "attentionReasons">[]
+): Record<AttentionReason, number> {
+  const counts: Record<AttentionReason, number> = {
+    no_workbook: 0,
+    inactive: 0,
+    behind_pace: 0,
+    diagnostic_incomplete: 0,
+    low_quiz: 0,
+  };
+
+  for (const student of students) {
+    for (const reason of student.attentionReasons) {
+      counts[reason] += 1;
+    }
+  }
+
+  return counts;
+}
+
+export function studentMatchesReasonFilter(
+  student: Pick<CohortStudentMetrics, "attentionReasons">,
+  reason: AttentionReason | null
+): boolean {
+  if (!reason) return true;
+  return student.attentionReasons.includes(reason);
+}
+
+export function formatLiveAttendanceSummary(params: {
+  attendedCount: number;
+  total: number;
+  adminConfirmedCount: number;
+  selfReportedCount: number;
+  unit?: string;
+}): string {
+  const {
+    attendedCount,
+    total,
+    adminConfirmedCount,
+    selfReportedCount,
+    unit = "attended",
+  } = params;
+  const base = `${attendedCount} of ${total} ${unit}`;
+  if (attendedCount === 0) return base;
+
+  const parts: string[] = [];
+  if (adminConfirmedCount > 0) {
+    parts.push(`${adminConfirmedCount} admin-confirmed`);
+  }
+  if (selfReportedCount > 0) {
+    parts.push(`${selfReportedCount} self-reported`);
+  }
+
+  if (parts.length === 0) return base;
+  return `${base} · ${parts.join(", ")}`;
+}
+
+export function formatStudentComponentMetrics(params: {
+  quizModulesPassed: number;
+  modulesPassedTotal: number;
+  workbookAnswered: number;
+  workbookTotal: number;
+  videosTracked: boolean;
+  videoModulesWatched: number;
+}): { quiz: string; workbook: string; video: string } {
+  return {
+    quiz: `${params.quizModulesPassed} of ${params.modulesPassedTotal} modules`,
+    workbook: `${params.workbookAnswered} of ${params.workbookTotal} exercises`,
+    video: params.videosTracked
+      ? `${params.videoModulesWatched} of ${params.modulesPassedTotal} modules`
+      : "not yet tracked",
+  };
+}
+
+export function pluralize(count: number, singular: string, plural = `${singular}s`): string {
+  return count === 1 ? singular : plural;
 }
 
 export function compareStudentsForRoster(

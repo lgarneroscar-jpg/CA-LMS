@@ -3,6 +3,7 @@ import type { Database } from "@/types/database";
 import {
   buildAttentionReasons,
   compareStudentsForRoster,
+  formatLiveAttendanceSummary,
 } from "@/lib/admin-reporting";
 import {
   formatCohortWeekLabel,
@@ -12,6 +13,8 @@ import {
 } from "@/lib/drip";
 import { getPaceStatus } from "@/lib/pace";
 import { getProgressWeek, type ProgressModuleRef } from "@/lib/program";
+import { compareCurriculumOrder } from "@/lib/program-nav";
+import { videosTrackedInReporting } from "@/lib/module-content-status";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   computeModuleWorkbookBreakdown,
@@ -31,13 +34,24 @@ export type LiveSessionRef = {
   unlock_week: number;
 };
 
+export type AttendanceSource = "self_reported" | "admin_confirmed";
+
 export type LiveSessionAttendanceRate = {
   sessionId: string;
   moduleCode: string;
   title: string;
   attendedCount: number;
+  adminConfirmedCount: number;
+  selfReportedCount: number;
   totalStudents: number;
   rate: number;
+  summaryLabel: string;
+};
+
+export type DiagnosticIncompleteStudent = {
+  id: string;
+  full_name: string | null;
+  daysSinceEnrollment: number;
 };
 
 export type CohortStudentMetrics = {
@@ -49,7 +63,12 @@ export type CohortStudentMetrics = {
   last_login: string | null;
   last_active_date: string | null;
   diagnostic_complete: boolean;
+  /** Quiz-passed modules as a percentage — used for pace math only. */
   completionPercent: number;
+  modulesPassedCount: number;
+  modulesPassedTotal: number;
+  quizModulesPassed: number;
+  videoModulesWatched: number;
   quizAverage: number;
   quizModulesTaken: number;
   isBehindPace: boolean;
@@ -59,6 +78,9 @@ export type CohortStudentMetrics = {
     attendedModuleIds: string[];
     attendedCount: number;
     total: number;
+    adminConfirmedCount: number;
+    selfReportedCount: number;
+    summaryLabel: string;
   };
   workbookAnswered: number;
   workbookTotal: number;
@@ -91,14 +113,23 @@ export type CohortAnalytics = {
     moduleId: string;
     moduleCode: string;
     title: string;
+    unlockWeek: number;
+    orderIndex: number;
     completionRate: number;
+    completedCount: number;
+    cohortSize: number;
     completedStudentIds: string[];
     incompleteStudentIds: string[];
   }[];
   liveSessions: LiveSessionRef[];
   liveSessionAttendanceRates: LiveSessionAttendanceRate[];
+  videosTrackedInReporting: boolean;
+  diagnostic: {
+    completedCount: number;
+    incompleteStudents: DiagnosticIncompleteStudent[];
+  };
   topStudents: CohortStudentMetrics[];
-  bottomStudents: CohortStudentMetrics[];
+  needsAttentionStudents: CohortStudentMetrics[];
   allStudents: CohortStudentMetrics[];
 };
 
@@ -268,7 +299,7 @@ export async function getCohortAnalytics(
   const { data: students, error: studentsError } = await supabase
     .from("profiles")
     .select(
-      "id, full_name, xp, rank, last_login, last_active_date, diagnostic_complete, program_started_at"
+      "id, full_name, xp, rank, last_login, last_active_date, diagnostic_complete, program_started_at, created_at"
     )
     .eq("institution_id", institutionId)
     .eq("role", "student");
@@ -284,7 +315,7 @@ export async function getCohortAnalytics(
   const { data: modules, error: modulesError } = await supabase
     .from("modules")
     .select(
-      "id, module_code, title, unlock_week, is_live_session, order_index, exercises"
+      "id, module_code, title, unlock_week, is_live_session, order_index, exercises, video_url"
     )
     .eq("is_live_session", false)
     .order("unlock_week")
@@ -321,7 +352,9 @@ export async function getCohortAnalytics(
 
   const { data: progress, error: progressError } = await supabase
     .from("student_progress")
-    .select("student_id, module_id, is_complete, quiz_score")
+    .select(
+      "student_id, module_id, is_complete, quiz_score, quiz_completed, video_watched, attendance_source"
+    )
     .in("student_id", studentIds.length ? studentIds : emptyStudentFilter);
 
   if (progressError) {
@@ -385,6 +418,7 @@ export async function getCohortAnalytics(
   const totalModules = modules?.length ?? 0;
   const contentModuleIds = new Set((modules ?? []).map((m) => m.id));
   const liveSessionIds = liveSessions.map((s) => s.id);
+  const videosTracked = videosTrackedInReporting(modules ?? []);
   const targetModules =
     modules?.filter((m) => m.unlock_week <= targetWeek) ?? [];
   const targetModuleIds = new Set(targetModules.map((m) => m.id));
@@ -392,7 +426,9 @@ export async function getCohortAnalytics(
   let paceCompletionSum = 0;
   let paceCompletionCount = 0;
 
-  const moduleCompletionRates = (modules ?? []).map((mod) => {
+  const moduleCompletionRates = [...(modules ?? [])]
+    .sort(compareCurriculumOrder)
+    .map((mod) => {
     const completedStudentIds: string[] = [];
     const incompleteStudentIds: string[] = [];
 
@@ -418,7 +454,11 @@ export async function getCohortAnalytics(
       moduleId: mod.id,
       moduleCode: mod.module_code,
       title: mod.title,
+      unlockWeek: mod.unlock_week ?? 1,
+      orderIndex: mod.order_index ?? 0,
       completionRate: rate,
+      completedCount: completedStudentIds.length,
+      cohortSize,
       completedStudentIds,
       incompleteStudentIds,
     };
@@ -431,17 +471,36 @@ export async function getCohortAnalytics(
 
   const allStudentsUnsorted: CohortStudentMetrics[] = (students ?? []).map(
     (student) => {
-      const studentProgress = (progress ?? []).filter(
-        (p) => p.student_id === student.id && p.is_complete
+      const studentProgressRows = (progress ?? []).filter(
+        (p) => p.student_id === student.id
       );
+      const studentProgress = studentProgressRows.filter((p) => p.is_complete);
       const completedCount = studentProgress.filter((p) =>
         contentModuleIds.has(p.module_id)
       ).length;
       const completionPercent =
         totalModules > 0 ? Math.round((completedCount / totalModules) * 100) : 0;
+
+      const quizModulesPassed = studentProgressRows.filter(
+        (p) => contentModuleIds.has(p.module_id) && p.quiz_completed
+      ).length;
+      const videoModulesWatched = studentProgressRows.filter(
+        (p) => contentModuleIds.has(p.module_id) && p.video_watched
+      ).length;
+
       const attendedModuleIds = liveSessionIds.filter((moduleId) =>
         studentProgress.some((p) => p.module_id === moduleId)
       );
+      let adminConfirmedCount = 0;
+      let selfReportedCount = 0;
+      for (const moduleId of attendedModuleIds) {
+        const row = studentProgressRows.find((p) => p.module_id === moduleId);
+        if (row?.attendance_source === "admin_confirmed") {
+          adminConfirmedCount += 1;
+        } else if (row?.attendance_source === "self_reported") {
+          selfReportedCount += 1;
+        }
+      }
 
       let quizSum = 0;
       let quizCount = 0;
@@ -475,6 +534,10 @@ export async function getCohortAnalytics(
         last_active_date: student.last_active_date,
         diagnostic_complete: student.diagnostic_complete,
         completionPercent,
+        modulesPassedCount: completedCount,
+        modulesPassedTotal: totalModules,
+        quizModulesPassed,
+        videoModulesWatched,
         quizAverage:
           quizCount > 0 ? Math.round((quizSum / quizCount) * 100) : 0,
         quizModulesTaken: quizCount,
@@ -488,6 +551,15 @@ export async function getCohortAnalytics(
           attendedModuleIds,
           attendedCount: attendedModuleIds.length,
           total: liveSessions.length,
+          adminConfirmedCount,
+          selfReportedCount,
+          summaryLabel: formatLiveAttendanceSummary({
+            attendedCount: attendedModuleIds.length,
+            total: liveSessions.length,
+            adminConfirmedCount,
+            selfReportedCount,
+            unit: "sessions",
+          }),
         },
         workbookAnswered: workbook.workbookAnswered,
         workbookTotal: workbook.workbookTotal,
@@ -507,10 +579,38 @@ export async function getCohortAnalytics(
 
   const sortedByXp = [...allStudents].sort((a, b) => b.xp - a.xp);
   const topStudents = sortedByXp.slice(0, 10);
-  const bottomStudents = allStudents
+  const needsAttentionStudents = allStudents
     .filter((s) => s.isBehindPace)
-    .sort((a, b) => a.completionPercent - b.completionPercent)
-    .slice(0, 5);
+    .sort((a, b) => a.completionPercent - b.completionPercent);
+
+  const now = new Date();
+  const diagnosticIncompleteStudents: DiagnosticIncompleteStudent[] = (
+    students ?? []
+  )
+    .filter((student) => !student.diagnostic_complete)
+    .map((student) => {
+      const enrolledAt = student.program_started_at ?? student.created_at;
+      const daysSinceEnrollment = enrolledAt
+        ? Math.max(
+            0,
+            Math.floor(
+              (now.getTime() - new Date(enrolledAt).getTime()) /
+                (24 * 60 * 60 * 1000)
+            )
+          )
+        : 0;
+      return {
+        id: student.id,
+        full_name: student.full_name,
+        daysSinceEnrollment,
+      };
+    })
+    .sort((a, b) => b.daysSinceEnrollment - a.daysSinceEnrollment);
+
+  const diagnostic = {
+    completedCount: (students ?? []).filter((s) => s.diagnostic_complete).length,
+    incompleteStudents: diagnosticIncompleteStudents,
+  };
 
   // Deliberately includes non-starters at 0% — unlike averageQuizScore below.
   const overallCompletionRate =
@@ -557,13 +657,15 @@ export async function getCohortAnalytics(
 
   const liveSessionAttendanceRates: LiveSessionAttendanceRate[] =
     liveSessions.map((session) => {
-      const attendedCount = (students ?? []).filter((student) =>
-        (progress ?? []).some(
-          (row) =>
-            row.student_id === student.id &&
-            row.module_id === session.id &&
-            row.is_complete
-        )
+      const sessionRows = (progress ?? []).filter(
+        (row) => row.module_id === session.id && row.is_complete
+      );
+      const attendedCount = sessionRows.length;
+      const adminConfirmedCount = sessionRows.filter(
+        (row) => row.attendance_source === "admin_confirmed"
+      ).length;
+      const selfReportedCount = sessionRows.filter(
+        (row) => row.attendance_source === "self_reported"
       ).length;
 
       return {
@@ -571,11 +673,19 @@ export async function getCohortAnalytics(
         moduleCode: session.module_code,
         title: session.title,
         attendedCount,
+        adminConfirmedCount,
+        selfReportedCount,
         totalStudents: cohortSize,
         rate:
           cohortSize > 0
             ? Math.round((attendedCount / cohortSize) * 100)
             : 0,
+        summaryLabel: formatLiveAttendanceSummary({
+          attendedCount,
+          total: cohortSize,
+          adminConfirmedCount,
+          selfReportedCount,
+        }),
       };
     });
 
@@ -596,8 +706,10 @@ export async function getCohortAnalytics(
     moduleCompletionRates,
     liveSessions,
     liveSessionAttendanceRates,
+    videosTrackedInReporting: videosTracked,
+    diagnostic,
     topStudents,
-    bottomStudents,
+    needsAttentionStudents,
     allStudents,
   };
 }

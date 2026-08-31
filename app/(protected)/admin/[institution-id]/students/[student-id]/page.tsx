@@ -6,7 +6,11 @@ import {
   getCohortAnalytics,
   getStudentModuleBreakdown,
 } from "@/lib/cohort-analytics";
-import { formatWorkbookActivityLabel } from "@/lib/admin-reporting";
+import {
+  formatStudentComponentMetrics,
+  formatWorkbookActivityLabel,
+} from "@/lib/admin-reporting";
+import { moduleCompletionExplainer } from "@/lib/module-gates";
 import { FlagStudentForm } from "@/components/admin/flag-student-form";
 import {
   formatQuizScoreDisplay,
@@ -49,24 +53,28 @@ export default async function AdminStudentDetailPage({ params }: PageProps) {
 
   if (!student) notFound();
 
-  const [analytics, moduleBreakdown, flagResult, diagnosticResult] =
-    await Promise.all([
-      getCohortAnalytics(supabase, institutionId),
-      getStudentModuleBreakdown(supabase, institutionId, studentId),
-      supabase
-        .from("flags")
-        .select("note, created_at")
-        .eq("student_id", studentId)
-        .maybeSingle(),
-      supabase
-        .from("diagnostic_responses")
-        .select("question_key, response")
-        .eq("student_id", studentId),
-    ]);
+  const [analytics, moduleBreakdown, flagResult] = await Promise.all([
+    getCohortAnalytics(supabase, institutionId),
+    getStudentModuleBreakdown(supabase, institutionId, studentId),
+    supabase
+      .from("flags")
+      .select("note, created_at")
+      .eq("student_id", studentId)
+      .maybeSingle(),
+  ]);
 
   const flag = flagResult.data;
-  const diagnostic = diagnosticResult.data;
   const studentMetrics = analytics?.allStudents.find((s) => s.id === studentId);
+  const components = studentMetrics
+    ? formatStudentComponentMetrics({
+        quizModulesPassed: studentMetrics.quizModulesPassed,
+        modulesPassedTotal: studentMetrics.modulesPassedTotal,
+        workbookAnswered: studentMetrics.workbookAnswered,
+        workbookTotal: studentMetrics.workbookTotal,
+        videosTracked: analytics?.videosTrackedInReporting ?? false,
+        videoModulesWatched: studentMetrics.videoModulesWatched,
+      })
+    : null;
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -86,20 +94,50 @@ export default async function AdminStudentDetailPage({ params }: PageProps) {
           {studentMetrics ? (
             <>
               <Badge variant="outline">
-                Completion {studentMetrics.completionPercent}%
+                Modules passed {studentMetrics.modulesPassedCount} of{" "}
+                {studentMetrics.modulesPassedTotal}
               </Badge>
               <Badge variant="outline">
-                Live sessions {studentMetrics.liveAttendance.attendedCount} of{" "}
-                {studentMetrics.liveAttendance.total}
+                {studentMetrics.liveAttendance.summaryLabel}
               </Badge>
               <Badge variant="outline">
                 {formatWorkbookActivityLabel(studentMetrics)}
+              </Badge>
+              <Badge
+                variant={student.diagnostic_complete ? "secondary" : "outline"}
+              >
+                Diagnostic {student.diagnostic_complete ? "complete" : "incomplete"}
               </Badge>
             </>
           ) : null}
           {flag ? <Badge variant="destructive">Flagged</Badge> : null}
         </div>
       </div>
+
+      {components ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Progress components</CardTitle>
+            <CardDescription>{moduleCompletionExplainer()}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <dl className="grid gap-3 text-sm sm:grid-cols-3">
+              <div>
+                <dt className="text-muted-foreground">Quiz</dt>
+                <dd className="font-medium">{components.quiz}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Workbook</dt>
+                <dd className="font-medium">{components.workbook}</dd>
+              </div>
+              <div>
+                <dt className="text-muted-foreground">Video</dt>
+                <dd className="font-medium">{components.video}</dd>
+              </div>
+            </dl>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <Card>
@@ -156,9 +194,9 @@ export default async function AdminStudentDetailPage({ params }: PageProps) {
                     ) : (
                       <span className="inline-flex flex-col items-end gap-1">
                         {mod.isComplete ? (
-                          <span>Complete</span>
+                          <span>Quiz passed</span>
                         ) : (
-                          <span>Not complete</span>
+                          <span>Not passed</span>
                         )}
                         {mod.exercisesTotal > 0 ? (
                           <span>
@@ -185,24 +223,6 @@ export default async function AdminStudentDetailPage({ params }: PageProps) {
           </ul>
         </CardContent>
       </Card>
-
-      {diagnostic && diagnostic.length > 0 ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Diagnostic responses</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            {diagnostic.map((d) => (
-              <div key={d.question_key}>
-                <p className="font-medium capitalize">
-                  {d.question_key.replace(/_/g, " ")}
-                </p>
-                <p className="text-muted-foreground">{d.response}</p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      ) : null}
 
       <FlagStudentForm
         institutionId={institutionId}

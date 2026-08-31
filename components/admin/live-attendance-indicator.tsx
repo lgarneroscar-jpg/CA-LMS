@@ -4,11 +4,13 @@ import { liveAttendanceLabel, liveSessionExportHeader } from "@/lib/cohort-analy
 type LiveAttendanceIndicatorProps = {
   sessions: LiveSessionRef[];
   attendedModuleIds: string[];
+  summaryLabel?: string;
 };
 
 export function LiveAttendanceIndicator({
   sessions,
   attendedModuleIds,
+  summaryLabel,
 }: LiveAttendanceIndicatorProps) {
   const attended = new Set(attendedModuleIds);
   const attendedCount = sessions.filter((session) => attended.has(session.id)).length;
@@ -20,9 +22,13 @@ export function LiveAttendanceIndicator({
     .join(" · ");
 
   return (
-    <div className="flex items-center gap-2" title={summary || undefined}>
+    <div
+      className="flex items-center gap-2"
+      title={summaryLabel ?? summary ?? undefined}
+    >
       <span className="whitespace-nowrap tabular-nums">
-        {attendedCount} of {sessions.length}
+        {summaryLabel ??
+          `${attendedCount} of ${sessions.length}`}
       </span>
       {sessions.length > 0 ? (
         <span className="flex gap-0.5" aria-hidden="true">

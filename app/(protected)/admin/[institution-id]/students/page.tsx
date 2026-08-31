@@ -3,6 +3,7 @@ import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getCohortAnalytics } from "@/lib/cohort-analytics";
 import { LiveAttendanceIndicator } from "@/components/admin/live-attendance-indicator";
+import { WorkbookActivityLabel } from "@/components/admin/reporting-labels";
 import {
   Card,
   CardContent,
@@ -44,7 +45,9 @@ export default async function AdminStudentsPage({ params }: PageProps) {
       <Card>
         <CardHeader>
           <CardTitle>Roster</CardTitle>
-          <CardDescription>Sorted by XP · flagged students highlighted</CardDescription>
+          <CardDescription>
+            Sorted by completion, XP, then name · flagged students highlighted
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {students.length > 0 ? (
@@ -56,14 +59,13 @@ export default async function AdminStudentsPage({ params }: PageProps) {
                     <th className="py-2 pr-4">XP</th>
                     <th className="py-2 pr-4">Rank</th>
                     <th className="py-2 pr-4">Completion</th>
+                    <th className="py-2 pr-4">Workbook</th>
                     <th className="py-2 pr-4">Live sessions</th>
                     <th className="py-2">Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {[...students]
-                    .sort((a, b) => b.xp - a.xp)
-                    .map((s) => (
+                  {students.map((s) => (
                       <tr
                         key={s.id}
                         className={
@@ -83,6 +85,9 @@ export default async function AdminStudentsPage({ params }: PageProps) {
                         <td className="py-2 pr-4">{s.xp}</td>
                         <td className="py-2 pr-4">{s.rank ?? "—"}</td>
                         <td className="py-2 pr-4">{s.completionPercent}%</td>
+                        <td className="py-2 pr-4">
+                          <WorkbookActivityLabel student={s} />
+                        </td>
                         <td className="py-2 pr-4">
                           <LiveAttendanceIndicator
                             sessions={analytics?.liveSessions ?? []}

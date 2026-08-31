@@ -2,12 +2,15 @@ import Link from "next/link";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getCohortAnalytics } from "@/lib/cohort-analytics";
+import { formatAverageQuizScoreLabel } from "@/lib/admin-reporting";
 import { maybeGenerateReportSnapshot } from "@/lib/reports";
 import { PaceGauge } from "@/components/admin/pace-gauge";
 import {
   CohortRankingsList,
   ModuleCompletionDonut,
 } from "@/components/admin/admin-dashboard-client";
+import { LiveSessionAttendanceSummary } from "@/components/admin/live-session-attendance-summary";
+import { WorkbookActivityLabel } from "@/components/admin/reporting-labels";
 import {
   Card,
   CardContent,
@@ -90,14 +93,26 @@ export default async function AdminDashboardPage({ params }: PageProps) {
             <CardTitle>Cohort health</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
               <HealthCard
                 label="Overall completion"
                 value={`${analytics.overallCompletionRate}%`}
               />
               <HealthCard
                 label="Avg quiz score"
-                value={`${analytics.averageQuizScore}%`}
+                value={formatAverageQuizScoreLabel(
+                  analytics.averageQuizScore,
+                  analytics.quizScoreStudentCount,
+                  analytics.allStudents.length
+                )}
+              />
+              <HealthCard
+                label="Avg workbook completion"
+                value={`${analytics.averageWorkbookCompletionPercent}%`}
+              />
+              <HealthCard
+                label="No workbook activity"
+                value={`${analytics.studentsWithZeroWorkbookActivity} students`}
               />
               <HealthCard label="Avg XP" value={`${analytics.averageXp}`} />
               <HealthCard
@@ -108,6 +123,20 @@ export default async function AdminDashboardPage({ params }: PageProps) {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Live session attendance</CardTitle>
+          <CardDescription>
+            Attendance is tracked separately from module completion
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <LiveSessionAttendanceSummary
+            rates={analytics.liveSessionAttendanceRates}
+          />
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -160,6 +189,8 @@ export default async function AdminDashboardPage({ params }: PageProps) {
                 <tr className="border-b text-muted-foreground">
                   <th className="py-2 pr-4">Name</th>
                   <th className="py-2 pr-4">Completion</th>
+                  <th className="py-2 pr-4">Workbook</th>
+                  <th className="py-2 pr-4">Live sessions</th>
                   <th className="py-2 pr-4">XP</th>
                   <th className="py-2 pr-4">Rank</th>
                   <th className="py-2">Flag</th>
@@ -181,6 +212,13 @@ export default async function AdminDashboardPage({ params }: PageProps) {
                       </Link>
                     </td>
                     <td className="py-2 pr-4">{s.completionPercent}%</td>
+                    <td className="py-2 pr-4">
+                      <WorkbookActivityLabel student={s} />
+                    </td>
+                    <td className="py-2 pr-4">
+                      {s.liveAttendance.attendedCount} of{" "}
+                      {s.liveAttendance.total}
+                    </td>
                     <td className="py-2 pr-4">{s.xp}</td>
                     <td className="py-2 pr-4">{s.rank ?? "—"}</td>
                     <td className="py-2">{s.hasFlag ? "Flagged" : "—"}</td>

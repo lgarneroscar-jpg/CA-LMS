@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { CohortAnalytics } from "@/lib/cohort-analytics";
+import { AttentionReasonChips } from "@/components/admin/reporting-labels";
 
 type AdminDashboardClientProps = {
   institutionId: string;
@@ -184,16 +185,19 @@ export function CohortRankingsList({
             <li className="py-2 text-muted-foreground">No students flagged by pace.</li>
           ) : (
             bottomStudents.map((s) => (
-              <li key={s.id} className="flex items-center justify-between py-2">
-                <Link
-                  href={`/admin/${institutionId}/students/${s.id}`}
-                  className="hover:underline"
-                >
-                  {s.full_name ?? "Unnamed"}
-                </Link>
-                <span className="text-muted-foreground">
-                  {s.completionPercent}% · {s.xp} XP
-                </span>
+              <li key={s.id} className="py-2">
+                <div className="flex items-start justify-between gap-3">
+                  <Link
+                    href={`/admin/${institutionId}/students/${s.id}`}
+                    className="hover:underline"
+                  >
+                    {s.full_name ?? "Unnamed"}
+                  </Link>
+                  <span className="shrink-0 text-muted-foreground">
+                    {s.completionPercent}% · {s.xp} XP
+                  </span>
+                </div>
+                <AttentionReasonChips student={s} />
               </li>
             ))
           )}

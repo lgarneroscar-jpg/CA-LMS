@@ -1,6 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
 import {
+  buildAttentionReasons,
+  compareStudentsForRoster,
+} from "@/lib/admin-reporting";
+import {
   formatCohortWeekLabel,
   getDisplayProgramWeek,
   getProgramWeek,
@@ -8,6 +12,15 @@ import {
 } from "@/lib/drip";
 import { getPaceStatus } from "@/lib/pace";
 import { getProgressWeek, type ProgressModuleRef } from "@/lib/program";
+import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  computeModuleWorkbookBreakdown,
+  computeStudentWorkbookMetrics,
+  parseModuleExerciseCatalog,
+  type ExerciseAnswerMetaRow,
+  type ModuleWorkbookBreakdown,
+} from "@/lib/workbook-activity";
+import type { AttentionReason } from "@/lib/admin-reporting";
 
 type DbClient = SupabaseClient<Database>;
 
@@ -16,6 +29,15 @@ export type LiveSessionRef = {
   module_code: string;
   title: string;
   unlock_week: number;
+};
+
+export type LiveSessionAttendanceRate = {
+  sessionId: string;
+  moduleCode: string;
+  title: string;
+  attendedCount: number;
+  totalStudents: number;
+  rate: number;
 };
 
 export type CohortStudentMetrics = {
@@ -29,6 +51,7 @@ export type CohortStudentMetrics = {
   diagnostic_complete: boolean;
   completionPercent: number;
   quizAverage: number;
+  quizModulesTaken: number;
   isBehindPace: boolean;
   hasFlag: boolean;
   flagNote: string | null;
@@ -37,6 +60,12 @@ export type CohortStudentMetrics = {
     attendedCount: number;
     total: number;
   };
+  workbookAnswered: number;
+  workbookTotal: number;
+  workbookPercent: number;
+  lastWorkbookActivity: string | null;
+  workbookModulesTouched: number;
+  attentionReasons: AttentionReason[];
 };
 
 export type CohortAnalytics = {
@@ -50,8 +79,12 @@ export type CohortAnalytics = {
   cohortWeekLabel: string;
   targetWeek: number;
   pacePercent: number;
+  /** Includes every student — a non-starter is genuinely 0% complete. */
   overallCompletionRate: number;
-  averageQuizScore: number;
+  averageQuizScore: number | null;
+  quizScoreStudentCount: number;
+  averageWorkbookCompletionPercent: number;
+  studentsWithZeroWorkbookActivity: number;
   averageXp: number;
   weeklyEngagementScore: number;
   moduleCompletionRates: {
@@ -63,6 +96,7 @@ export type CohortAnalytics = {
     incompleteStudentIds: string[];
   }[];
   liveSessions: LiveSessionRef[];
+  liveSessionAttendanceRates: LiveSessionAttendanceRate[];
   topStudents: CohortStudentMetrics[];
   bottomStudents: CohortStudentMetrics[];
   allStudents: CohortStudentMetrics[];
@@ -104,6 +138,112 @@ function failQuery(label: string, message: string): never {
   throw new Error(`cohort-analytics ${label}: ${message}`);
 }
 
+/** Service role for exercise_answers — RLS only allows own/public rows. */
+function getExerciseAnswersClient(fallback: DbClient): DbClient {
+  try {
+    return createAdminClient();
+  } catch {
+    return fallback;
+  }
+}
+
+async function fetchExerciseAnswerMeta(
+  supabase: DbClient,
+  studentIds: string[],
+  emptyStudentFilter: string[]
+): Promise<ExerciseAnswerMetaRow[]> {
+  const answersClient = getExerciseAnswersClient(supabase);
+  const { data, error } = await answersClient
+    .from("exercise_answers")
+    .select("user_id, module_id, exercise_key, answer, updated_at")
+    .in("user_id", studentIds.length ? studentIds : emptyStudentFilter);
+
+  if (error) {
+    failQuery("exercise_answers", error.message);
+  }
+
+  return (data ?? []) as ExerciseAnswerMetaRow[];
+}
+
+export async function getStudentModuleBreakdown(
+  supabase: DbClient,
+  institutionId: string,
+  studentId: string
+): Promise<ModuleWorkbookBreakdown[] | null> {
+  const { data: student, error: studentError } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", studentId)
+    .eq("institution_id", institutionId)
+    .eq("role", "student")
+    .single();
+
+  if (studentError) {
+    failQuery("student profile", studentError.message);
+  }
+  if (!student) return null;
+
+  const { data: modules, error: modulesError } = await supabase
+    .from("modules")
+    .select("id, module_code, title, is_live_session, exercises, unlock_week, order_index")
+    .order("unlock_week")
+    .order("order_index");
+
+  if (modulesError) {
+    failQuery("modules", modulesError.message);
+  }
+
+  const { data: progress, error: progressError } = await supabase
+    .from("student_progress")
+    .select("module_id, is_complete, quiz_score")
+    .eq("student_id", studentId);
+
+  if (progressError) {
+    failQuery("student_progress", progressError.message);
+  }
+
+  const { data: quizCounts, error: quizCountsError } = await supabase
+    .from("quiz_questions")
+    .select("module_id");
+
+  if (quizCountsError) {
+    failQuery("quiz_questions", quizCountsError.message);
+  }
+
+  const quizTotalByModule = new Map<string, number>();
+  (quizCounts ?? []).forEach((q) => {
+    quizTotalByModule.set(
+      q.module_id,
+      (quizTotalByModule.get(q.module_id) ?? 0) + 1
+    );
+  });
+
+  const contentModules = (modules ?? []).filter((m) => !m.is_live_session);
+  const catalog = parseModuleExerciseCatalog(contentModules);
+  const answers = await fetchExerciseAnswerMeta(supabase, [studentId], [
+    studentId,
+  ]);
+
+  const progressByModule = new Map(
+    (progress ?? []).map((row) => [
+      row.module_id,
+      {
+        is_complete: row.is_complete,
+        quiz_score: row.quiz_score,
+      },
+    ])
+  );
+
+  return computeModuleWorkbookBreakdown({
+    modules: modules ?? [],
+    catalog,
+    answers,
+    studentId,
+    quizTotalByModule,
+    progressByModule,
+  });
+}
+
 export async function getCohortAnalytics(
   supabase: DbClient,
   institutionId: string
@@ -123,7 +263,6 @@ export async function getCohortAnalytics(
   const displayWeek = getDisplayProgramWeek(currentWeek);
   const programComplete = currentWeek > PROGRAM_LENGTH_WEEKS;
   const cohortWeekLabel = formatCohortWeekLabel(currentWeek);
-  // Clamp for clarity; unlock_week max is 12 so pace math is unchanged either way.
   const targetWeek = Math.min(Math.max(1, currentWeek), PROGRAM_LENGTH_WEEKS);
 
   const { data: students, error: studentsError } = await supabase
@@ -144,7 +283,9 @@ export async function getCohortAnalytics(
 
   const { data: modules, error: modulesError } = await supabase
     .from("modules")
-    .select("id, module_code, title, unlock_week, is_live_session, order_index")
+    .select(
+      "id, module_code, title, unlock_week, is_live_session, order_index, exercises"
+    )
     .eq("is_live_session", false)
     .order("unlock_week")
     .order("order_index");
@@ -229,9 +370,15 @@ export async function getCohortAnalytics(
 
   const activeUsers = new Set((recentLogins ?? []).map((l) => l.user_id));
 
+  const exerciseCatalog = parseModuleExerciseCatalog(modules ?? []);
+  const exerciseAnswers = await fetchExerciseAnswerMeta(
+    supabase,
+    studentIds,
+    emptyStudentFilter
+  );
+
   const emails = new Map<string, string>();
   for (const student of students ?? []) {
-    // Email fetched separately in export; placeholder for analytics list
     emails.set(student.id, "");
   }
 
@@ -282,60 +429,81 @@ export async function getCohortAnalytics(
       ? Math.round(paceCompletionSum / paceCompletionCount)
       : 0;
 
-  const allStudents: CohortStudentMetrics[] = (students ?? []).map((student) => {
-    const studentProgress = (progress ?? []).filter(
-      (p) => p.student_id === student.id && p.is_complete
-    );
-    const completedCount = studentProgress.filter((p) =>
-      contentModuleIds.has(p.module_id)
-    ).length;
-    const completionPercent =
-      totalModules > 0 ? Math.round((completedCount / totalModules) * 100) : 0;
-    const attendedModuleIds = liveSessionIds.filter((moduleId) =>
-      studentProgress.some((p) => p.module_id === moduleId)
-    );
+  const allStudentsUnsorted: CohortStudentMetrics[] = (students ?? []).map(
+    (student) => {
+      const studentProgress = (progress ?? []).filter(
+        (p) => p.student_id === student.id && p.is_complete
+      );
+      const completedCount = studentProgress.filter((p) =>
+        contentModuleIds.has(p.module_id)
+      ).length;
+      const completionPercent =
+        totalModules > 0 ? Math.round((completedCount / totalModules) * 100) : 0;
+      const attendedModuleIds = liveSessionIds.filter((moduleId) =>
+        studentProgress.some((p) => p.module_id === moduleId)
+      );
 
-    let quizSum = 0;
-    let quizCount = 0;
-    for (const row of studentProgress) {
-      const total = quizTotalByModule.get(row.module_id) ?? 0;
-      if (total > 0 && row.quiz_score != null) {
-        quizSum += row.quiz_score / total;
-        quizCount += 1;
+      let quizSum = 0;
+      let quizCount = 0;
+      for (const row of studentProgress) {
+        const total = quizTotalByModule.get(row.module_id) ?? 0;
+        if (total > 0 && row.quiz_score != null) {
+          quizSum += row.quiz_score / total;
+          quizCount += 1;
+        }
       }
+
+      const progressWeek = getStudentProgressWeek(
+        student.id,
+        modules ?? [],
+        progress ?? []
+      );
+
+      const workbook = computeStudentWorkbookMetrics(
+        student.id,
+        exerciseCatalog,
+        exerciseAnswers
+      );
+
+      const base: Omit<CohortStudentMetrics, "attentionReasons"> = {
+        id: student.id,
+        full_name: student.full_name,
+        email: emails.get(student.id) ?? "",
+        xp: student.xp,
+        rank: student.rank,
+        last_login: student.last_login,
+        last_active_date: student.last_active_date,
+        diagnostic_complete: student.diagnostic_complete,
+        completionPercent,
+        quizAverage:
+          quizCount > 0 ? Math.round((quizSum / quizCount) * 100) : 0,
+        quizModulesTaken: quizCount,
+        isBehindPace: isStudentBehindPace(
+          student.program_started_at,
+          progressWeek
+        ),
+        hasFlag: flagByStudent.has(student.id),
+        flagNote: flagByStudent.get(student.id) ?? null,
+        liveAttendance: {
+          attendedModuleIds,
+          attendedCount: attendedModuleIds.length,
+          total: liveSessions.length,
+        },
+        workbookAnswered: workbook.workbookAnswered,
+        workbookTotal: workbook.workbookTotal,
+        workbookPercent: workbook.workbookPercent,
+        lastWorkbookActivity: workbook.lastWorkbookActivity,
+        workbookModulesTouched: workbook.workbookModulesTouched,
+      };
+
+      return {
+        ...base,
+        attentionReasons: buildAttentionReasons(base),
+      };
     }
+  );
 
-    const progressWeek = getStudentProgressWeek(
-      student.id,
-      modules ?? [],
-      progress ?? []
-    );
-
-    return {
-      id: student.id,
-      full_name: student.full_name,
-      email: emails.get(student.id) ?? "",
-      xp: student.xp,
-      rank: student.rank,
-      last_login: student.last_login,
-      last_active_date: student.last_active_date,
-      diagnostic_complete: student.diagnostic_complete,
-      completionPercent,
-      quizAverage:
-        quizCount > 0 ? Math.round((quizSum / quizCount) * 100) : 0,
-      isBehindPace: isStudentBehindPace(
-        student.program_started_at,
-        progressWeek
-      ),
-      hasFlag: flagByStudent.has(student.id),
-      flagNote: flagByStudent.get(student.id) ?? null,
-      liveAttendance: {
-        attendedModuleIds,
-        attendedCount: attendedModuleIds.length,
-        total: liveSessions.length,
-      },
-    };
-  });
+  const allStudents = [...allStudentsUnsorted].sort(compareStudentsForRoster);
 
   const sortedByXp = [...allStudents].sort((a, b) => b.xp - a.xp);
   const topStudents = sortedByXp.slice(0, 10);
@@ -344,6 +512,7 @@ export async function getCohortAnalytics(
     .sort((a, b) => a.completionPercent - b.completionPercent)
     .slice(0, 5);
 
+  // Deliberately includes non-starters at 0% — unlike averageQuizScore below.
   const overallCompletionRate =
     allStudents.length > 0
       ? Math.round(
@@ -352,13 +521,28 @@ export async function getCohortAnalytics(
         )
       : 0;
 
+  const studentsWithQuizScores = allStudents.filter(
+    (s) => s.quizModulesTaken > 0
+  );
   const averageQuizScore =
+    studentsWithQuizScores.length > 0
+      ? Math.round(
+          studentsWithQuizScores.reduce((sum, s) => sum + s.quizAverage, 0) /
+            studentsWithQuizScores.length
+        )
+      : null;
+
+  const averageWorkbookCompletionPercent =
     allStudents.length > 0
       ? Math.round(
-          allStudents.reduce((sum, s) => sum + s.quizAverage, 0) /
+          allStudents.reduce((sum, s) => sum + s.workbookPercent, 0) /
             allStudents.length
         )
       : 0;
+
+  const studentsWithZeroWorkbookActivity = allStudents.filter(
+    (s) => s.workbookAnswered === 0
+  ).length;
 
   const averageXp =
     allStudents.length > 0
@@ -371,6 +555,30 @@ export async function getCohortAnalytics(
     (activeUsers.size / cohortSize) * 100
   );
 
+  const liveSessionAttendanceRates: LiveSessionAttendanceRate[] =
+    liveSessions.map((session) => {
+      const attendedCount = (students ?? []).filter((student) =>
+        (progress ?? []).some(
+          (row) =>
+            row.student_id === student.id &&
+            row.module_id === session.id &&
+            row.is_complete
+        )
+      ).length;
+
+      return {
+        sessionId: session.id,
+        moduleCode: session.module_code,
+        title: session.title,
+        attendedCount,
+        totalStudents: cohortSize,
+        rate:
+          cohortSize > 0
+            ? Math.round((attendedCount / cohortSize) * 100)
+            : 0,
+      };
+    });
+
   return {
     currentWeek,
     displayWeek,
@@ -380,10 +588,14 @@ export async function getCohortAnalytics(
     pacePercent,
     overallCompletionRate,
     averageQuizScore,
+    quizScoreStudentCount: studentsWithQuizScores.length,
+    averageWorkbookCompletionPercent,
+    studentsWithZeroWorkbookActivity,
     averageXp,
     weeklyEngagementScore,
     moduleCompletionRates,
     liveSessions,
+    liveSessionAttendanceRates,
     topStudents,
     bottomStudents,
     allStudents,

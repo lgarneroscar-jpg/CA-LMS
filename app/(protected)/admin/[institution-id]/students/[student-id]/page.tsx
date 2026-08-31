@@ -2,7 +2,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import {
+  getCohortAnalytics,
+  getStudentModuleBreakdown,
+} from "@/lib/cohort-analytics";
+import { formatWorkbookActivityLabel } from "@/lib/admin-reporting";
 import { FlagStudentForm } from "@/components/admin/flag-student-form";
+import {
+  formatQuizScoreDisplay,
+  isLowQuizScore,
+} from "@/lib/workbook-activity";
 import {
   Card,
   CardContent,
@@ -40,48 +49,24 @@ export default async function AdminStudentDetailPage({ params }: PageProps) {
 
   if (!student) notFound();
 
-  const { data: flag } = await supabase
-    .from("flags")
-    .select("note, created_at")
-    .eq("student_id", studentId)
-    .maybeSingle();
+  const [analytics, moduleBreakdown, flagResult, diagnosticResult] =
+    await Promise.all([
+      getCohortAnalytics(supabase, institutionId),
+      getStudentModuleBreakdown(supabase, institutionId, studentId),
+      supabase
+        .from("flags")
+        .select("note, created_at")
+        .eq("student_id", studentId)
+        .maybeSingle(),
+      supabase
+        .from("diagnostic_responses")
+        .select("question_key, response")
+        .eq("student_id", studentId),
+    ]);
 
-  const { data: modules } = await supabase
-    .from("modules")
-    .select("id, module_code, title, is_live_session")
-    .order("unlock_week")
-    .order("order_index");
-
-  const { data: progress } = await supabase
-    .from("student_progress")
-    .select("*")
-    .eq("student_id", studentId);
-
-  const { data: diagnostic } = await supabase
-    .from("diagnostic_responses")
-    .select("question_key, response")
-    .eq("student_id", studentId);
-
-  const { data: quizCounts } = await supabase
-    .from("quiz_questions")
-    .select("module_id");
-
-  const quizTotalByModule = new Map<string, number>();
-  (quizCounts ?? []).forEach((q) => {
-    quizTotalByModule.set(
-      q.module_id,
-      (quizTotalByModule.get(q.module_id) ?? 0) + 1
-    );
-  });
-
-  const progressByModule = new Map(
-    (progress ?? []).map((p) => [p.module_id, p])
-  );
-
-  const liveSessions = (modules ?? []).filter((m) => m.is_live_session);
-  const liveAttendedCount = liveSessions.filter(
-    (m) => progressByModule.get(m.id)?.is_complete
-  ).length;
+  const flag = flagResult.data;
+  const diagnostic = diagnosticResult.data;
+  const studentMetrics = analytics?.allStudents.find((s) => s.id === studentId);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -98,9 +83,20 @@ export default async function AdminStudentDetailPage({ params }: PageProps) {
         <div className="mt-2 flex flex-wrap gap-2">
           <Badge variant="secondary">{student.xp} XP</Badge>
           <Badge variant="outline">Rank {student.rank ?? "—"}</Badge>
-          <Badge variant="outline">
-            Live sessions {liveAttendedCount} of {liveSessions.length}
-          </Badge>
+          {studentMetrics ? (
+            <>
+              <Badge variant="outline">
+                Completion {studentMetrics.completionPercent}%
+              </Badge>
+              <Badge variant="outline">
+                Live sessions {studentMetrics.liveAttendance.attendedCount} of{" "}
+                {studentMetrics.liveAttendance.total}
+              </Badge>
+              <Badge variant="outline">
+                {formatWorkbookActivityLabel(studentMetrics)}
+              </Badge>
+            </>
+          ) : null}
           {flag ? <Badge variant="destructive">Flagged</Badge> : null}
         </div>
       </div>
@@ -129,39 +125,59 @@ export default async function AdminStudentDetailPage({ params }: PageProps) {
       <Card>
         <CardHeader>
           <CardTitle>Module history</CardTitle>
+          <CardDescription>
+            Workbook counts only — answer content is never shown to admins
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <ul className="divide-y divide-border text-sm">
-            {(modules ?? []).map((mod) => {
-              const row = progressByModule.get(mod.id);
-              const quizTotal = quizTotalByModule.get(mod.id) ?? 0;
+            {(moduleBreakdown ?? []).map((mod) => {
+              // QUIZ_SCORE_IS_RAW_COUNT — quiz_score is correct answers, not a percentage.
+              const quizDisplay = formatQuizScoreDisplay(
+                mod.quizScore,
+                mod.quizTotal
+              );
+              const lowQuiz = isLowQuizScore(mod.quizScore, mod.quizTotal);
+
               return (
                 <li
-                  key={mod.id}
-                  className="flex flex-col gap-1 py-2 sm:flex-row sm:justify-between"
+                  key={mod.moduleId}
+                  className="flex flex-col gap-1 py-2 sm:flex-row sm:items-start sm:justify-between"
                 >
                   <span>
                     <span className="font-mono text-xs text-muted-foreground">
-                      {mod.module_code}
+                      {mod.moduleCode}
                     </span>{" "}
                     {mod.title}
                   </span>
-                  <span className="text-muted-foreground">
-                    {mod.is_live_session
-                      ? row?.is_complete
-                        ? `Attended${
-                            row.completed_at
-                              ? ` · ${new Date(row.completed_at).toLocaleDateString()}`
-                              : ""
-                          }`
-                        : "Not attended"
-                      : row?.is_complete
-                        ? `Complete · ${row.completed_at ? new Date(row.completed_at).toLocaleDateString() : ""}${
-                            quizTotal > 0
-                              ? ` · Quiz ${row.quiz_score}/${quizTotal}`
-                              : ""
-                          }`
-                        : "Not complete"}
+                  <span className="text-right text-muted-foreground">
+                    {mod.isLiveSession ? (
+                      mod.isComplete ? "Attended" : "Not attended"
+                    ) : (
+                      <span className="inline-flex flex-col items-end gap-1">
+                        {mod.isComplete ? (
+                          <span>Complete</span>
+                        ) : (
+                          <span>Not complete</span>
+                        )}
+                        {mod.exercisesTotal > 0 ? (
+                          <span>
+                            Workbook {mod.exercisesAnswered} of{" "}
+                            {mod.exercisesTotal}
+                          </span>
+                        ) : null}
+                        {quizDisplay ? (
+                          <span
+                            className={
+                              lowQuiz ? "font-medium text-amber-700" : undefined
+                            }
+                          >
+                            Quiz {quizDisplay}
+                            {lowQuiz ? " · below 50%" : ""}
+                          </span>
+                        ) : null}
+                      </span>
+                    )}
                   </span>
                 </li>
               );

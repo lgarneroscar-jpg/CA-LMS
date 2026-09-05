@@ -1,19 +1,29 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { HelpCircle, Lock } from "lucide-react";
 import { submitQuiz } from "@/app/actions/module-progress";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
-import { isQuizLocked } from "@/lib/module-gates";
+import {
+  isQuizLocked,
+  isQuizPassingScore,
+  quizPassCorrectCount,
+} from "@/lib/module-gates";
 import { StationHeaderV2 } from "@/components/modules/v2/station-header";
 
 export type QuizQuestionView = {
   id: string;
   question: string;
   options: { id: string; label: string }[];
+};
+
+export type IncompleteExerciseRef = {
+  key: string;
+  title: string;
 };
 
 type QuizSectionProps = {
@@ -23,6 +33,7 @@ type QuizSectionProps = {
   questions: QuizQuestionView[];
   correctAnswers: Record<string, string>;
   exercisesSubmitted: boolean;
+  incompleteExercises?: IncompleteExerciseRef[];
   quizCompleted: boolean;
   quizScore: number | null;
   variant?: "default" | "lift";
@@ -44,6 +55,7 @@ export function QuizSection({
   questions,
   correctAnswers,
   exercisesSubmitted,
+  incompleteExercises = [],
   quizCompleted,
   quizScore,
   variant = "default",
@@ -54,11 +66,19 @@ export function QuizSection({
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [completed, setCompleted] = useState(quizCompleted);
+  const [passed, setPassed] = useState(quizCompleted);
   const [score, setScore] = useState(quizScore);
+  const [lastTotal, setLastTotal] = useState(questions.length);
+  const [showRetake, setShowRetake] = useState(false);
 
   const locked = isQuizLocked(exercisesSubmitted);
   const isLift = variant === "lift";
+  const passRequired = quizPassCorrectCount(questions.length);
+  const attemptedBelowThreshold =
+    !passed &&
+    score != null &&
+    !isQuizPassingScore(score, lastTotal) &&
+    !showRetake;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -73,9 +93,12 @@ export function QuizSection({
         questions.map((q) => q.id),
         correctAnswers
       );
-      setCompleted(true);
       setScore(result.score);
-      if (result.moduleCompleted) {
+      setLastTotal(result.total);
+      setPassed(result.passed);
+      setShowRetake(false);
+      setAnswers({});
+      if (result.passed && result.moduleCompleted) {
         onModuleComplete(
           result.xpEarned,
           result.score,
@@ -90,6 +113,15 @@ export function QuizSection({
       setLoading(false);
     }
   }
+
+  function startRetake() {
+    setShowRetake(true);
+    setAnswers({});
+    setError(null);
+  }
+
+  const scoreLabel =
+    score !== null ? `Score: ${score}/${lastTotal || questions.length}` : null;
 
   return (
     <section
@@ -107,28 +139,26 @@ export function QuizSection({
           status={liftStationStatus}
         />
       ) : (
-      <div className="flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <HelpCircle className="size-5 text-primary" />
-          Module quiz
-        </h2>
-        {locked && (
-          <span className="flex items-center gap-1 text-sm text-muted-foreground">
-            <Lock className="size-4" />
-            Submit exercises first
-          </span>
-        )}
-        {completed && score !== null && (
-          <span className="text-sm font-medium text-accent">
-            Score: {score}/{questions.length}
-          </span>
-        )}
-      </div>
+        <div className="flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <HelpCircle className="size-5 text-primary" />
+            Module quiz
+          </h2>
+          {locked && (
+            <span className="flex items-center gap-1 text-sm text-muted-foreground">
+              <Lock className="size-4" />
+              Finish exercises first
+            </span>
+          )}
+          {!locked && scoreLabel ? (
+            <span className="text-sm font-medium text-accent">{scoreLabel}</span>
+          ) : null}
+        </div>
       )}
-      {isLift && completed && score !== null ? (
+      {isLift && scoreLabel && !locked ? (
         <div className="flex justify-end">
           <span className="rounded-full bg-lift-muted px-4 py-1.5 text-sm font-semibold text-lift">
-            Score: {score}/{questions.length}
+            {scoreLabel}
           </span>
         </div>
       ) : null}
@@ -136,19 +166,78 @@ export function QuizSection({
         <div className="flex justify-end">
           <span className="flex items-center gap-1 text-sm text-muted-foreground">
             <Lock className="size-4" />
-            Submit exercises first
+            Finish exercises first
           </span>
         </div>
       ) : null}
 
       {locked ? (
+        <div className="space-y-3 text-sm text-muted-foreground">
+          <p>
+            The quiz unlocks after every workbook exercise has an answer.
+          </p>
+          {incompleteExercises.length > 0 ? (
+            <div className="space-y-2">
+              <p className="font-medium text-foreground">Still to finish:</p>
+              <ul className="list-inside list-disc space-y-1">
+                {incompleteExercises.map((exercise) => (
+                  <li key={exercise.key}>{exercise.title}</li>
+                ))}
+              </ul>
+              <Link
+                href="#station-do"
+                className="inline-flex text-sm font-medium text-primary underline underline-offset-2"
+                onClick={(event) => {
+                  const target = document.getElementById("station-do");
+                  if (target) {
+                    event.preventDefault();
+                    target.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }
+                }}
+              >
+                Go to exercises →
+              </Link>
+            </div>
+          ) : (
+            <Link
+              href="#station-do"
+              className="inline-flex text-sm font-medium text-primary underline underline-offset-2"
+              onClick={(event) => {
+                const target =
+                  document.getElementById("station-do") ??
+                  document.querySelector("[data-exercise-section]");
+                if (target) {
+                  event.preventDefault();
+                  target.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
+              }}
+            >
+              Go to exercises →
+            </Link>
+          )}
+        </div>
+      ) : passed ? (
         <p className="text-sm text-muted-foreground">
-          Five questions unlock after you submit your exercise responses.
+          Quiz passed. Your score has been recorded
+          {score !== null
+            ? ` (${score} of ${lastTotal || questions.length}).`
+            : "."}
         </p>
-      ) : completed ? (
-        <p className="text-sm text-muted-foreground">
-          Quiz complete. Your score has been recorded.
-        </p>
+      ) : attemptedBelowThreshold ? (
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            You scored {score} of {lastTotal}. You need {passRequired} of{" "}
+            {lastTotal} to complete this module — take another try when you are
+            ready.
+          </p>
+          <Button
+            type="button"
+            onClick={startRetake}
+            className={cn(isLift && "lift-btn")}
+          >
+            Retake quiz
+          </Button>
+        </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-8">
           {questions.map((q, index) => (

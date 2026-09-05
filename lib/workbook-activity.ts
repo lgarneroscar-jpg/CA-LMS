@@ -238,8 +238,16 @@ export function formatQuizScoreDisplay(
   quizTotal: number
 ): string | null {
   if (quizTotal <= 0 || quizScore == null) return null;
-  const percent = Math.round((quizScore / quizTotal) * 100);
-  return `${quizScore} of ${quizTotal} (${percent}%)`;
+  // Clamp at 100% — quiz_score is a raw correct count; values above
+  // questionCount are data bugs (e.g. pre-Q1 seeds) and must not render as 125%.
+  if (quizScore > quizTotal) {
+    console.warn(
+      `[quiz-score] quiz_score ${quizScore} exceeds questionCount ${quizTotal}; clamping display to 100%`
+    );
+  }
+  const clampedScore = Math.min(quizScore, quizTotal);
+  const percent = Math.round((clampedScore / quizTotal) * 100);
+  return `${clampedScore} of ${quizTotal} (${percent}%)`;
 }
 
 export function isLowQuizScore(
@@ -247,5 +255,20 @@ export function isLowQuizScore(
   quizTotal: number
 ): boolean {
   if (quizTotal <= 0 || quizScore == null) return false;
-  return quizScore / quizTotal < 0.5;
+  return Math.min(quizScore, quizTotal) / quizTotal < 0.5;
+}
+
+/** Clamped percentage for reporting (0–100). Logs when score exceeds total. */
+export function clampedQuizPercent(
+  quizScore: number,
+  questionCount: number
+): number {
+  if (questionCount <= 0) return 0;
+  if (quizScore > questionCount) {
+    console.warn(
+      `[quiz-score] quiz_score ${quizScore} exceeds questionCount ${questionCount}; clamping display to 100%`
+    );
+    return 100;
+  }
+  return Math.round((quizScore / questionCount) * 100);
 }

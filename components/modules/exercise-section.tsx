@@ -14,9 +14,22 @@ import { ExerciseCard } from "@/components/modules/exercise-card";
 import type { ExerciseField } from "@/types/modules";
 import { isStructuredExercise } from "@/types/modules";
 import type { SavedExerciseAnswer } from "@/lib/exercise-answers";
+import {
+  isAnswerEmpty,
+  parseAnswerData,
+} from "@/lib/exercise-answers";
 import { isExercisesLocked } from "@/lib/module-gates";
 import { StationHeaderV2 } from "@/components/modules/v2/station-header";
 import { cn } from "@/lib/utils";
+
+function isSavedAnswerNonEmpty(
+  field: Extract<ExerciseField, { input_type: string; fields: unknown[] }>,
+  saved: SavedExerciseAnswer | undefined
+): boolean {
+  if (!saved) return false;
+  const data = parseAnswerData(saved.answer);
+  return !isAnswerEmpty(field.input_type, data, field.fields, field.key);
+}
 
 function isLegacyExercise(
   field: ExerciseField
@@ -80,9 +93,11 @@ export function ExerciseSection({
     [exercises]
   );
   const structuredKeys = structuredExercises.map((e) => e.key);
-  const allStructuredSaved =
+  const allStructuredAnswered =
     structuredKeys.length > 0 &&
-    structuredKeys.every((key) => Boolean(savedAnswers[key]));
+    structuredExercises.every((exercise) =>
+      isSavedAnswerNonEmpty(exercise, savedAnswers[exercise.key])
+    );
 
   function handleAnswerSaved(saved: SavedExerciseAnswer) {
     setSavedAnswers((prev) => ({ ...prev, [saved.exercise_key]: saved }));
@@ -136,6 +151,7 @@ export function ExerciseSection({
         isLift ? "scroll-mt-40 space-y-8" : "space-y-6 rounded-xl border border-border p-6",
         !isLift && locked && "bg-muted/20"
       )}
+      data-exercise-section
     >
       {isLift ? (
         <StationHeaderV2
@@ -307,7 +323,7 @@ export function ExerciseSection({
               type="button"
               variant={isLift ? "default" : "secondary"}
               className={cn(isLift && "lift-btn")}
-              disabled={!allStructuredSaved || continueLoading}
+              disabled={!allStructuredAnswered || continueLoading}
               onClick={handleContinueToQuiz}
             >
               {continueLoading ? "Continuing…" : "Continue to quiz"}

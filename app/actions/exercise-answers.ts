@@ -5,7 +5,13 @@ import { createClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth";
 import { getOrCreateProgress } from "@/lib/progress";
 import { assertVideoWatched } from "@/lib/module-gates";
-import type { ExerciseAnswerData } from "@/lib/exercise-answers";
+import {
+  isAnswerEmpty,
+  parseAnswerData,
+  type ExerciseAnswerData,
+} from "@/lib/exercise-answers";
+import { normalizeExerciseField } from "@/lib/content-normalize";
+import { isStructuredExercise } from "@/types/modules";
 import type { Json } from "@/types/database";
 
 async function requireStudent() {
@@ -151,19 +157,78 @@ export async function markExercisesReadyForQuiz(
   const progress = await getOrCreateProgress(user.id, moduleId);
   assertVideoWatched(progress.video_watched, "Watch the video before continuing");
 
+  const { data: moduleRow, error: moduleError } = await supabase
+    .from("modules")
+    .select("exercises")
+    .eq("id", moduleId)
+    .single();
+
+  if (moduleError) throw new Error(moduleError.message);
+
+  const exerciseDefs = Array.isArray(moduleRow?.exercises)
+    ? moduleRow.exercises
+        .map((item) =>
+          item && typeof item === "object"
+            ? normalizeExerciseField(item as Record<string, unknown>)
+            : null
+        )
+        .filter(
+          (
+            field
+          ): field is Extract<
+            import("@/types/modules").ExerciseField,
+            { input_type: string; fields: { key: string; label: string }[] }
+          > => field !== null && isStructuredExercise(field)
+        )
+    : [];
+
+  const requiredKeys =
+    exerciseKeys.length > 0
+      ? exerciseKeys
+      : exerciseDefs.map((exercise) => exercise.key);
+
   const { data: savedRows, error: fetchError } = await supabase
     .from("exercise_answers")
-    .select("exercise_key")
+    .select("exercise_key, answer")
     .eq("user_id", user.id)
     .eq("module_id", moduleId)
-    .in("exercise_key", exerciseKeys);
+    .in("exercise_key", requiredKeys);
 
   if (fetchError) throw new Error(fetchError.message);
 
-  const savedKeys = new Set((savedRows ?? []).map((r) => r.exercise_key));
-  const missing = exerciseKeys.filter((k) => !savedKeys.has(k));
-  if (missing.length > 0) {
-    throw new Error("Save every exercise before continuing to the quiz");
+  const answerByKey = new Map(
+    (savedRows ?? []).map((row) => [row.exercise_key, row.answer])
+  );
+
+  const missingTitles: string[] = [];
+  for (const key of requiredKeys) {
+    const def = exerciseDefs.find((exercise) => exercise.key === key);
+    const title = def?.title || def?.label || key;
+    const raw = answerByKey.get(key);
+    if (raw === undefined) {
+      missingTitles.push(title);
+      continue;
+    }
+    if (!def) {
+      const data = parseAnswerData(raw);
+      if (Object.keys(data.values).length === 0) {
+        missingTitles.push(title);
+      }
+      continue;
+    }
+    const data = parseAnswerData(raw);
+    if (isAnswerEmpty(def.input_type, data, def.fields, def.key)) {
+      missingTitles.push(title);
+    }
+  }
+
+  if (missingTitles.length > 0) {
+    const listed = missingTitles.join(", ");
+    throw new Error(
+      missingTitles.length === 1
+        ? `Finish “${listed}” before continuing to the quiz`
+        : `Finish these exercises before continuing to the quiz: ${listed}`
+    );
   }
 
   await supabase

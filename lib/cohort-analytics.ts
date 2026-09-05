@@ -20,9 +20,11 @@ import {
   computeModuleWorkbookBreakdown,
   computeStudentWorkbookMetrics,
   parseModuleExerciseCatalog,
+  clampedQuizPercent,
   type ExerciseAnswerMetaRow,
   type ModuleWorkbookBreakdown,
 } from "@/lib/workbook-activity";
+import { isQuizPassingScore } from "@/lib/module-gates";
 import type { AttentionReason } from "@/lib/admin-reporting";
 
 type DbClient = SupabaseClient<Database>;
@@ -71,6 +73,8 @@ export type CohortStudentMetrics = {
   videoModulesWatched: number;
   quizAverage: number;
   quizModulesTaken: number;
+  /** Modules where the student has a quiz score but has not yet passed (≥75%). */
+  quizBelowThresholdCount: number;
   isBehindPace: boolean;
   hasFlag: boolean;
   flagNote: string | null;
@@ -504,11 +508,18 @@ export async function getCohortAnalytics(
 
       let quizSum = 0;
       let quizCount = 0;
-      for (const row of studentProgress) {
+      let quizBelowThresholdCount = 0;
+      for (const row of studentProgressRows) {
+        if (!contentModuleIds.has(row.module_id)) continue;
         const total = quizTotalByModule.get(row.module_id) ?? 0;
-        if (total > 0 && row.quiz_score != null) {
-          quizSum += row.quiz_score / total;
-          quizCount += 1;
+        if (total <= 0 || row.quiz_score == null) continue;
+        quizSum += clampedQuizPercent(row.quiz_score, total) / 100;
+        quizCount += 1;
+        if (
+          !row.quiz_completed &&
+          !isQuizPassingScore(row.quiz_score, total)
+        ) {
+          quizBelowThresholdCount += 1;
         }
       }
 
@@ -541,6 +552,7 @@ export async function getCohortAnalytics(
         quizAverage:
           quizCount > 0 ? Math.round((quizSum / quizCount) * 100) : 0,
         quizModulesTaken: quizCount,
+        quizBelowThresholdCount,
         isBehindPace: isStudentBehindPace(
           student.program_started_at,
           progressWeek

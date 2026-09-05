@@ -6,7 +6,8 @@ export type AttentionReason =
   | "inactive"
   | "behind_pace"
   | "diagnostic_incomplete"
-  | "low_quiz";
+  | "low_quiz"
+  | "quiz_below_threshold";
 
 export const ATTENTION_REASONS: AttentionReason[] = [
   "no_workbook",
@@ -14,6 +15,7 @@ export const ATTENTION_REASONS: AttentionReason[] = [
   "behind_pace",
   "diagnostic_incomplete",
   "low_quiz",
+  "quiz_below_threshold",
 ];
 
 export function buildAttentionReasons(
@@ -25,6 +27,7 @@ export function buildAttentionReasons(
     | "diagnostic_complete"
     | "quizModulesTaken"
     | "quizAverage"
+    | "quizBelowThresholdCount"
   >,
   now = new Date()
 ): AttentionReason[] {
@@ -56,6 +59,10 @@ export function buildAttentionReasons(
     reasons.push("low_quiz");
   }
 
+  if (student.quizBelowThresholdCount > 0) {
+    reasons.push("quiz_below_threshold");
+  }
+
   return reasons;
 }
 
@@ -71,6 +78,8 @@ export function attentionReasonLabel(reason: AttentionReason): string {
       return "Diagnostic incomplete";
     case "low_quiz":
       return "Low quiz average";
+    case "quiz_below_threshold":
+      return "Quiz below pass threshold";
   }
 }
 
@@ -93,6 +102,10 @@ export function attentionReasonDetail(
       return "Diagnostic incomplete";
     case "low_quiz":
       return `Low quiz average (${student.quizAverage}%)`;
+    case "quiz_below_threshold":
+      return student.quizBelowThresholdCount === 1
+        ? "Quiz below 75% pass threshold"
+        : `${student.quizBelowThresholdCount} quizzes below 75% pass threshold`;
   }
 }
 
@@ -116,6 +129,7 @@ export function countAttentionReasons(
     behind_pace: 0,
     diagnostic_incomplete: 0,
     low_quiz: 0,
+    quiz_below_threshold: 0,
   };
 
   for (const student of students) {

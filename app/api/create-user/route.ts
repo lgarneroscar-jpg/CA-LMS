@@ -89,7 +89,7 @@ async function seedDemoProgress(
         video_watched: true,
         exercises_submitted: true,
         quiz_completed: true,
-        quiz_score: 5,
+        quiz_score: 4,
         is_complete: true,
         completed_at: new Date().toISOString(),
         xp_earned: 140,

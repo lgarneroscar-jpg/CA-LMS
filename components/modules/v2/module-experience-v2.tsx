@@ -20,7 +20,27 @@ import { StationHeaderV2 } from "@/components/modules/v2/station-header";
 import { WorkbookBlocksV2 } from "@/components/modules/v2/workbook-blocks";
 import { SHOW_PLACEHOLDER_VIDEO_STRIP } from "@/lib/experience-lift";
 import type { ExerciseField, WorkbookBlock, ModuleProgressState } from "@/types/modules";
+import { isStructuredExercise } from "@/types/modules";
 import type { SavedExerciseAnswer } from "@/lib/exercise-answers";
+import { isAnswerEmpty, parseAnswerData } from "@/lib/exercise-answers";
+
+function incompleteExercisesForQuiz(
+  exercises: ExerciseField[],
+  savedAnswers: Record<string, SavedExerciseAnswer>,
+  exercisesSubmitted: boolean
+) {
+  if (exercisesSubmitted) return [];
+  return exercises.filter(isStructuredExercise).flatMap((exercise) => {
+    const saved = savedAnswers[exercise.key];
+    const data = saved ? parseAnswerData(saved.answer) : null;
+    const empty =
+      !saved ||
+      isAnswerEmpty(exercise.input_type, data!, exercise.fields, exercise.key);
+    return empty
+      ? [{ key: exercise.key, title: exercise.title || exercise.label }]
+      : [];
+  });
+}
 
 type ModuleExperienceV2Props = {
   moduleId: string;
@@ -215,6 +235,11 @@ export function ModuleExperienceV2(props: ModuleExperienceV2Props) {
             questions={questions}
             correctAnswers={correctAnswers}
             exercisesSubmitted={progress.exercises_submitted}
+            incompleteExercises={incompleteExercisesForQuiz(
+              exercises,
+              savedAnswers,
+              progress.exercises_submitted
+            )}
             quizCompleted={progress.quiz_completed}
             quizScore={progress.quiz_score}
             onModuleComplete={handleModuleComplete}

@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { getCohortAnalytics } from "@/lib/cohort-analytics";
 import { formatAverageQuizScoreLabel, pluralize } from "@/lib/admin-reporting";
 import { moduleCompletionExplainer } from "@/lib/module-gates";
-import { maybeGenerateReportSnapshot } from "@/lib/reports";
 import { PaceGauge } from "@/components/admin/pace-gauge";
 import {
   AdminDashboardReporting,
@@ -12,6 +11,7 @@ import {
   ModuleCompletionBarList,
 } from "@/components/admin/admin-dashboard-reporting";
 import { LiveSessionAttendanceSummary } from "@/components/admin/live-session-attendance-summary";
+import { GenerateReportButton } from "@/components/admin/generate-report-button";
 import {
   Card,
   CardContent,
@@ -24,6 +24,11 @@ type PageProps = {
   params: Promise<{ "institution-id": string }>;
 };
 
+function metricLabel(value: number | null | undefined, suffix = ""): string {
+  if (value == null) return "— · no data yet";
+  return `${value}${suffix}`;
+}
+
 export default async function AdminDashboardPage({ params }: PageProps) {
   const { "institution-id": institutionId } = await params;
   const profile = await requireRole(["institutional_admin", "super_admin"]);
@@ -34,8 +39,6 @@ export default async function AdminDashboardPage({ params }: PageProps) {
   ) {
     return null;
   }
-
-  await maybeGenerateReportSnapshot(institutionId);
 
   const supabase = await createClient();
   const analytics = await getCohortAnalytics(supabase, institutionId);
@@ -56,6 +59,8 @@ export default async function AdminDashboardPage({ params }: PageProps) {
     analytics.allStudents.map((s) => [s.id, s.full_name ?? "Unnamed"])
   );
   const studentCount = analytics.allStudents.length;
+  const preStart = analytics.cohortPhase === "pre_start";
+  const early = analytics.cohortPhase === "early";
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -69,25 +74,57 @@ export default async function AdminDashboardPage({ params }: PageProps) {
             {pluralize(studentCount, "student")}
           </p>
         </div>
-        <a
-          href={`/api/admin/${institutionId}/export`}
-          className="inline-flex h-8 items-center rounded-lg bg-secondary px-2.5 text-sm font-medium text-secondary-foreground hover:bg-secondary/80"
-        >
-          Export CSV
-        </a>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={`/admin/${institutionId}/reports`}
+            className="inline-flex h-8 items-center rounded-lg border px-2.5 text-sm font-medium hover:bg-muted"
+          >
+            Reports
+          </Link>
+          <a
+            href={`/api/admin/${institutionId}/export`}
+            className="inline-flex h-8 items-center rounded-lg bg-secondary px-2.5 text-sm font-medium text-secondary-foreground hover:bg-secondary/80"
+          >
+            Export CSV
+          </a>
+        </div>
       </div>
+
+      {preStart ? (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          Cohort starts in {analytics.daysUntilStart}{" "}
+          {pluralize(analytics.daysUntilStart, "day")} — no activity expected
+          yet. Pace and attention lists are suppressed until the programme
+          begins.
+        </div>
+      ) : null}
+
+      {early ? (
+        <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+          Early cohort (weeks 1–2): showing participation and diagnostic
+          completion. Students are not flagged as behind pace yet.
+        </div>
+      ) : null}
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle>Pace tracker</CardTitle>
-            <CardDescription>Target vs actual cohort pace</CardDescription>
+            <CardDescription>
+              {preStart || early
+                ? "Not shown until week 3"
+                : "Target vs actual cohort pace"}
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <PaceGauge
-              targetWeek={analytics.targetWeek}
-              pacePercent={analytics.pacePercent}
-            />
+            {analytics.pacePercent == null ? (
+              <p className="text-sm text-muted-foreground">— · no data yet</p>
+            ) : (
+              <PaceGauge
+                targetWeek={analytics.targetWeek}
+                pacePercent={analytics.pacePercent}
+              />
+            )}
           </CardContent>
         </Card>
 
@@ -100,7 +137,7 @@ export default async function AdminDashboardPage({ params }: PageProps) {
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
               <HealthCard
                 label="Modules passed (avg)"
-                value={`${analytics.overallCompletionRate}%`}
+                value={metricLabel(analytics.overallCompletionRate, "%")}
               />
               <HealthCard
                 label="Avg quiz score"
@@ -112,16 +149,26 @@ export default async function AdminDashboardPage({ params }: PageProps) {
               />
               <HealthCard
                 label="Avg workbook completion"
-                value={`${analytics.averageWorkbookCompletionPercent}%`}
+                value={metricLabel(
+                  analytics.averageWorkbookCompletionPercent,
+                  "%"
+                )}
               />
               <HealthCard
                 label="No workbook activity"
-                value={`${analytics.studentsWithZeroWorkbookActivity} ${pluralize(analytics.studentsWithZeroWorkbookActivity, "student")}`}
+                value={
+                  preStart
+                    ? "— · no data yet"
+                    : `${analytics.studentsWithZeroWorkbookActivity} ${pluralize(analytics.studentsWithZeroWorkbookActivity, "student")}`
+                }
               />
-              <HealthCard label="Avg XP" value={`${analytics.averageXp}`} />
+              <HealthCard
+                label="Avg XP"
+                value={metricLabel(analytics.averageXp)}
+              />
               <HealthCard
                 label="Weekly engagement"
-                value={`${analytics.weeklyEngagementScore}%`}
+                value={metricLabel(analytics.weeklyEngagementScore, "%")}
               />
             </div>
           </CardContent>
@@ -130,67 +177,84 @@ export default async function AdminDashboardPage({ params }: PageProps) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Week-1 diagnostic</CardTitle>
+          <CardTitle>Report snapshots</CardTitle>
           <CardDescription>
-            Completion counts only — individual answers are not shown to admins
+            Explicit generation only — this page never writes to reports
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <DiagnosticSummary
-            institutionId={institutionId}
-            diagnostic={analytics.diagnostic}
-            totalStudents={studentCount}
-          />
+          <GenerateReportButton institutionId={institutionId} />
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Live session attendance</CardTitle>
-          <CardDescription>
-            Tracked separately from module completion · admin-confirmed vs
-            self-reported
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <LiveSessionAttendanceSummary
-            institutionId={institutionId}
-            rates={analytics.liveSessionAttendanceRates}
-          />
-        </CardContent>
-      </Card>
+      {!preStart ? (
+        <>
+          <Card>
+            <CardHeader>
+              <CardTitle>Week-1 diagnostic</CardTitle>
+              <CardDescription>
+                Completion counts only — individual answers are not shown to
+                admins
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DiagnosticSummary
+                institutionId={institutionId}
+                diagnostic={analytics.diagnostic}
+                totalStudents={studentCount}
+              />
+            </CardContent>
+          </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Cohort rankings &amp; roster</CardTitle>
-          <CardDescription>
-            Filter by attention reason · {moduleCompletionExplainer()}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <AdminDashboardReporting
-            institutionId={institutionId}
-            analytics={analytics}
-            studentNames={studentNames}
-          />
-        </CardContent>
-      </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Live session attendance</CardTitle>
+              <CardDescription>
+                Tracked separately from module completion · admin-confirmed vs
+                self-reported
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LiveSessionAttendanceSummary
+                institutionId={institutionId}
+                rates={analytics.liveSessionAttendanceRates}
+              />
+            </CardContent>
+          </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Module completion breakdown</CardTitle>
-          <CardDescription>
-            Quiz-passed modules in curriculum order · click a row to expand
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ModuleCompletionBarList
-            institutionId={institutionId}
-            modules={analytics.moduleCompletionRates}
-            studentNames={studentNames}
-          />
-        </CardContent>
-      </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Cohort rankings &amp; roster</CardTitle>
+              <CardDescription>
+                Filter by attention reason · {moduleCompletionExplainer()}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AdminDashboardReporting
+                institutionId={institutionId}
+                analytics={analytics}
+                studentNames={studentNames}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Module completion breakdown</CardTitle>
+              <CardDescription>
+                Quiz-passed modules in curriculum order · click a row to expand
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ModuleCompletionBarList
+                institutionId={institutionId}
+                modules={analytics.moduleCompletionRates}
+                studentNames={studentNames}
+              />
+            </CardContent>
+          </Card>
+        </>
+      ) : null}
 
       <p className="text-center text-sm">
         <Link

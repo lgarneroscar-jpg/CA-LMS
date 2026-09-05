@@ -94,6 +94,8 @@ export type CohortStudentMetrics = {
   attentionReasons: AttentionReason[];
 };
 
+export type CohortPhase = "pre_start" | "early" | "active" | "complete";
+
 export type CohortAnalytics = {
   /** Raw calendar week from cohort start — may exceed program length. */
   currentWeek: number;
@@ -103,16 +105,20 @@ export type CohortAnalytics = {
   programComplete: boolean;
   /** Label for "Cohort Week N" / "Week N of 12 · program complete". */
   cohortWeekLabel: string;
+  /** pre_start | early (weeks 1–2) | active | complete */
+  cohortPhase: CohortPhase;
+  /** Days until cohort_start_date when phase is pre_start; otherwise 0. */
+  daysUntilStart: number;
   targetWeek: number;
-  pacePercent: number;
-  /** Includes every student — a non-starter is genuinely 0% complete. */
-  overallCompletionRate: number;
+  pacePercent: number | null;
+  /** Includes every student — a non-starter is genuinely 0% complete. Null when pre-start / no data yet. */
+  overallCompletionRate: number | null;
   averageQuizScore: number | null;
   quizScoreStudentCount: number;
-  averageWorkbookCompletionPercent: number;
+  averageWorkbookCompletionPercent: number | null;
   studentsWithZeroWorkbookActivity: number;
-  averageXp: number;
-  weeklyEngagementScore: number;
+  averageXp: number | null;
+  weeklyEngagementScore: number | null;
   moduleCompletionRates: {
     moduleId: string;
     moduleCode: string;
@@ -297,8 +303,34 @@ export async function getCohortAnalytics(
   const currentWeek = getProgramWeek(institution.cohort_start_date);
   const displayWeek = getDisplayProgramWeek(currentWeek);
   const programComplete = currentWeek > PROGRAM_LENGTH_WEEKS;
-  const cohortWeekLabel = formatCohortWeekLabel(currentWeek);
+
+  let daysUntilStart = 0;
+  let cohortPhase: CohortPhase = "active";
+  if (!institution.cohort_start_date || currentWeek === 0) {
+    cohortPhase = "pre_start";
+    if (institution.cohort_start_date) {
+      const start = new Date(institution.cohort_start_date + "T00:00:00");
+      const today = new Date(new Date().toDateString());
+      daysUntilStart = Math.max(
+        0,
+        Math.ceil((start.getTime() - today.getTime()) / (24 * 60 * 60 * 1000))
+      );
+    }
+  } else if (programComplete) {
+    cohortPhase = "complete";
+  } else if (displayWeek <= 2) {
+    cohortPhase = "early";
+  }
+
+  const cohortWeekLabel =
+    cohortPhase === "pre_start"
+      ? daysUntilStart > 0
+        ? `Cohort starts in ${daysUntilStart} day${daysUntilStart === 1 ? "" : "s"} — no activity expected yet`
+        : "Cohort has not started"
+      : formatCohortWeekLabel(currentWeek);
   const targetWeek = Math.min(Math.max(1, currentWeek), PROGRAM_LENGTH_WEEKS);
+  const suppressBehindPace =
+    cohortPhase === "pre_start" || cohortPhase === "early";
 
   const { data: students, error: studentsError } = await supabase
     .from("profiles")
@@ -553,10 +585,12 @@ export async function getCohortAnalytics(
           quizCount > 0 ? Math.round((quizSum / quizCount) * 100) : 0,
         quizModulesTaken: quizCount,
         quizBelowThresholdCount,
-        isBehindPace: isStudentBehindPace(
-          student.program_started_at,
-          progressWeek
-        ),
+        isBehindPace: suppressBehindPace
+          ? false
+          : isStudentBehindPace(
+              student.program_started_at,
+              progressWeek
+            ),
         hasFlag: flagByStudent.has(student.id),
         flagNote: flagByStudent.get(student.id) ?? null,
         liveAttendance: {
@@ -582,7 +616,12 @@ export async function getCohortAnalytics(
 
       return {
         ...base,
-        attentionReasons: buildAttentionReasons(base),
+        attentionReasons: buildAttentionReasons(base).filter((reason) => {
+          if (suppressBehindPace && reason === "behind_pace") return false;
+          if (cohortPhase === "early" && reason === "inactive") return false;
+          if (cohortPhase === "pre_start") return false;
+          return true;
+        }),
       };
     }
   );
@@ -591,9 +630,16 @@ export async function getCohortAnalytics(
 
   const sortedByXp = [...allStudents].sort((a, b) => b.xp - a.xp);
   const topStudents = sortedByXp.slice(0, 10);
-  const needsAttentionStudents = allStudents
-    .filter((s) => s.isBehindPace)
-    .sort((a, b) => a.completionPercent - b.completionPercent);
+  const needsAttentionStudents =
+    cohortPhase === "pre_start"
+      ? []
+      : cohortPhase === "early"
+        ? allStudents
+            .filter((s) => s.attentionReasons.length > 0)
+            .sort((a, b) => a.completionPercent - b.completionPercent)
+        : allStudents
+            .filter((s) => s.isBehindPace)
+            .sort((a, b) => a.completionPercent - b.completionPercent);
 
   const now = new Date();
   const diagnosticIncompleteStudents: DiagnosticIncompleteStudent[] = (
@@ -624,14 +670,18 @@ export async function getCohortAnalytics(
     incompleteStudents: diagnosticIncompleteStudents,
   };
 
-  // Deliberately includes non-starters at 0% — unlike averageQuizScore below.
+  // Deliberately includes non-starters at 0% when the cohort is underway —
+  // unlike averageQuizScore below. Pre-start / empty cohorts return null ("no data yet").
+  const anyModulePassed = allStudents.some((s) => s.modulesPassedCount > 0);
   const overallCompletionRate =
-    allStudents.length > 0
-      ? Math.round(
-          allStudents.reduce((sum, s) => sum + s.completionPercent, 0) /
-            allStudents.length
-        )
-      : 0;
+    cohortPhase === "pre_start" || allStudents.length === 0
+      ? null
+      : !anyModulePassed && cohortPhase === "early"
+        ? null
+        : Math.round(
+            allStudents.reduce((sum, s) => sum + s.completionPercent, 0) /
+              allStudents.length
+          );
 
   const studentsWithQuizScores = allStudents.filter(
     (s) => s.quizModulesTaken > 0
@@ -644,28 +694,39 @@ export async function getCohortAnalytics(
         )
       : null;
 
+  const anyWorkbook = allStudents.some((s) => s.workbookAnswered > 0);
   const averageWorkbookCompletionPercent =
-    allStudents.length > 0
-      ? Math.round(
-          allStudents.reduce((sum, s) => sum + s.workbookPercent, 0) /
-            allStudents.length
-        )
-      : 0;
+    cohortPhase === "pre_start" || allStudents.length === 0
+      ? null
+      : !anyWorkbook
+        ? null
+        : Math.round(
+            allStudents.reduce((sum, s) => sum + s.workbookPercent, 0) /
+              allStudents.length
+          );
 
   const studentsWithZeroWorkbookActivity = allStudents.filter(
     (s) => s.workbookAnswered === 0
   ).length;
 
   const averageXp =
-    allStudents.length > 0
-      ? Math.round(
+    cohortPhase === "pre_start" || allStudents.length === 0
+      ? null
+      : Math.round(
           allStudents.reduce((sum, s) => sum + s.xp, 0) / allStudents.length
-        )
-      : 0;
+        );
 
-  const weeklyEngagementScore = Math.round(
-    (activeUsers.size / cohortSize) * 100
-  );
+  const weeklyEngagementScore =
+    cohortPhase === "pre_start"
+      ? null
+      : activeUsers.size === 0 && cohortPhase === "early"
+        ? null
+        : Math.round((activeUsers.size / cohortSize) * 100);
+
+  const pacePercentValue =
+    cohortPhase === "pre_start" || suppressBehindPace
+      ? null
+      : pacePercent;
 
   const liveSessionAttendanceRates: LiveSessionAttendanceRate[] =
     liveSessions.map((session) => {
@@ -706,8 +767,10 @@ export async function getCohortAnalytics(
     displayWeek,
     programComplete,
     cohortWeekLabel,
+    cohortPhase,
+    daysUntilStart,
     targetWeek,
-    pacePercent,
+    pacePercent: pacePercentValue,
     overallCompletionRate,
     averageQuizScore,
     quizScoreStudentCount: studentsWithQuizScores.length,

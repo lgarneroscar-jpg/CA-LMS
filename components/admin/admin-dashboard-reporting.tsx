@@ -390,7 +390,7 @@ export function DiagnosticSummary({
     <div className="space-y-4">
       <p className="text-sm">
         <span className="font-medium">{diagnostic.completedCount}</span> of{" "}
-        {totalStudents} students completed the Week-1 diagnostic.
+        {totalStudents} students completed the CAPRI readiness baseline.
       </p>
       {diagnostic.incompleteStudents.length > 0 ? (
         <div>
@@ -419,7 +419,7 @@ export function DiagnosticSummary({
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">
-          Every enrolled student has completed the diagnostic.
+          Every enrolled student has completed the CAPRI baseline.
         </p>
       )}
     </div>

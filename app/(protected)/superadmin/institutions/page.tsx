@@ -74,6 +74,12 @@ export default async function InstitutionsPage() {
                       <Badge variant="secondary">Pilot</Badge>
                     ) : null}
                     <Link
+                      href={`/admin/${inst.id}/dashboard`}
+                      className="text-sm font-medium text-accent underline hover:text-accent/80"
+                    >
+                      Dashboard
+                    </Link>
+                    <Link
                       href={`/superadmin/institutions/${inst.id}`}
                       className="text-sm font-medium text-accent underline hover:text-accent/80"
                     >

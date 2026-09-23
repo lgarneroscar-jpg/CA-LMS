@@ -3,7 +3,9 @@ import type { Database } from "@/types/database";
 import {
   buildAttentionReasons,
   compareStudentsForRoster,
+  expectedModuleCountForWeek,
   formatLiveAttendanceSummary,
+  paceCompletionPercent as paceCompletionPercentOf,
 } from "@/lib/admin-reporting";
 import {
   fetchAuthInviteStatuses,
@@ -16,7 +18,7 @@ import {
   getProgramWeek,
   PROGRAM_LENGTH_WEEKS,
 } from "@/lib/drip";
-import { getPaceStatus } from "@/lib/pace";
+import { getExpectedWeek, getPaceStatus } from "@/lib/pace";
 import { getProgressWeek, type ProgressModuleRef } from "@/lib/program";
 import { compareCurriculumOrder } from "@/lib/program-nav";
 import { videosTrackedInReporting } from "@/lib/module-content-status";
@@ -72,6 +74,14 @@ export type CohortStudentMetrics = {
   diagnostic_complete: boolean;
   /** Quiz-passed modules as a percentage — used for pace math only. */
   completionPercent: number;
+  /**
+   * Completion against what this student was expected to have finished by now,
+   * derived from their own program_started_at. Capped at 100 so a student who
+   * ran ahead cannot inflate the cohort average.
+   */
+  paceCompletionPercent: number;
+  /** Content modules whose unlock_week has been reached for this student. */
+  expectedModuleCount: number;
   modulesPassedCount: number;
   modulesPassedTotal: number;
   quizModulesPassed: number;
@@ -120,11 +130,26 @@ export type CohortAnalytics = {
   pacePercent: number | null;
   /** Includes every student — a non-starter is genuinely 0% complete. Null when pre-start / no data yet. */
   overallCompletionRate: number | null;
+  /**
+   * Headline completion: progress against what was expected by now, not
+   * against the whole 12-week program. Mid-program, overallCompletionRate has a
+   * structural ceiling (a perfectly on-pace week-6 cohort reads ~50%), which
+   * makes it unreadable as a performance signal. This one answers "are they
+   * keeping up". Null when pre-start / no data yet.
+   */
+  paceCompletionRate: number | null;
+  /** Average number of modules students were expected to have reached by now. */
+  averageExpectedModuleCount: number | null;
+  /** Total content modules in the program — the denominator for absolute completion. */
+  totalContentModules: number;
   averageQuizScore: number | null;
   quizScoreStudentCount: number;
   averageWorkbookCompletionPercent: number | null;
   studentsWithZeroWorkbookActivity: number;
   averageXp: number | null;
+  /** Highest XP in the cohort, for scale alongside the average. */
+  topXp: number | null;
+  topXpStudentName: string | null;
   weeklyEngagementScore: number | null;
   moduleCompletionRates: {
     moduleId: string;
@@ -477,6 +502,7 @@ export async function getCohortAnalytics(
   }
 
   const totalModules = modules?.length ?? 0;
+  const contentUnlockWeeks = (modules ?? []).map((m) => m.unlock_week);
   const contentModuleIds = new Set((modules ?? []).map((m) => m.id));
   const liveSessionIds = liveSessions.map((s) => s.id);
   const videosTracked = videosTrackedInReporting(modules ?? []);
@@ -541,6 +567,20 @@ export async function getCohortAnalytics(
       ).length;
       const completionPercent =
         totalModules > 0 ? Math.round((completedCount / totalModules) * 100) : 0;
+
+      // Content is no longer gated by calendar week — every module is open once
+      // the baseline is in. "Expected by now" therefore comes from the module's
+      // unlock_week measured against this student's own program clock, which is
+      // what pace notifications already use.
+      const expectedWeek = getExpectedWeek(student.program_started_at);
+      const expectedModuleCount = expectedModuleCountForWeek(
+        contentUnlockWeeks,
+        expectedWeek
+      );
+      const paceCompletionPercent = paceCompletionPercentOf(
+        completedCount,
+        expectedModuleCount
+      );
 
       const quizModulesPassed = studentProgressRows.filter(
         (p) => contentModuleIds.has(p.module_id) && p.quiz_completed
@@ -607,6 +647,8 @@ export async function getCohortAnalytics(
         last_active_date: student.last_active_date,
         diagnostic_complete: student.diagnostic_complete,
         completionPercent,
+        paceCompletionPercent,
+        expectedModuleCount,
         modulesPassedCount: completedCount,
         modulesPassedTotal: totalModules,
         quizModulesPassed,
@@ -756,6 +798,38 @@ export async function getCohortAnalytics(
           allStudents.reduce((sum, s) => sum + s.xp, 0) / allStudents.length
         );
 
+  // An average with no scale beside it is unreadable. The top score gives the
+  // reader something to measure it against.
+  const topXpStudent =
+    allStudents.length === 0
+      ? null
+      : allStudents.reduce((best, s) => (s.xp > best.xp ? s : best));
+  const topXp =
+    cohortPhase === "pre_start" || !topXpStudent ? null : topXpStudent.xp;
+  const topXpStudentName =
+    cohortPhase === "pre_start" || !topXpStudent || topXpStudent.xp === 0
+      ? null
+      : topXpStudent.full_name;
+
+  // Same inclusion rule as overallCompletionRate: non-starters count at 0%.
+  const paceCompletionRate =
+    cohortPhase === "pre_start" || allStudents.length === 0
+      ? null
+      : !anyModulePassed && cohortPhase === "early"
+        ? null
+        : Math.round(
+            allStudents.reduce((sum, s) => sum + s.paceCompletionPercent, 0) /
+              allStudents.length
+          );
+
+  const averageExpectedModuleCount =
+    cohortPhase === "pre_start" || allStudents.length === 0
+      ? null
+      : Math.round(
+          allStudents.reduce((sum, s) => sum + s.expectedModuleCount, 0) /
+            allStudents.length
+        );
+
   const weeklyEngagementScore =
     cohortPhase === "pre_start"
       ? null
@@ -812,11 +886,16 @@ export async function getCohortAnalytics(
     targetWeek,
     pacePercent: pacePercentValue,
     overallCompletionRate,
+    paceCompletionRate,
+    averageExpectedModuleCount,
+    totalContentModules: totalModules,
     averageQuizScore,
     quizScoreStudentCount: studentsWithQuizScores.length,
     averageWorkbookCompletionPercent,
     studentsWithZeroWorkbookActivity,
     averageXp,
+    topXp,
+    topXpStudentName,
     weeklyEngagementScore,
     moduleCompletionRates,
     liveSessions,

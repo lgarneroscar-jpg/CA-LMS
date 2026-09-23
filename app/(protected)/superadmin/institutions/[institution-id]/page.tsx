@@ -58,6 +58,12 @@ export default async function InstitutionDetailPage({ params }: Props) {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
+            href={`/admin/${institutionId}/dashboard`}
+            className="inline-flex h-8 items-center justify-center rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            Cohort dashboard
+          </Link>
+          <Link
             href={`/superadmin/institutions/${institutionId}/reports`}
             className="inline-flex h-8 items-center justify-center rounded-lg border border-border bg-background px-3 text-sm font-medium hover:bg-muted"
           >

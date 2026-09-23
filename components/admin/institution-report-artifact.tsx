@@ -1,10 +1,11 @@
 import type { CapriOutcomesPayload } from "@/lib/capri-outcomes";
 import type { ReportDeltas } from "@/lib/report-deltas";
-import { formatDeltaValue } from "@/lib/report-deltas";
+import { formatDeltaWithEndpoints } from "@/lib/report-deltas";
 import type { ReportSnapshotEnvelope } from "@/lib/reports";
 import {
   formatAverageQuizScoreLabel,
   attentionReasonDetail,
+  METRIC_DEFINITIONS,
 } from "@/lib/admin-reporting";
 import { moduleCompletionExplainer } from "@/lib/module-gates";
 
@@ -34,6 +35,27 @@ function MetricOrDash({
       {value}
       {suffix}
     </span>
+  );
+}
+
+/** A headline number with its formula stated directly underneath it. */
+function Metric({
+  label,
+  definition,
+  children,
+}: {
+  label: string;
+  definition: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-lg border p-3">
+      <dt className="text-xs text-muted-foreground">{label}</dt>
+      <dd className="text-2xl font-semibold">{children}</dd>
+      <p className="mt-1 text-xs leading-snug text-muted-foreground">
+        {definition}
+      </p>
+    </div>
   );
 }
 
@@ -78,51 +100,64 @@ export function InstitutionReportArtifact({
         <h2 className="text-lg font-semibold">Participation &amp; completion</h2>
         <p className="text-xs text-muted-foreground">{moduleCompletionExplainer()}</p>
         <dl className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-lg border p-3">
-            <dt className="text-xs text-muted-foreground">Modules passed (avg)</dt>
-            <dd className="text-2xl font-semibold">
-              <MetricOrDash value={m.overallCompletionRate} suffix="%" />
-            </dd>
-          </div>
-          <div className="rounded-lg border p-3">
-            <dt className="text-xs text-muted-foreground">Weekly engagement</dt>
-            <dd className="text-2xl font-semibold">
-              <MetricOrDash value={m.weeklyEngagementScore} suffix="%" />
-            </dd>
-          </div>
-          <div className="rounded-lg border p-3">
-            <dt className="text-xs text-muted-foreground">Diagnostic complete</dt>
-            <dd className="text-2xl font-semibold">
-              {m.diagnostic.completedCount} of {envelope.cohortSize}
-            </dd>
-          </div>
-          <div className="rounded-lg border p-3">
-            <dt className="text-xs text-muted-foreground">Avg XP</dt>
-            <dd className="text-2xl font-semibold">
-              <MetricOrDash value={m.averageXp} />
-            </dd>
-          </div>
+          <Metric
+            label="Keeping pace"
+            definition={METRIC_DEFINITIONS.paceCompletion(
+              m.averageExpectedModuleCount ?? null
+            )}
+          >
+            <MetricOrDash value={m.paceCompletionRate} suffix="%" />
+          </Metric>
+          <Metric
+            label={`Modules passed (avg of ${m.totalContentModules ?? 14})`}
+            definition={METRIC_DEFINITIONS.overallCompletion(
+              m.totalContentModules ?? 14
+            )}
+          >
+            <MetricOrDash value={m.overallCompletionRate} suffix="%" />
+          </Metric>
+          <Metric
+            label="Weekly engagement"
+            definition={METRIC_DEFINITIONS.weeklyEngagement}
+          >
+            <MetricOrDash value={m.weeklyEngagementScore} suffix="%" />
+          </Metric>
+          <Metric
+            label="CAPRI baseline complete"
+            definition={METRIC_DEFINITIONS.capriBaseline}
+          >
+            {m.diagnostic.completedCount} of {envelope.cohortSize}
+          </Metric>
+          <Metric
+            label="Avg XP"
+            definition={METRIC_DEFINITIONS.averageXp(
+              m.topXp ?? null,
+              m.topXpStudentName ?? null
+            )}
+          >
+            <MetricOrDash value={m.averageXp} />
+          </Metric>
         </dl>
       </section>
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Workbook depth</h2>
         <dl className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-lg border p-3">
-            <dt className="text-xs text-muted-foreground">Avg workbook completion</dt>
-            <dd className="text-2xl font-semibold">
-              <MetricOrDash
-                value={m.averageWorkbookCompletionPercent}
-                suffix="%"
-              />
-            </dd>
-          </div>
-          <div className="rounded-lg border p-3">
-            <dt className="text-xs text-muted-foreground">No workbook activity</dt>
-            <dd className="text-2xl font-semibold">
-              {m.studentsWithZeroWorkbookActivity} students
-            </dd>
-          </div>
+          <Metric
+            label="Avg workbook completion"
+            definition={METRIC_DEFINITIONS.workbookCompletion}
+          >
+            <MetricOrDash
+              value={m.averageWorkbookCompletionPercent}
+              suffix="%"
+            />
+          </Metric>
+          <Metric
+            label="No workbook activity"
+            definition="Enrolled students who have not answered a single workbook exercise."
+          >
+            {m.studentsWithZeroWorkbookActivity} students
+          </Metric>
         </dl>
       </section>
 
@@ -135,9 +170,8 @@ export function InstitutionReportArtifact({
             envelope.cohortSize
           )}
         </p>
-        <p className="text-xs text-muted-foreground">
-          Average among students who have taken at least one quiz. Pass threshold
-          is 75% (3 of 4 on current quizzes).
+        <p className="text-xs leading-snug text-muted-foreground">
+          {METRIC_DEFINITIONS.quizScore}
         </p>
       </section>
 
@@ -160,6 +194,10 @@ export function InstitutionReportArtifact({
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Since last report</h2>
+        <p className="text-xs text-muted-foreground">
+          Previous value → current value, with the change in brackets. Percentage
+          moves are shown in percentage points (pp).
+        </p>
         {!deltas ? (
           <p className="text-sm text-muted-foreground">
             No prior snapshot for this institution — nothing to compare yet.
@@ -182,7 +220,7 @@ export function InstitutionReportArtifact({
                   <span>{metric.label}</span>
                   <span className="tabular-nums text-muted-foreground">
                     {metric.comparable
-                      ? formatDeltaValue(metric)
+                      ? formatDeltaWithEndpoints(metric)
                       : "definition changed — not comparable"}
                   </span>
                 </li>

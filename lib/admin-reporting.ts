@@ -137,6 +137,70 @@ export function formatAverageQuizScoreLabel(
   return `${averageQuizScore}% · ${quizScoreStudentCount} of ${totalStudents} students`;
 }
 
+/**
+ * How many content modules a student was expected to have reached by a given
+ * week of their own program clock.
+ */
+export function expectedModuleCountForWeek(
+  unlockWeeks: number[],
+  expectedWeek: number
+): number {
+  return unlockWeeks.filter((week) => week <= expectedWeek).length;
+}
+
+/**
+ * Completion against what was expected by now, capped at 100.
+ *
+ * The cap matters: without it a student who raced ahead would pull the cohort
+ * average above what any individual achieved, and "keeping pace" would stop
+ * meaning what it says.
+ */
+export function paceCompletionPercent(
+  completedCount: number,
+  expectedModuleCount: number
+): number {
+  if (expectedModuleCount <= 0) return 0;
+  return Math.min(
+    100,
+    Math.round((completedCount / expectedModuleCount) * 100)
+  );
+}
+
+/**
+ * Plain-English definitions shown under each metric.
+ *
+ * Every headline figure states its own formula and denominator. Two of them
+ * count differently on purpose — completion includes students who never
+ * started, quiz average excludes them — and that difference is disclosed
+ * rather than left for a reader to discover by doing the arithmetic.
+ */
+export const METRIC_DEFINITIONS = {
+  paceCompletion: (expectedModules: number | null) =>
+    expectedModules == null
+      ? "Average progress against what each student was expected to have finished by now."
+      : `Average progress against what each student was expected to have finished by now (about ${expectedModules} module${expectedModules === 1 ? "" : "s"} at this point). Each student is capped at 100%, and students who have not started count as 0%.`,
+
+  overallCompletion: (totalModules: number) =>
+    `Average share of all ${totalModules} program modules completed, counting every enrolled student. Mid-program this has a ceiling — a cohort exactly on pace will read well below 100% — so read it as absolute progress, not performance.`,
+
+  weeklyEngagement:
+    "Share of enrolled students who signed in at least once in the last 7 days. It measures presence, not depth of work.",
+
+  capriBaseline:
+    "Students who have submitted the CAPRI Week 1 readiness baseline. Required before module content opens.",
+
+  averageXp: (topXp: number | null, topName: string | null) =>
+    topXp == null
+      ? "Points earned across module completion, perfect quizzes, on-time work, live sessions, and streaks. Averaged over every enrolled student."
+      : `Points earned across module completion, perfect quizzes, on-time work, live sessions, and streaks. Averaged over every enrolled student; the highest in this cohort is ${topXp}${topName ? ` (${topName})` : ""}.`,
+
+  quizScore:
+    "Averaged across students who have attempted at least one quiz — students with no attempts are excluded, unlike the completion figures above, which count them at 0%. Pass threshold is 75%.",
+
+  workbookCompletion:
+    "Average share of workbook exercises answered, across every enrolled student.",
+} as const;
+
 export function countAttentionReasons(
   students: Pick<CohortStudentMetrics, "attentionReasons">[]
 ): Record<AttentionReason, number> {

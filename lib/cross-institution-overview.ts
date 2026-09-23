@@ -13,6 +13,8 @@ export type InstitutionOverviewRow = {
   displayWeek: number | null;
   cohortWeekLabel: string;
   modulesPassedAverage: number | null;
+  /** Progress against what was expected by now — the pace-adjusted figure. */
+  keepingPaceAverage: number | null;
   workbookAverage: number | null;
   needingAttention: number;
   lastReportAt: string | null;
@@ -70,6 +72,7 @@ export async function getCrossInstitutionOverview(): Promise<
       displayWeek: analytics?.displayWeek ?? null,
       cohortWeekLabel: analytics?.cohortWeekLabel ?? "—",
       modulesPassedAverage: analytics?.overallCompletionRate ?? null,
+      keepingPaceAverage: analytics?.paceCompletionRate ?? null,
       workbookAverage: analytics?.averageWorkbookCompletionPercent ?? null,
       needingAttention: analytics?.needsAttentionStudents.length ?? 0,
       lastReportAt: lastReportByInstitution.get(inst.id) ?? null,

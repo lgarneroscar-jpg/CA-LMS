@@ -2,7 +2,11 @@ import Link from "next/link";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getCohortAnalytics } from "@/lib/cohort-analytics";
-import { formatAverageQuizScoreLabel, pluralize } from "@/lib/admin-reporting";
+import {
+  formatAverageQuizScoreLabel,
+  pluralize,
+  METRIC_DEFINITIONS,
+} from "@/lib/admin-reporting";
 import { moduleCompletionExplainer } from "@/lib/module-gates";
 import { PaceGauge } from "@/components/admin/pace-gauge";
 import {
@@ -101,7 +105,7 @@ export default async function AdminDashboardPage({ params }: PageProps) {
 
       {early ? (
         <div className="rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-          Early cohort (weeks 1–2): showing participation and diagnostic
+          Early cohort (weeks 1–2): showing participation and baseline
           completion. Students are not flagged as behind pace yet.
         </div>
       ) : null}
@@ -136,8 +140,18 @@ export default async function AdminDashboardPage({ params }: PageProps) {
           <CardContent>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
               <HealthCard
-                label="Modules passed (avg)"
+                label="Keeping pace"
+                value={metricLabel(analytics.paceCompletionRate, "%")}
+                definition={METRIC_DEFINITIONS.paceCompletion(
+                  analytics.averageExpectedModuleCount
+                )}
+              />
+              <HealthCard
+                label={`Modules passed (avg of ${analytics.totalContentModules})`}
                 value={metricLabel(analytics.overallCompletionRate, "%")}
+                definition={METRIC_DEFINITIONS.overallCompletion(
+                  analytics.totalContentModules
+                )}
               />
               <HealthCard
                 label="Avg quiz score"
@@ -146,6 +160,7 @@ export default async function AdminDashboardPage({ params }: PageProps) {
                   analytics.quizScoreStudentCount,
                   analytics.allStudents.length
                 )}
+                definition={METRIC_DEFINITIONS.quizScore}
               />
               <HealthCard
                 label="Avg workbook completion"
@@ -153,6 +168,7 @@ export default async function AdminDashboardPage({ params }: PageProps) {
                   analytics.averageWorkbookCompletionPercent,
                   "%"
                 )}
+                definition={METRIC_DEFINITIONS.workbookCompletion}
               />
               <HealthCard
                 label="No workbook activity"
@@ -161,14 +177,20 @@ export default async function AdminDashboardPage({ params }: PageProps) {
                     ? "— · no data yet"
                     : `${analytics.studentsWithZeroWorkbookActivity} ${pluralize(analytics.studentsWithZeroWorkbookActivity, "student")}`
                 }
+                definition="Enrolled students who have not answered a single workbook exercise."
               />
               <HealthCard
                 label="Avg XP"
                 value={metricLabel(analytics.averageXp)}
+                definition={METRIC_DEFINITIONS.averageXp(
+                  analytics.topXp,
+                  analytics.topXpStudentName
+                )}
               />
               <HealthCard
                 label="Weekly engagement"
                 value={metricLabel(analytics.weeklyEngagementScore, "%")}
+                definition={METRIC_DEFINITIONS.weeklyEngagement}
               />
             </div>
           </CardContent>
@@ -191,7 +213,7 @@ export default async function AdminDashboardPage({ params }: PageProps) {
         <>
           <Card>
             <CardHeader>
-              <CardTitle>Week-1 diagnostic</CardTitle>
+              <CardTitle>CAPRI readiness baseline</CardTitle>
               <CardDescription>
                 Completion counts only — individual answers are not shown to
                 admins
@@ -268,11 +290,24 @@ export default async function AdminDashboardPage({ params }: PageProps) {
   );
 }
 
-function HealthCard({ label, value }: { label: string; value: string }) {
+function HealthCard({
+  label,
+  value,
+  definition,
+}: {
+  label: string;
+  value: string;
+  definition?: string;
+}) {
   return (
     <div className="rounded-lg border bg-background p-4">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 text-2xl font-semibold">{value}</p>
+      {definition ? (
+        <p className="mt-1 text-xs leading-snug text-muted-foreground">
+          {definition}
+        </p>
+      ) : null}
     </div>
   );
 }

@@ -156,6 +156,7 @@ export default async function SuperAdminPage() {
                     <th className="px-3 py-2 font-medium">Institution</th>
                     <th className="px-3 py-2 font-medium">Cohort</th>
                     <th className="px-3 py-2 font-medium">Week</th>
+                    <th className="px-3 py-2 font-medium">Keeping pace</th>
                     <th className="px-3 py-2 font-medium">Modules passed</th>
                     <th className="px-3 py-2 font-medium">Workbook</th>
                     <th className="px-3 py-2 font-medium">Attention</th>
@@ -183,6 +184,9 @@ export default async function SuperAdminPage() {
                         {row.displayWeek != null
                           ? `W${row.displayWeek}`
                           : row.cohortWeekLabel}
+                      </td>
+                      <td className="px-3 py-2">
+                        {pct(row.keepingPaceAverage)}
                       </td>
                       <td className="px-3 py-2">
                         {pct(row.modulesPassedAverage)}

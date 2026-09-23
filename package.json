@@ -13,7 +13,8 @@
     "seed:live": "tsx --env-file=.env.local scripts/seed-live-sessions.ts",
     "seed:demo": "tsx --env-file=.env.local scripts/seed-demo-cohort.ts",
     "test:workbook-format": "tsx --test lib/workbook-format.test.ts",
-    "test:workbook-seed": "tsx --test lib/workbook-seed-parser.test.ts"
+    "test:workbook-seed": "tsx --test lib/workbook-seed-parser.test.ts",
+    "test:reporting": "tsx --test lib/admin-reporting.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

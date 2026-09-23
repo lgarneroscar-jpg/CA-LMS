@@ -86,6 +86,14 @@ export function computeReportDeltas(
 
   const metrics: MetricDelta[] = [
     pctDelta(
+      "paceCompletionRate",
+      "Keeping pace",
+      a.paceCompletionRate,
+      b.paceCompletionRate,
+      completionComparable,
+      completionNote ?? undefined
+    ),
+    pctDelta(
       "overallCompletionRate",
       "Modules passed (avg)",
       a.overallCompletionRate,
@@ -186,4 +194,26 @@ export function formatDeltaValue(
     return `${sign}${delta.delta} pp`;
   }
   return `${sign}${delta.delta}`;
+}
+
+/**
+ * "42% → 55% (+13 pp)" rather than "+13 pp" alone. A change with no anchors is
+ * not readable: the reader cannot tell whether it moved off a strong base or a
+ * weak one.
+ */
+export function formatDeltaWithEndpoints(delta: MetricDelta): string {
+  if (!delta.comparable) {
+    return "not comparable";
+  }
+  const suffix = delta.unit === "percent" ? "%" : "";
+  const render = (value: number | null) =>
+    value == null ? "—" : `${value}${suffix}`;
+
+  if (delta.previous == null && delta.current == null) {
+    return "—";
+  }
+  if (delta.delta == null) {
+    return `${render(delta.previous)} → ${render(delta.current)}`;
+  }
+  return `${render(delta.previous)} → ${render(delta.current)} (${formatDeltaValue(delta)})`;
 }

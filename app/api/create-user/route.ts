@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -5,14 +6,27 @@ export type CreateUserBody = {
   email: string;
   password: string;
   full_name?: string;
-  role?: "student" | "institutional_admin" | "super_admin";
+  /** super_admin is intentionally not accepted. */
+  role?: "student" | "institutional_admin";
   institution_id?: string | null;
   is_demo?: boolean;
-  /** Delete existing auth user with this email before creating */
-  recreate?: boolean;
   /** Apply demo seed progress after create (P1 complete, P2 in progress) */
   seed_demo_progress?: boolean;
 };
+
+const ALLOWED_ROLES = new Set(["student", "institutional_admin"]);
+
+function secretsEqual(provided: string, expected: string): boolean {
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) {
+    const padded = Buffer.alloc(b.length);
+    a.copy(padded);
+    timingSafeEqual(padded, b);
+    return false;
+  }
+  return timingSafeEqual(a, b);
+}
 
 function authorizeRequest(request: Request): boolean {
   const secret = process.env.CREATE_USER_SECRET;
@@ -21,30 +35,12 @@ function authorizeRequest(request: Request): boolean {
   const authHeader = request.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) return false;
 
-  return authHeader.slice("Bearer ".length) === secret;
+  return secretsEqual(authHeader.slice("Bearer ".length), secret);
 }
 
-async function findUserIdByEmail(
-  admin: ReturnType<typeof createAdminClient>,
-  email: string
-): Promise<string | null> {
-  let page = 1;
-  const perPage = 200;
-
-  while (page <= 10) {
-    const { data, error } = await admin.auth.admin.listUsers({ page, perPage });
-    if (error) throw new Error(error.message);
-
-    const match = data.users.find(
-      (u) => u.email?.toLowerCase() === email.toLowerCase()
-    );
-    if (match) return match.id;
-
-    if (data.users.length < perPage) break;
-    page += 1;
-  }
-
-  return null;
+function isProductionLocked(): boolean {
+  if (process.env.NODE_ENV !== "production") return false;
+  return process.env.ALLOW_DEV_USER_API !== "true";
 }
 
 async function seedDemoProgress(
@@ -146,7 +142,16 @@ async function seedDemoProgress(
   }
 }
 
+/**
+ * Local/dev-only helper for test accounts.
+ * Disabled in production unless ALLOW_DEV_USER_API=true.
+ * Never creates super_admin. Never deletes users. Never used for student invites.
+ */
 export async function POST(request: Request) {
+  if (isProductionLocked()) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   if (!authorizeRequest(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -175,25 +180,25 @@ export async function POST(request: Request) {
     );
   }
 
+  const role = body.role ?? "student";
+  if (!ALLOWED_ROLES.has(role)) {
+    return NextResponse.json(
+      { error: "role must be student or institutional_admin" },
+      { status: 400 }
+    );
+  }
+
+  // recreate / delete path intentionally removed — no privilege to wipe users.
+
   try {
     const admin = createAdminClient();
-
-    if (body.recreate) {
-      const existingId = await findUserIdByEmail(admin, email);
-      if (existingId) {
-        const { error: deleteError } = await admin.auth.admin.deleteUser(
-          existingId
-        );
-        if (deleteError) throw new Error(deleteError.message);
-      }
-    }
 
     const { data, error } = await admin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
       user_metadata: {
-        role: body.role ?? "student",
+        role,
         full_name: body.full_name ?? email.split("@")[0],
         institution_id: body.institution_id ?? null,
       },
@@ -210,7 +215,7 @@ export async function POST(request: Request) {
       await admin
         .from("profiles")
         .update({
-          role: body.role ?? "student",
+          role,
           full_name: body.full_name ?? null,
           institution_id: body.institution_id ?? null,
           is_demo: body.is_demo ?? false,

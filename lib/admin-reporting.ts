@@ -2,6 +2,7 @@ import { daysSince, formatWorkbookActivityLabel } from "@/lib/workbook-activity"
 import type { CohortStudentMetrics } from "@/lib/cohort-analytics";
 
 export type AttentionReason =
+  | "invite_pending"
   | "no_workbook"
   | "inactive"
   | "behind_pace"
@@ -10,6 +11,7 @@ export type AttentionReason =
   | "quiz_below_threshold";
 
 export const ATTENTION_REASONS: AttentionReason[] = [
+  "invite_pending",
   "no_workbook",
   "inactive",
   "behind_pace",
@@ -28,10 +30,19 @@ export function buildAttentionReasons(
     | "quizModulesTaken"
     | "quizAverage"
     | "quizBelowThresholdCount"
+    | "invitePendingDays"
   >,
-  now = new Date()
+  now = new Date(),
+  invitePendingThresholdDays = 7
 ): AttentionReason[] {
   const reasons: AttentionReason[] = [];
+
+  if (
+    student.invitePendingDays != null &&
+    student.invitePendingDays >= invitePendingThresholdDays
+  ) {
+    reasons.push("invite_pending");
+  }
 
   if (student.workbookAnswered === 0) {
     reasons.push("no_workbook");
@@ -68,6 +79,8 @@ export function buildAttentionReasons(
 
 export function attentionReasonLabel(reason: AttentionReason): string {
   switch (reason) {
+    case "invite_pending":
+      return "Invite not accepted";
     case "no_workbook":
       return "No workbook activity";
     case "inactive":
@@ -89,6 +102,10 @@ export function attentionReasonDetail(
   now = new Date()
 ): string {
   switch (reason) {
+    case "invite_pending":
+      return student.invitePendingDays != null
+        ? `Invite not accepted after ${student.invitePendingDays} days`
+        : "Invite not accepted";
     case "no_workbook":
       return "No workbook activity";
     case "inactive": {
@@ -124,6 +141,7 @@ export function countAttentionReasons(
   students: Pick<CohortStudentMetrics, "attentionReasons">[]
 ): Record<AttentionReason, number> {
   const counts: Record<AttentionReason, number> = {
+    invite_pending: 0,
     no_workbook: 0,
     inactive: 0,
     behind_pace: 0,

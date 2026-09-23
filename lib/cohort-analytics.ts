@@ -6,6 +6,11 @@ import {
   formatLiveAttendanceSummary,
 } from "@/lib/admin-reporting";
 import {
+  fetchAuthInviteStatuses,
+  invitePendingDays,
+  INVITE_PENDING_ATTENTION_DAYS,
+} from "@/lib/auth-invite-status";
+import {
   formatCohortWeekLabel,
   getDisplayProgramWeek,
   getProgramWeek,
@@ -91,6 +96,8 @@ export type CohortStudentMetrics = {
   workbookPercent: number;
   lastWorkbookActivity: string | null;
   workbookModulesTouched: number;
+  /** Days since invite with no sign-in; null once accepted or unknown. */
+  invitePendingDays: number | null;
   attentionReasons: AttentionReason[];
 };
 
@@ -285,10 +292,21 @@ export async function getStudentModuleBreakdown(
   });
 }
 
+export type GetCohortAnalyticsOptions = {
+  /**
+   * When true, exclude `is_demo` students from all totals.
+   * Used for cross-institution rollups; leave false for single-institution
+   * reporting (Demo University fixtures must remain visible there).
+   */
+  excludeDemo?: boolean;
+};
+
 export async function getCohortAnalytics(
   supabase: DbClient,
-  institutionId: string
+  institutionId: string,
+  options: GetCohortAnalyticsOptions = {}
 ): Promise<CohortAnalytics | null> {
+  const { excludeDemo = false } = options;
   const { data: institution, error: institutionError } = await supabase
     .from("institutions")
     .select("cohort_start_date")
@@ -332,13 +350,19 @@ export async function getCohortAnalytics(
   const suppressBehindPace =
     cohortPhase === "pre_start" || cohortPhase === "early";
 
-  const { data: students, error: studentsError } = await supabase
+  let studentsQuery = supabase
     .from("profiles")
     .select(
-      "id, full_name, xp, rank, last_login, last_active_date, diagnostic_complete, program_started_at, created_at"
+      "id, full_name, xp, rank, last_login, last_active_date, diagnostic_complete, program_started_at, created_at, is_demo"
     )
     .eq("institution_id", institutionId)
     .eq("role", "student");
+
+  if (excludeDemo) {
+    studentsQuery = studentsQuery.eq("is_demo", false);
+  }
+
+  const { data: students, error: studentsError } = await studentsQuery;
 
   if (studentsError) {
     failQuery("students", studentsError.message);
@@ -446,9 +470,10 @@ export async function getCohortAnalytics(
     emptyStudentFilter
   );
 
+  const authInviteStatuses = await fetchAuthInviteStatuses(studentIds);
   const emails = new Map<string, string>();
   for (const student of students ?? []) {
-    emails.set(student.id, "");
+    emails.set(student.id, authInviteStatuses.get(student.id)?.email ?? "");
   }
 
   const totalModules = modules?.length ?? 0;
@@ -567,6 +592,11 @@ export async function getCohortAnalytics(
         exerciseAnswers
       );
 
+      const authStatus = authInviteStatuses.get(student.id);
+      const pendingDays = authStatus
+        ? invitePendingDays(authStatus)
+        : null;
+
       const base: Omit<CohortStudentMetrics, "attentionReasons"> = {
         id: student.id,
         full_name: student.full_name,
@@ -612,14 +642,22 @@ export async function getCohortAnalytics(
         workbookPercent: workbook.workbookPercent,
         lastWorkbookActivity: workbook.lastWorkbookActivity,
         workbookModulesTouched: workbook.workbookModulesTouched,
+        invitePendingDays: pendingDays,
       };
 
       return {
         ...base,
-        attentionReasons: buildAttentionReasons(base).filter((reason) => {
+        attentionReasons: buildAttentionReasons(
+          base,
+          new Date(),
+          INVITE_PENDING_ATTENTION_DAYS
+        ).filter((reason) => {
           if (suppressBehindPace && reason === "behind_pace") return false;
           if (cohortPhase === "early" && reason === "inactive") return false;
-          if (cohortPhase === "pre_start") return false;
+          // Invite never accepted is actionable even before cohort start.
+          if (cohortPhase === "pre_start" && reason !== "invite_pending") {
+            return false;
+          }
           return true;
         }),
       };
@@ -632,13 +670,15 @@ export async function getCohortAnalytics(
   const topStudents = sortedByXp.slice(0, 10);
   const needsAttentionStudents =
     cohortPhase === "pre_start"
-      ? []
+      ? allStudents
+          .filter((s) => s.attentionReasons.includes("invite_pending"))
+          .sort((a, b) => (b.invitePendingDays ?? 0) - (a.invitePendingDays ?? 0))
       : cohortPhase === "early"
         ? allStudents
             .filter((s) => s.attentionReasons.length > 0)
             .sort((a, b) => a.completionPercent - b.completionPercent)
         : allStudents
-            .filter((s) => s.isBehindPace)
+            .filter((s) => s.isBehindPace || s.attentionReasons.includes("invite_pending"))
             .sort((a, b) => a.completionPercent - b.completionPercent);
 
   const now = new Date();

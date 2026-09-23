@@ -9,6 +9,227 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      capri_instruments: {
+        Row: {
+          created_at: string;
+          is_active: boolean;
+          version: string;
+        };
+        Insert: {
+          created_at?: string;
+          is_active?: boolean;
+          version: string;
+        };
+        Update: {
+          created_at?: string;
+          is_active?: boolean;
+          version?: string;
+        };
+        Relationships: [];
+      };
+      capri_items: {
+        Row: {
+          id: string;
+          instrument_version: string;
+          is_active: boolean;
+          item_type: string;
+          order_index: number;
+          pillar: number;
+          prompt: string;
+          section: string;
+          subdimension: string | null;
+        };
+        Insert: {
+          id: string;
+          instrument_version: string;
+          is_active?: boolean;
+          item_type: string;
+          order_index?: number;
+          pillar: number;
+          prompt: string;
+          section: string;
+          subdimension?: string | null;
+        };
+        Update: {
+          id?: string;
+          instrument_version?: string;
+          is_active?: boolean;
+          item_type?: string;
+          order_index?: number;
+          pillar?: number;
+          prompt?: string;
+          section?: string;
+          subdimension?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "capri_items_instrument_version_fkey";
+            columns: ["instrument_version"];
+            isOneToOne: false;
+            referencedRelation: "capri_instruments";
+            referencedColumns: ["version"];
+          },
+        ];
+      };
+      capri_administrations: {
+        Row: {
+          administration_type: string;
+          closes_at: string | null;
+          created_at: string;
+          id: string;
+          institution_id: string;
+          instrument_version: string;
+          opens_at: string | null;
+        };
+        Insert: {
+          administration_type: string;
+          closes_at?: string | null;
+          created_at?: string;
+          id?: string;
+          institution_id: string;
+          instrument_version: string;
+          opens_at?: string | null;
+        };
+        Update: {
+          administration_type?: string;
+          closes_at?: string | null;
+          created_at?: string;
+          id?: string;
+          institution_id?: string;
+          instrument_version?: string;
+          opens_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "capri_administrations_institution_id_fkey";
+            columns: ["institution_id"];
+            isOneToOne: false;
+            referencedRelation: "institutions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      capri_responses: {
+        Row: {
+          administration_id: string;
+          duration_seconds: number | null;
+          id: string;
+          started_at: string;
+          student_id: string;
+          submitted_at: string | null;
+        };
+        Insert: {
+          administration_id: string;
+          duration_seconds?: number | null;
+          id?: string;
+          started_at?: string;
+          student_id: string;
+          submitted_at?: string | null;
+        };
+        Update: {
+          administration_id?: string;
+          duration_seconds?: number | null;
+          id?: string;
+          started_at?: string;
+          student_id?: string;
+          submitted_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "capri_responses_administration_id_fkey";
+            columns: ["administration_id"];
+            isOneToOne: false;
+            referencedRelation: "capri_administrations";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "capri_responses_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      capri_answers: {
+        Row: {
+          id: string;
+          instrument_version: string;
+          item_id: string;
+          rating_context: string;
+          raw_value: number;
+          response_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          instrument_version: string;
+          item_id: string;
+          rating_context?: string;
+          raw_value: number;
+          response_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          instrument_version?: string;
+          item_id?: string;
+          rating_context?: string;
+          raw_value?: number;
+          response_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "capri_answers_response_id_fkey";
+            columns: ["response_id"];
+            isOneToOne: false;
+            referencedRelation: "capri_responses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      capri_scores: {
+        Row: {
+          computed_at: string;
+          id: string;
+          instrument_version: string;
+          rating_context: string;
+          response_id: string;
+          scope: string;
+          scope_id: string;
+          value: number;
+        };
+        Insert: {
+          computed_at?: string;
+          id?: string;
+          instrument_version: string;
+          rating_context?: string;
+          response_id: string;
+          scope: string;
+          scope_id: string;
+          value: number;
+        };
+        Update: {
+          computed_at?: string;
+          id?: string;
+          instrument_version?: string;
+          rating_context?: string;
+          response_id?: string;
+          scope?: string;
+          scope_id?: string;
+          value?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "capri_scores_response_id_fkey";
+            columns: ["response_id"];
+            isOneToOne: false;
+            referencedRelation: "capri_responses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       diagnostic_responses: {
         Row: {
           id: string;

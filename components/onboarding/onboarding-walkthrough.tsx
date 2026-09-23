@@ -24,7 +24,7 @@ export function OnboardingWalkthrough() {
   async function finish() {
     setLoading(true);
     await completeOnboarding();
-    router.push("/diagnostic");
+    router.push("/capri/baseline");
     router.refresh();
   }
 
@@ -52,7 +52,7 @@ export function OnboardingWalkthrough() {
           </Button>
           {isLast ? (
             <Button onClick={finish} disabled={loading}>
-              {loading ? "Saving..." : "Start diagnostic"}
+              {loading ? "Saving..." : "Start readiness baseline"}
             </Button>
           ) : (
             <Button onClick={() => setStep((s) => s + 1)}>Next</Button>

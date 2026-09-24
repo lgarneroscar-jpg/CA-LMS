@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth";
-import { fetchCapriOutcomes } from "@/lib/capri-outcomes";
+import { fetchCapriOutcomes, setCapriOutcomesProvider } from "@/lib/capri-outcomes";
+import { capriOutcomesProvider } from "@/lib/capri/outcomes-provider";
 import { computeReportDeltas } from "@/lib/report-deltas";
 import { loadPreviousReport, loadReportRow } from "@/lib/reports";
 import { createClient } from "@/lib/supabase/server";
@@ -11,6 +12,10 @@ import { PrintReportButton } from "@/components/admin/print-report-button";
 type PageProps = {
   params: Promise<{ "institution-id": string; "report-id": string }>;
 };
+
+// CAPRI has landed, so the null provider is replaced with the real one. The
+// seam stays in place: swapping this line back restores the previous behaviour.
+setCapriOutcomesProvider(capriOutcomesProvider);
 
 export default async function AdminReportDetailPage({ params }: PageProps) {
   const { "institution-id": institutionId, "report-id": reportId } =

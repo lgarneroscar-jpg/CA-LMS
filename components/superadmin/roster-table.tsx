@@ -20,6 +20,18 @@ function formatDate(iso: string | null): string {
   });
 }
 
+function formatDateTime(iso: string | null): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 function statusLabel(status: RosterStudentRow["inviteStatus"]): string {
   switch (status) {
     case "accepted":
@@ -50,7 +62,7 @@ export function RosterTable({
 
   function resend(student: RosterStudentRow) {
     const ok = window.confirm(
-      `Resend invite email to ${student.full_name ?? student.email ?? "this student"}?\n\nThis affects 1 student. No password is set or emailed.`
+      `Send a fresh invite link to ${student.full_name ?? student.email ?? "this student"}?\n\nThis affects 1 student. Any earlier link stops working. No password is set or emailed.`
     );
     if (!ok) return;
 
@@ -59,7 +71,7 @@ export function RosterTable({
       setMessageById((prev) => ({
         ...prev,
         [student.id]: result.ok
-          ? "Invite resent"
+          ? `${result.via === "invite" ? "Fresh invite" : "Password link"} sent ${formatDateTime(result.sentAt)}`
           : result.reason,
       }));
       if (result.ok) router.refresh();
@@ -87,7 +99,7 @@ export function RosterTable({
               <th className="px-3 py-2 font-medium">Name</th>
               <th className="px-3 py-2 font-medium">Email</th>
               <th className="px-3 py-2 font-medium">Status</th>
-              <th className="px-3 py-2 font-medium">Invited</th>
+              <th className="px-3 py-2 font-medium">Last invite sent</th>
               <th className="px-3 py-2 font-medium">Actions</th>
             </tr>
           </thead>
@@ -117,7 +129,9 @@ export function RosterTable({
                   </Badge>
                 </td>
                 <td className="px-3 py-2 text-muted-foreground">
-                  {formatDate(student.invitedAt)}
+                  {student.inviteStatus === "accepted"
+                    ? formatDate(student.invitedAt)
+                    : formatDateTime(student.lastLinkSentAt)}
                 </td>
                 <td className="px-3 py-2">
                   {student.inviteStatus === "pending" ? (

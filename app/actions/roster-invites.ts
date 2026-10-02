@@ -11,6 +11,7 @@ import {
   smtpFailureMessage,
   type InviteUiStatus,
 } from "@/lib/auth-invite-status";
+import { authCallbackUrl, passwordResetRedirectUrl } from "@/lib/auth-links";
 
 export type InviteRowInput = {
   full_name: string;
@@ -23,14 +24,6 @@ export type InviteRowResult = {
   status: "sent" | "already_exists" | "failed";
   reason?: string;
 };
-
-function siteUrl(): string {
-  const raw =
-    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
-    process.env.NEXT_PUBLIC_VERCEL_URL?.replace(/\/$/, "") ||
-    "http://localhost:3000";
-  return raw.startsWith("http") ? raw : `https://${raw}`;
-}
 
 async function assertSuperAdmin() {
   await requireRole(["super_admin"]);
@@ -121,7 +114,7 @@ export async function inviteStudentsBatch(
 
   const admin = createAdminClient();
   const byEmail = await loadAuthUsersByEmail();
-  const redirectTo = `${siteUrl()}/auth/callback`;
+  const redirectTo = authCallbackUrl();
 
   const results: InviteRowResult[] = [];
   let smtpNotConfigured = false;
@@ -210,10 +203,14 @@ export async function inviteStudentsBatch(
   };
 }
 
+export type ResendInviteResult =
+  | { ok: true; via: "invite" | "password_link"; sentAt: string }
+  | { ok: false; reason: string };
+
 export async function resendStudentInvite(
   institutionId: string,
   studentId: string
-): Promise<{ ok: true } | { ok: false; reason: string }> {
+): Promise<ResendInviteResult> {
   await assertSuperAdmin();
 
   const admin = createAdminClient();
@@ -239,47 +236,47 @@ export async function resendStudentInvite(
     return { ok: false, reason: "Student has already accepted and signed in" };
   }
 
-  const redirectTo = `${siteUrl()}/auth/callback`;
-
-  // Resend confirmation/invite email for an existing unconfirmed user.
-  // Never set or transmit a password.
-  const { error: resendError } = await admin.auth.resend({
-    type: "signup",
-    email: status.email,
-    options: { emailRedirectTo: redirectTo },
-  });
-
-  if (resendError) {
-    const message = resendError.message;
-    if (isSmtpNotConfiguredError(message)) {
-      return { ok: false, reason: smtpFailureMessage() };
+  // Re-inviting an unconfirmed user issues a new token, invalidating the
+  // expired one and updating invited_at.
+  const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(
+    status.email,
+    {
+      data: {
+        role: "student",
+        institution_id: institutionId,
+        full_name: profile.full_name ?? status.email.split("@")[0],
+      },
+      redirectTo: authCallbackUrl(),
     }
+  );
 
-    // Fallback: re-issue invite metadata via inviteUserByEmail (fails if user exists).
-    const { error: inviteError } = await admin.auth.admin.inviteUserByEmail(
-      status.email,
-      {
-        data: {
-          role: "student",
-          institution_id: institutionId,
-          full_name: profile.full_name ?? status.email.split("@")[0],
-        },
-        redirectTo,
-      }
-    );
+  if (!inviteError) {
+    revalidatePath(`/superadmin/institutions/${institutionId}`);
+    return { ok: true, via: "invite", sentAt: new Date().toISOString() };
+  }
 
-    if (inviteError) {
-      return {
-        ok: false,
-        reason: isSmtpNotConfiguredError(inviteError.message)
-          ? smtpFailureMessage()
-          : inviteError.message,
-      };
-    }
+  if (isSmtpNotConfiguredError(inviteError.message)) {
+    return { ok: false, reason: smtpFailureMessage() };
+  }
+
+  // Supabase refuses to re-invite an already-confirmed email. A password link
+  // lands on the same set-password page, so it serves the same purpose.
+  const { error: recoveryError } = await admin.auth.resetPasswordForEmail(
+    status.email,
+    { redirectTo: passwordResetRedirectUrl() }
+  );
+
+  if (recoveryError) {
+    return {
+      ok: false,
+      reason: isSmtpNotConfiguredError(recoveryError.message)
+        ? smtpFailureMessage()
+        : `${inviteError.message}; password link also failed: ${recoveryError.message}`,
+    };
   }
 
   revalidatePath(`/superadmin/institutions/${institutionId}`);
-  return { ok: true };
+  return { ok: true, via: "password_link", sentAt: new Date().toISOString() };
 }
 
 export type RosterStudentRow = {
@@ -290,6 +287,7 @@ export type RosterStudentRow = {
   is_demo: boolean;
   inviteStatus: InviteUiStatus;
   invitedAt: string | null;
+  lastLinkSentAt: string | null;
   lastSignInAt: string | null;
 };
 
@@ -327,6 +325,7 @@ export async function getInstitutionRoster(
       is_demo: student.is_demo,
       inviteStatus,
       invitedAt: auth?.invitedAt ?? student.created_at,
+      lastLinkSentAt: auth?.lastLinkSentAt ?? auth?.invitedAt ?? null,
       lastSignInAt: auth?.lastSignInAt ?? null,
     };
   });

@@ -7,7 +7,20 @@ export type AuthInviteStatus = {
   invitedAt: string | null;
   lastSignInAt: string | null;
   emailConfirmedAt: string | null;
+  /** Most recent invite or password-link email sent to this user. */
+  lastLinkSentAt: string | null;
 };
+
+function latestIso(...values: (string | null | undefined)[]): string | null {
+  let latest: string | null = null;
+  for (const value of values) {
+    if (!value) continue;
+    if (!latest || new Date(value).getTime() > new Date(latest).getTime()) {
+      latest = value;
+    }
+  }
+  return latest;
+}
 
 export type InviteUiStatus = "accepted" | "pending" | "unknown";
 
@@ -68,6 +81,11 @@ export async function fetchAuthInviteStatuses(
         invitedAt: user.invited_at ?? user.created_at ?? null,
         lastSignInAt: user.last_sign_in_at ?? null,
         emailConfirmedAt: user.email_confirmed_at ?? null,
+        lastLinkSentAt: latestIso(
+          user.invited_at,
+          user.recovery_sent_at,
+          user.confirmation_sent_at
+        ),
       });
     }
 

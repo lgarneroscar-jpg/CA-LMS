@@ -4,7 +4,9 @@ import type { Database } from "@/types/database";
 import { getHomePathForRole } from "@/lib/auth-routes";
 import type { UserRole } from "@/types/index";
 
-const PUBLIC_PATHS = ["/login", "/auth/callback"];
+// /auth/* pages validate their own session so an expired link can explain
+// itself instead of bouncing silently to /login.
+const PUBLIC_PATHS = ["/login", "/auth/"];
 
 /** Routes that need profile/role data for redirects or guards */
 function needsProfileLookup(pathname: string): boolean {

@@ -1,14 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireProfile } from "@/lib/auth";
 
 export async function completeOnboarding() {
   const profile = await requireProfile();
-  const supabase = await createClient();
 
-  await supabase
+  // onboarding_complete is not client-writable; the id comes from the session.
+  await createAdminClient()
     .from("profiles")
     .update({ onboarding_complete: true })
     .eq("id", profile.id);

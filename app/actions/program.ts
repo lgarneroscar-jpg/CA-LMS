@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireProfile } from "@/lib/auth";
 
 export async function startProgram() {
@@ -14,10 +14,10 @@ export async function startProgram() {
     return { success: true, alreadyStarted: true };
   }
 
-  const supabase = await createClient();
   const startedAt = new Date().toISOString();
 
-  const { error } = await supabase
+  // program_started_at is not client-writable; the id comes from the session.
+  const { error } = await createAdminClient()
     .from("profiles")
     .update({ program_started_at: startedAt })
     .eq("id", profile.id);

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getAuthContext } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { refreshStreakIfLapsed } from "@/lib/streaks";
 import { AppHeader } from "@/components/layout/app-header";
 import { AppSidebar } from "@/components/layout/app-sidebar";
@@ -37,7 +38,7 @@ export default async function ProtectedLayout({
 
   if (profile.role === "student" && profile.program_started_at) {
     await refreshStreakIfLapsed(
-      supabase,
+      createAdminClient(),
       profile.id,
       profile.program_started_at
     );

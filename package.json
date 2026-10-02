@@ -15,7 +15,8 @@
     "test:workbook-format": "tsx --test lib/workbook-format.test.ts",
     "test:workbook-seed": "tsx --test lib/workbook-seed-parser.test.ts",
     "test:reporting": "tsx --test lib/admin-reporting.test.ts",
-    "test:quiz-grading": "tsx --test lib/quiz-grading.test.ts"
+    "test:quiz-grading": "tsx --test lib/quiz-grading.test.ts",
+    "probe:student-writes": "tsx --env-file=.env.local scripts/probe-student-writes.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",

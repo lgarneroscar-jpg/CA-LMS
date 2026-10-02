@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { calculateModuleXp, XP_REWARDS } from "@/lib/xp";
 import { getExpectedWeek } from "@/lib/pace";
 import { recalculateCohortRanksAndNotify } from "@/lib/rankings";
@@ -11,11 +11,15 @@ import type { Tables } from "@/types/database";
 
 export type StudentProgressRow = Tables<"student_progress">;
 
+// student_progress and the outcome columns of profiles are not writable by
+// client roles. Every function here uses the service role, so `studentId` must
+// come from the verified session, never from client input.
+
 export async function getOrCreateProgress(
   studentId: string,
   moduleId: string
 ): Promise<StudentProgressRow> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
   const { data: existing } = await supabase
     .from("student_progress")
@@ -67,7 +71,7 @@ export async function tryCompleteModule(params: {
   programJustCompleted?: boolean;
   certificateStudentId?: string;
 }> {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const progress = await getOrCreateProgress(params.studentId, params.moduleId);
 
   if (progress.is_complete) {
@@ -99,6 +103,7 @@ export async function tryCompleteModule(params: {
       xp_earned: xpEarned,
     })
     .eq("id", progress.id)
+    .eq("student_id", params.studentId)
     .select("*")
     .single();
 
@@ -166,7 +171,7 @@ export async function markLiveSessionAttended(params: {
   institutionName: string | null;
   studentEmail?: string | null;
 }) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const progress = await getOrCreateProgress(params.studentId, params.moduleId);
 
   if (progress.is_complete) {
@@ -188,7 +193,8 @@ export async function markLiveSessionAttended(params: {
       video_watched: true,
       attendance_source: "self_reported",
     })
-    .eq("id", progress.id);
+    .eq("id", progress.id)
+    .eq("student_id", params.studentId);
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -241,7 +247,7 @@ export async function recordStudentActivity(
   studentId: string,
   programStartedAt: string | null
 ) {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   await updateWeeklyStreakOnActivity(supabase, {
     studentId,
     programStartedAt,

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getSessionUser } from "@/lib/auth";
 import { getOrCreateProgress } from "@/lib/progress";
 import { assertVideoWatched } from "@/lib/module-gates";
@@ -231,10 +232,11 @@ export async function markExercisesReadyForQuiz(
     );
   }
 
-  await supabase
+  await createAdminClient()
     .from("student_progress")
     .update({ exercises_submitted: true })
-    .eq("id", progress.id);
+    .eq("id", progress.id)
+    .eq("student_id", user.id);
 
   revalidateModulePaths(pillarSlug, moduleSlug);
   return { success: true };

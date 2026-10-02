@@ -86,13 +86,14 @@ export async function markVideoWatched(
   pillarSlug: string,
   moduleSlug: string
 ) {
-  const { user, supabase } = await requireStudent();
+  const { user } = await requireStudent();
   const progress = await getOrCreateProgress(user.id, moduleId);
 
-  await supabase
+  await createAdminClient()
     .from("student_progress")
     .update({ video_watched: true })
-    .eq("id", progress.id);
+    .eq("id", progress.id)
+    .eq("student_id", user.id);
 
   revalidateModulePaths(pillarSlug, moduleSlug);
   return { success: true };
@@ -149,10 +150,11 @@ export async function submitExercises(
     );
   }
 
-  await supabase
+  await createAdminClient()
     .from("student_progress")
     .update({ exercises_submitted: true })
-    .eq("id", progress.id);
+    .eq("id", progress.id)
+    .eq("student_id", user.id);
 
   revalidateModulePaths(pillarSlug, moduleSlug);
   return { success: true };
@@ -230,10 +232,11 @@ export async function submitQuiz(
       }
       if (missingTitles.length > 0) {
         // Clear stale exercises_submitted so the UI re-locks until fixed.
-        await supabase
+        await createAdminClient()
           .from("student_progress")
           .update({ exercises_submitted: false })
-          .eq("id", progress.id);
+          .eq("id", progress.id)
+          .eq("student_id", user.id);
         const listed = missingTitles.join(", ");
         throw new Error(
           missingTitles.length === 1
@@ -278,14 +281,15 @@ export async function submitQuiz(
   // Latest attempt wins — do not keep a prior best score.
   const passed = isQuizPassingScore(score, total);
 
-  await supabase
+  await admin
     .from("student_progress")
     .update({
       quiz_score: score,
       // quiz_completed means passed at threshold, not merely attempted.
       quiz_completed: passed,
     })
-    .eq("id", progress.id);
+    .eq("id", progress.id)
+    .eq("student_id", user.id);
 
   let moduleCompleted = false;
   let xpEarned = 0;

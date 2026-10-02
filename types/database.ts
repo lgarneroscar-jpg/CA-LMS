@@ -637,6 +637,58 @@ export type Database = {
           },
         ];
       };
+      quiz_answers: {
+        Row: {
+          attempt_at: string;
+          chosen_option: string;
+          id: string;
+          is_correct: boolean;
+          module_id: string;
+          question_id: string;
+          student_id: string;
+        };
+        Insert: {
+          attempt_at?: string;
+          chosen_option: string;
+          id?: string;
+          is_correct: boolean;
+          module_id: string;
+          question_id: string;
+          student_id: string;
+        };
+        Update: {
+          attempt_at?: string;
+          chosen_option?: string;
+          id?: string;
+          is_correct?: boolean;
+          module_id?: string;
+          question_id?: string;
+          student_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "quiz_answers_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "quiz_answers_module_id_fkey";
+            columns: ["module_id"];
+            isOneToOne: false;
+            referencedRelation: "modules";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "quiz_answers_question_id_fkey";
+            columns: ["question_id"];
+            isOneToOne: false;
+            referencedRelation: "quiz_questions";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       quiz_questions: {
         Row: {
           correct_answer: string;

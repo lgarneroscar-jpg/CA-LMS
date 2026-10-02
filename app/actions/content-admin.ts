@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { ExerciseField, WorkbookBlock } from "@/types/modules";
 import type { Json } from "@/types/database";
 
@@ -50,11 +51,27 @@ export async function updateModuleContent(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
+export type SavedQuizQuestion = {
+  id: string;
+  question: string;
+  options: { id: string; label: string }[];
+  correct_answer: string;
+  order_index: number;
+};
+
+/**
+ * Questions are updated in place by id rather than deleted and re-inserted:
+ * quiz_answers cascades on question delete, so a full replace would erase the
+ * module's answer history on every save. Only questions removed in the editor
+ * are deleted.
+ */
 export async function saveQuizQuestions(
   moduleId: string,
   questionsJson: string
-) {
-  const supabase = await requireSuperAdmin();
+): Promise<SavedQuizQuestion[]> {
+  await requireRole(["super_admin"]);
+  // The answer key column is not readable by client roles.
+  const admin = createAdminClient();
 
   let questions: {
     id?: string;
@@ -70,24 +87,60 @@ export async function saveQuizQuestions(
     throw new Error("Invalid quiz JSON");
   }
 
-  await supabase.from("quiz_questions").delete().eq("module_id", moduleId);
+  const { data: existing, error: existingError } = await admin
+    .from("quiz_questions")
+    .select("id")
+    .eq("module_id", moduleId);
+  if (existingError) throw new Error(existingError.message);
 
-  if (questions.length > 0) {
-    const { error } = await supabase.from("quiz_questions").insert(
-      questions.map((q, index) => ({
-        module_id: moduleId,
-        question: q.question,
-        options: q.options,
-        correct_answer: q.correct_answer,
-        order_index: q.order_index ?? index + 1,
-      }))
-    );
+  const existingIds = new Set((existing ?? []).map((row) => row.id));
+  const keptIds = new Set(
+    questions.map((q) => q.id).filter((id): id is string => !!id && existingIds.has(id))
+  );
+  const removedIds = [...existingIds].filter((id) => !keptIds.has(id));
 
+  if (removedIds.length > 0) {
+    const { error } = await admin
+      .from("quiz_questions")
+      .delete()
+      .in("id", removedIds);
     if (error) throw new Error(error.message);
   }
 
+  for (const [index, q] of questions.entries()) {
+    const row = {
+      module_id: moduleId,
+      question: q.question,
+      options: q.options,
+      correct_answer: q.correct_answer,
+      order_index: q.order_index ?? index + 1,
+    };
+    const { error } =
+      q.id && keptIds.has(q.id)
+        ? await admin.from("quiz_questions").update(row).eq("id", q.id)
+        : await admin.from("quiz_questions").insert(row);
+    if (error) throw new Error(error.message);
+  }
+
+  const { data: saved, error: savedError } = await admin
+    .from("quiz_questions")
+    .select("id, question, options, correct_answer, order_index")
+    .eq("module_id", moduleId)
+    .order("order_index");
+  if (savedError) throw new Error(savedError.message);
+
   revalidatePath("/superadmin/content");
   revalidatePath(`/superadmin/content/${moduleId}`);
+
+  return (saved ?? []).map((row) => ({
+    id: row.id,
+    question: row.question,
+    options: Array.isArray(row.options)
+      ? (row.options as { id: string; label: string }[])
+      : [],
+    correct_answer: row.correct_answer,
+    order_index: row.order_index,
+  }));
 }
 
 export async function updateLiveSession(formData: FormData) {

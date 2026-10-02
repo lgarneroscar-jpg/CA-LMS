@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { getSessionUser } from "@/lib/auth";
+import { gradeQuizSubmission } from "@/lib/quiz-grading";
 import {
   getOrCreateProgress,
   markLiveSessionAttended,
@@ -161,8 +163,7 @@ export async function submitQuiz(
   pillarSlug: string,
   moduleSlug: string,
   answers: Record<string, string>,
-  questionIds: string[],
-  correctAnswers: Record<string, string>
+  questionIds: string[]
 ) {
   const { user, profile, supabase } = await requireStudent();
   const progress = await getOrCreateProgress(user.id, moduleId);
@@ -243,10 +244,35 @@ export async function submitQuiz(
     }
   }
 
-  const total = questionIds.length;
-  let score = 0;
-  for (const qId of questionIds) {
-    if (answers[qId] === correctAnswers[qId]) score += 1;
+  // The answer key is not readable by client roles; grading uses the service role.
+  const admin = createAdminClient();
+  const { data: questionRows, error: questionsError } = await admin
+    .from("quiz_questions")
+    .select("id, options, correct_answer")
+    .eq("module_id", moduleId);
+  if (questionsError) throw new Error(questionsError.message);
+  if (!questionRows || questionRows.length === 0) {
+    throw new Error("This module has no quiz questions.");
+  }
+
+  const graded = gradeQuizSubmission(questionRows, answers, questionIds);
+  const total = questionRows.length;
+  const score = graded.filter((g) => g.isCorrect).length;
+
+  // Every attempt is kept; recording must succeed before the score counts.
+  const attemptAt = new Date().toISOString();
+  const { error: answersInsertError } = await admin.from("quiz_answers").insert(
+    graded.map((g) => ({
+      student_id: user.id,
+      module_id: moduleId,
+      question_id: g.questionId,
+      chosen_option: g.chosenOption,
+      is_correct: g.isCorrect,
+      attempt_at: attemptAt,
+    }))
+  );
+  if (answersInsertError) {
+    throw new Error(`Could not record quiz answers: ${answersInsertError.message}`);
   }
 
   // Latest attempt wins — do not keep a prior best score.

@@ -33,6 +33,14 @@ import {
   type ModuleWorkbookBreakdown,
 } from "@/lib/workbook-activity";
 import { isQuizPassingScore } from "@/lib/module-gates";
+import {
+  analyzeQuestions,
+  fetchQuizAnswers,
+  fetchQuizQuestions,
+  pickMostMissed,
+  QUIZ_ANSWER_CAPTURE_SINCE,
+  type MostMissedQuestion,
+} from "@/lib/quiz-analysis";
 import type { AttentionReason } from "@/lib/admin-reporting";
 
 type DbClient = SupabaseClient<Database>;
@@ -174,6 +182,10 @@ export type CohortAnalytics = {
   topStudents: CohortStudentMetrics[];
   needsAttentionStudents: CohortStudentMetrics[];
   allStudents: CohortStudentMetrics[];
+  /** Lowest first-attempt correct rates. Absent in snapshots taken before answer capture. */
+  mostMissedQuestions?: MostMissedQuestion[];
+  /** Date answer capture began — every quiz-answer figure covers attempts since then only. */
+  quizAnswerCaptureSince?: string;
 };
 
 export function liveSessionExportHeader(session: LiveSessionRef): string {
@@ -494,6 +506,20 @@ export async function getCohortAnalytics(
     supabase,
     studentIds,
     emptyStudentFilter
+  );
+
+  const quizAnswerClient = getExerciseAnswersClient(supabase);
+  const contentModuleIdList = (modules ?? []).map((m) => m.id);
+  const [quizQuestionRefs, quizAnswerRows] = await Promise.all([
+    fetchQuizQuestions(quizAnswerClient, contentModuleIdList),
+    fetchQuizAnswers(quizAnswerClient, {
+      moduleIds: contentModuleIdList,
+      studentIds,
+    }),
+  ]);
+  const mostMissedQuestions = pickMostMissed(
+    analyzeQuestions(quizQuestionRefs, quizAnswerRows),
+    new Map((modules ?? []).map((m) => [m.id, m.module_code]))
   );
 
   const authInviteStatuses = await fetchAuthInviteStatuses(studentIds);
@@ -907,5 +933,7 @@ export async function getCohortAnalytics(
     topStudents,
     needsAttentionStudents,
     allStudents,
+    mostMissedQuestions,
+    quizAnswerCaptureSince: QUIZ_ANSWER_CAPTURE_SINCE,
   };
 }

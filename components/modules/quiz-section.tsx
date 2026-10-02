@@ -31,7 +31,6 @@ type QuizSectionProps = {
   pillarSlug: string;
   moduleSlug: string;
   questions: QuizQuestionView[];
-  correctAnswers: Record<string, string>;
   exercisesSubmitted: boolean;
   incompleteExercises?: IncompleteExerciseRef[];
   quizCompleted: boolean;
@@ -53,7 +52,6 @@ export function QuizSection({
   pillarSlug,
   moduleSlug,
   questions,
-  correctAnswers,
   exercisesSubmitted,
   incompleteExercises = [],
   quizCompleted,
@@ -90,8 +88,7 @@ export function QuizSection({
         pillarSlug,
         moduleSlug,
         answers,
-        questions.map((q) => q.id),
-        correctAnswers
+        questions.map((q) => q.id)
       );
       setScore(result.score);
       setLastTotal(result.total);

@@ -9,6 +9,7 @@ import {
   pluralize,
 } from "@/lib/admin-reporting";
 import { moduleCompletionExplainer } from "@/lib/module-gates";
+import { formatCaptureSince, MOST_MISSED_MIN_STUDENTS } from "@/lib/quiz-analysis";
 
 type InstitutionReportArtifactProps = {
   institutionName: string;
@@ -175,6 +176,35 @@ export function InstitutionReportArtifact({
         <p className="text-xs leading-snug text-muted-foreground">
           {METRIC_DEFINITIONS.quizScore}
         </p>
+        {m.quizAnswerCaptureSince ? (
+          <div className="space-y-1 pt-2">
+            <h3 className="text-sm font-semibold">Most-missed questions</h3>
+            {m.mostMissedQuestions && m.mostMissedQuestions.length > 0 ? (
+              <ul className="space-y-1 text-sm">
+                {m.mostMissedQuestions.map((q) => (
+                  <li key={`${q.moduleCode}-${q.questionNumber}`}>
+                    <span className="font-medium">
+                      {q.moduleCode} Q{q.questionNumber}
+                    </span>{" "}
+                    — {q.correctRate}% correct on first attempt ({q.studentsCorrect}{" "}
+                    of {q.studentsAnswered}) · {q.question}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                No question has enough first attempts yet to report (at least{" "}
+                {MOST_MISSED_MIN_STUDENTS} {pluralize(MOST_MISSED_MIN_STUDENTS, "student")}{" "}
+                per question).
+              </p>
+            )}
+            <p className="text-xs leading-snug text-muted-foreground">
+              Covers first attempts since answer recording began on{" "}
+              {formatCaptureSince(m.quizAnswerCaptureSince)}. Earlier attempts kept
+              only a score, so an early sample may be thin.
+            </p>
+          </div>
+        ) : null}
       </section>
 
       <section className="space-y-3">

@@ -108,7 +108,7 @@ export default async function ModulePage({ params }: PageProps) {
         .eq("module_id", module.id),
       supabase
         .from("quiz_questions")
-        .select("id, question, options, correct_answer, order_index")
+        .select("id, question, options, order_index")
         .eq("module_id", module.id)
         .order("order_index"),
       getContentModuleCatalog(),
@@ -146,11 +146,6 @@ export default async function ModulePage({ params }: PageProps) {
     options: parseQuizOptions(q.options),
   }));
 
-  const correctAnswers: Record<string, string> = {};
-  quizRows.forEach((q) => {
-    correctAnswers[q.id] = q.correct_answer;
-  });
-
   const nextModuleHref = findNextModuleHref(
     catalog,
     progressMap,
@@ -175,7 +170,6 @@ export default async function ModulePage({ params }: PageProps) {
       completionCheck={workbook.completion_check}
       exercises={exercises}
       questions={questions}
-      correctAnswers={correctAnswers}
       progress={progress}
       savedResponses={savedResponses}
       savedAnswers={savedAnswers}

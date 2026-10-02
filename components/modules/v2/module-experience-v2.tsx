@@ -57,7 +57,6 @@ type ModuleExperienceV2Props = {
   completionCheck?: string[];
   exercises: ExerciseField[];
   questions: QuizQuestionView[];
-  correctAnswers: Record<string, string>;
   progress: ModuleProgressState;
   savedResponses: Record<string, string>;
   savedAnswers: Record<string, SavedExerciseAnswer>;
@@ -80,7 +79,6 @@ export function ModuleExperienceV2(props: ModuleExperienceV2Props) {
     completionCheck,
     exercises,
     questions,
-    correctAnswers,
     progress,
     savedResponses,
     savedAnswers,
@@ -233,7 +231,6 @@ export function ModuleExperienceV2(props: ModuleExperienceV2Props) {
             pillarSlug={pillarSlug}
             moduleSlug={moduleSlug}
             questions={questions}
-            correctAnswers={correctAnswers}
             exercisesSubmitted={progress.exercises_submitted}
             incompleteExercises={incompleteExercisesForQuiz(
               exercises,

@@ -86,7 +86,7 @@ export function ModuleContentEditor({
       );
       formData.set("exercisesJson", JSON.stringify(exercises));
       await updateModuleContent(formData);
-      await saveQuizQuestions(moduleId, JSON.stringify(quiz));
+      setQuiz(await saveQuizQuestions(moduleId, JSON.stringify(quiz)));
       setMessage("Saved.");
       router.refresh();
     } catch (err) {

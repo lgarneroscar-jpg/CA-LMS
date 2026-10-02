@@ -5,6 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 import { parseWorkbookContent } from "@/lib/program";
 import { normalizeExerciseField } from "@/lib/content-normalize";
 import { ModuleContentEditor } from "@/components/superadmin/module-content-editor";
+import { QuestionAnalysisTable } from "@/components/superadmin/question-analysis-table";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { analyzeQuestions, fetchQuizAnswers } from "@/lib/quiz-analysis";
 import type { ExerciseField } from "@/types/modules";
 
 type PageProps = {
@@ -49,11 +52,38 @@ export default async function ModuleContentEditPage({ params }: PageProps) {
 
   if (!module) notFound();
 
-  const { data: quizRows } = await supabase
-    .from("quiz_questions")
-    .select("id, question, options, correct_answer, order_index")
-    .eq("module_id", moduleId)
-    .order("order_index");
+  // The answer key column is not readable by client roles.
+  const admin = createAdminClient();
+  const [{ data: quizRows }, answerRows] = await Promise.all([
+    admin
+      .from("quiz_questions")
+      .select("id, module_id, question, options, correct_answer, order_index")
+      .eq("module_id", moduleId)
+      .order("order_index"),
+    fetchQuizAnswers(admin, { moduleIds: [moduleId] }),
+  ]);
+
+  const answeringStudentIds = [...new Set(answerRows.map((r) => r.student_id))];
+  const { data: demoRows } = answeringStudentIds.length
+    ? await admin
+        .from("profiles")
+        .select("id")
+        .in("id", answeringStudentIds)
+        .eq("is_demo", true)
+    : { data: [] };
+  const demoIds = new Set((demoRows ?? []).map((r) => r.id));
+
+  const analysis = analyzeQuestions(
+    quizRows ?? [],
+    answerRows.filter((r) => !demoIds.has(r.student_id))
+  );
+  const correctLabels = new Map(
+    (quizRows ?? []).map((q) => [
+      q.id,
+      parseQuizOptions(q.options).find((o) => o.id === q.correct_answer)?.label ??
+        q.correct_answer,
+    ])
+  );
 
   const workbook = parseWorkbookContent(module.workbook_content);
 
@@ -81,6 +111,7 @@ export default async function ModuleContentEditPage({ params }: PageProps) {
           order_index: q.order_index,
         }))}
       />
+      <QuestionAnalysisTable analysis={analysis} correctLabels={correctLabels} />
     </div>
   );
 }

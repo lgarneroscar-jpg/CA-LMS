@@ -154,7 +154,7 @@ export default async function AdminStudentDetailPage({ params }: PageProps) {
           <CardHeader className="pb-2">
             <CardDescription>Streak</CardDescription>
             <CardTitle className="text-base font-medium">
-              {student.streak_days} weeks
+              {student.streak_days} {student.streak_days === 1 ? "week" : "weeks"}
             </CardTitle>
           </CardHeader>
         </Card>

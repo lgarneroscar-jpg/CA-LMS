@@ -390,7 +390,8 @@ export function DiagnosticSummary({
     <div className="space-y-4">
       <p className="text-sm">
         <span className="font-medium">{diagnostic.completedCount}</span> of{" "}
-        {totalStudents} students completed the CAPRI readiness baseline.
+        {totalStudents} {pluralize(totalStudents, "student")} completed the
+        CAPRI readiness baseline.
       </p>
       {diagnostic.incompleteStudents.length > 0 ? (
         <div>

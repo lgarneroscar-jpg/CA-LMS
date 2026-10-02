@@ -6,6 +6,7 @@ import {
   formatAverageQuizScoreLabel,
   attentionReasonDetail,
   METRIC_DEFINITIONS,
+  pluralize,
 } from "@/lib/admin-reporting";
 import { moduleCompletionExplainer } from "@/lib/module-gates";
 
@@ -78,7 +79,7 @@ export function InstitutionReportArtifact({
         <h1 className="text-3xl font-semibold tracking-tight">{institutionName}</h1>
         <p className="text-muted-foreground">
           Period {periodStart} → {periodEnd} · {m.cohortWeekLabel} ·{" "}
-          {envelope.cohortSize} students
+          {envelope.cohortSize} {pluralize(envelope.cohortSize, "student")}
         </p>
         <p className="text-xs text-muted-foreground">
           Generated {new Date(envelope.generatedAt).toLocaleString()} ·{" "}
@@ -156,7 +157,8 @@ export function InstitutionReportArtifact({
             label="No workbook activity"
             definition="Enrolled students who have not answered a single workbook exercise."
           >
-            {m.studentsWithZeroWorkbookActivity} students
+            {m.studentsWithZeroWorkbookActivity}{" "}
+            {pluralize(m.studentsWithZeroWorkbookActivity, "student")}
           </Metric>
         </dl>
       </section>

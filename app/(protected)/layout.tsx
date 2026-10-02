@@ -6,6 +6,7 @@ import { AppHeader } from "@/components/layout/app-header";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { LoginTracker } from "@/components/layout/login-tracker";
+import { NoCohortNotice } from "@/components/layout/no-cohort-notice";
 import { getContentModuleCatalog, getStudentProgressMap } from "@/lib/modules-queries";
 import { buildProgramNavByPillar } from "@/lib/program-nav";
 import type { UserRole } from "@/types/index";
@@ -18,6 +19,19 @@ export default async function ProtectedLayout({
   const { user, profile } = await getAuthContext();
   if (!user) redirect("/login");
   if (!profile) redirect("/login?error=no_profile");
+
+  // Modules, drip unlocks and CAPRI are all cohort-scoped, so a student without
+  // an institution would otherwise see empty pages on every route.
+  if (profile.role === "student" && !profile.institution_id) {
+    return (
+      <div className="app-shell flex min-h-full flex-col">
+        <AppHeader profile={profile} />
+        <main className="flex-1 overflow-auto bg-muted/30 p-4 md:p-6">
+          <NoCohortNotice email={user.email ?? null} />
+        </main>
+      </div>
+    );
+  }
 
   const supabase = await createClient();
 

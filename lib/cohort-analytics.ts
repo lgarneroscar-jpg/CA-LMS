@@ -3,6 +3,7 @@ import type { Database } from "@/types/database";
 import {
   buildAttentionReasons,
   compareStudentsForRoster,
+  hasRecordedActivity,
   expectedModuleCountForWeek,
   formatLiveAttendanceSummary,
   paceCompletionPercent as paceCompletionPercentOf,
@@ -686,6 +687,7 @@ export async function getCohortAnalytics(
         workbookModulesTouched: workbook.workbookModulesTouched,
         invitePendingDays: pendingDays,
       };
+      if (hasRecordedActivity(base)) base.invitePendingDays = null;
 
       return {
         ...base,

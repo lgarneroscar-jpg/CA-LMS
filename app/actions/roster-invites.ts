@@ -12,6 +12,7 @@ import {
   type InviteUiStatus,
 } from "@/lib/auth-invite-status";
 import { authCallbackUrl, passwordResetRedirectUrl } from "@/lib/auth-links";
+import { hasRecordedActivity } from "@/lib/admin-reporting";
 
 export type InviteRowInput = {
   full_name: string;
@@ -313,9 +314,11 @@ export async function getInstitutionRoster(
 
   return (students ?? []).map((student) => {
     const auth = authStatuses.get(student.id);
-    const inviteStatus = auth
-      ? deriveInviteUiStatus(auth)
-      : ("unknown" as const);
+    const inviteStatus = hasRecordedActivity(student)
+      ? ("accepted" as const)
+      : auth
+        ? deriveInviteUiStatus(auth)
+        : ("unknown" as const);
 
     return {
       id: student.id,

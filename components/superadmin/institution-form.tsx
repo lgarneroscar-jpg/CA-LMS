@@ -101,7 +101,7 @@ export function InstitutionForm({
           setReportCountHint(count);
           setCohortConfirmNeeded(true);
           setError(
-            `Changing cohort start date moves every future report period. This institution already has ${count} report snapshot(s). Confirm to proceed.`
+            `Changing cohort start date moves every future report period. This institution already has ${count} report ${count === 1 ? "snapshot" : "snapshots"}. Confirm to proceed.`
           );
           return;
         }
@@ -139,7 +139,8 @@ export function InstitutionForm({
           />
           {mode === "edit" && existingReportCount > 0 ? (
             <p className="text-xs text-muted-foreground">
-              This institution has {existingReportCount} report snapshot(s).
+              This institution has {existingReportCount} report{" "}
+              {existingReportCount === 1 ? "snapshot" : "snapshots"}.
               Changing the start date moves every future report period.
             </p>
           ) : null}
@@ -236,7 +237,8 @@ export function InstitutionForm({
             disabled={pending}
             onClick={() => submit(true)}
           >
-            Confirm cohort start change ({reportCountHint} reports)
+            Confirm cohort start change ({reportCountHint}{" "}
+            {reportCountHint === 1 ? "report" : "reports"})
           </Button>
         ) : null}
       </div>

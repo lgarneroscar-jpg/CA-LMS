@@ -126,7 +126,7 @@ export async function updateInstitution(
 
   if (cohortChanged && reportCount > 0 && !confirmCohortChange) {
     throw new Error(
-      `COHORT_START_NEEDS_CONFIRM:${reportCount}:Changing cohort_start_date moves every future report period. This institution already has ${reportCount} report snapshot(s). Resubmit with confirmation.`
+      `COHORT_START_NEEDS_CONFIRM:${reportCount}:Changing cohort_start_date moves every future report period. This institution already has ${reportCount} report ${reportCount === 1 ? "snapshot" : "snapshots"}. Resubmit with confirmation.`
     );
   }
 

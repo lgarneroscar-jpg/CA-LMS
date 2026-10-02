@@ -20,17 +20,43 @@ export const ATTENTION_REASONS: AttentionReason[] = [
   "quiz_below_threshold",
 ];
 
+/**
+ * Any trace of coursework or sign-in. An auth timestamp can be stale or missing
+ * (e.g. accounts created before sign-in tracking), so this evidence overrides
+ * "invite not accepted" rather than letting the two contradict each other.
+ */
+export function hasRecordedActivity(student: {
+  modulesPassedCount?: number;
+  workbookAnswered?: number;
+  xp?: number;
+  quizModulesTaken?: number;
+  last_login?: string | null;
+  last_active_date?: string | null;
+}): boolean {
+  return (
+    (student.modulesPassedCount ?? 0) > 0 ||
+    (student.workbookAnswered ?? 0) > 0 ||
+    (student.xp ?? 0) > 0 ||
+    (student.quizModulesTaken ?? 0) > 0 ||
+    Boolean(student.last_login) ||
+    Boolean(student.last_active_date)
+  );
+}
+
 export function buildAttentionReasons(
   student: Pick<
     CohortStudentMetrics,
     | "workbookAnswered"
     | "last_active_date"
+    | "last_login"
     | "isBehindPace"
     | "diagnostic_complete"
     | "quizModulesTaken"
     | "quizAverage"
     | "quizBelowThresholdCount"
     | "invitePendingDays"
+    | "modulesPassedCount"
+    | "xp"
   >,
   now = new Date(),
   invitePendingThresholdDays = 7
@@ -39,7 +65,8 @@ export function buildAttentionReasons(
 
   if (
     student.invitePendingDays != null &&
-    student.invitePendingDays >= invitePendingThresholdDays
+    student.invitePendingDays >= invitePendingThresholdDays &&
+    !hasRecordedActivity(student)
   ) {
     reasons.push("invite_pending");
   }
@@ -134,7 +161,7 @@ export function formatAverageQuizScoreLabel(
   if (averageQuizScore == null || quizScoreStudentCount === 0) {
     return "—";
   }
-  return `${averageQuizScore}% · ${quizScoreStudentCount} of ${totalStudents} students`;
+  return `${averageQuizScore}% · ${quizScoreStudentCount} of ${totalStudents} ${pluralize(totalStudents, "student")}`;
 }
 
 /**

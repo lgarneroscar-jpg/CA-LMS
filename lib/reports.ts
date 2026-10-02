@@ -250,7 +250,7 @@ export async function previewNextReportPeriod(
       alreadyExists: false,
       message:
         daysUntil > 0
-          ? `First reporting period ends in ${daysUntil} day(s). Nothing to generate yet.`
+          ? `First reporting period ends in ${daysUntil} ${daysUntil === 1 ? "day" : "days"}. Nothing to generate yet.`
           : "No reporting period is due yet.",
     };
   }

@@ -210,7 +210,9 @@ export function RosterUpload({ institutionId }: { institutionId: string }) {
               <strong>add</strong> new invites — it will not replace the
               roster.
               {alreadyUserEmails.length > 0
-                ? ` ${alreadyUserEmails.length} email(s) already exist as users and will be skipped.`
+                ? alreadyUserEmails.length === 1
+                  ? " 1 email already exists as a user and will be skipped."
+                  : ` ${alreadyUserEmails.length} emails already exist as users and will be skipped.`
                 : ""}
             </p>
           ) : null}

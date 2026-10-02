@@ -48,7 +48,8 @@ export default async function InstitutionsPage() {
         <CardHeader>
           <CardTitle>Institution list</CardTitle>
           <CardDescription>
-            {institutions?.length ?? 0} institution(s)
+            {institutions?.length ?? 0}{" "}
+            {(institutions?.length ?? 0) === 1 ? "institution" : "institutions"}
           </CardDescription>
         </CardHeader>
         <CardContent>

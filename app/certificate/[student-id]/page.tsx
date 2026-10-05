@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { requireProfile } from "@/lib/auth";
 import { hasSubmittedPost } from "@/lib/capri/queries";
 import { CertificateView } from "@/components/certificate/certificate-view";
@@ -34,7 +35,7 @@ export default async function CertificatePage({ params }: PageProps) {
   // The certificate is gated on the Week 12 CAPRI. Without a paired post
   // response there is no outcome to report to the institution, so completing
   // the assessment is part of completing the program.
-  const postComplete = await hasSubmittedPost(supabase, studentId);
+  const postComplete = await hasSubmittedPost(createAdminClient(), studentId);
   if (!postComplete) {
     if (viewer.id === studentId) redirect("/capri/post");
     notFound();

@@ -300,20 +300,39 @@ export async function submitResponse(
   return { current, retrospective };
 }
 
-/** Has this student submitted the Week 12 post? Gates the certificate. */
+/**
+ * Has this student genuinely completed the Week 12 post? Gates the certificate.
+ * A timestamp alone is not enough: the response must have saved answers and a
+ * stored composite score, which only submitResponse() writes after scoring a
+ * complete set. Elevated client — institutional admins cannot read scores.
+ */
 export async function hasSubmittedPost(
-  supabase: DbClient,
+  adminClient: DbClient,
   studentId: string
 ): Promise<boolean> {
-  const { data } = await supabase
+  const { data: responses } = await adminClient
     .from("capri_responses")
     .select("id, capri_administrations!inner(administration_type)")
     .eq("student_id", studentId)
     .eq("capri_administrations.administration_type", "post")
-    .not("submitted_at", "is", null)
-    .maybeSingle();
+    .not("submitted_at", "is", null);
 
-  return Boolean(data);
+  for (const response of responses ?? []) {
+    const [{ count: answers }, { count: composite }] = await Promise.all([
+      adminClient
+        .from("capri_answers")
+        .select("id", { count: "exact", head: true })
+        .eq("response_id", response.id),
+      adminClient
+        .from("capri_scores")
+        .select("id", { count: "exact", head: true })
+        .eq("response_id", response.id)
+        .eq("scope", "composite")
+        .eq("rating_context", "current"),
+    ]);
+    if (answers && composite) return true;
+  }
+  return false;
 }
 
 export type StudentCompositeRow = {

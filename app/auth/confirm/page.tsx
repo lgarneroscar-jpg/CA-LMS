@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { setPasswordModeForType, setPasswordPath } from "@/lib/auth-links";
+import { AuthHeading, AuthShell } from "@/components/auth/auth-shell";
 
 const LINK_EXPIRED = "/login?error=link_expired";
 
@@ -46,8 +47,11 @@ export default function AuthConfirmPage() {
   }, []);
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-muted/40 p-4">
-      <p className="text-muted-foreground">Signing you in…</p>
-    </div>
+    <AuthShell>
+      <AuthHeading
+        title="Signing you in…"
+        description="This only takes a moment."
+      />
+    </AuthShell>
   );
 }

@@ -6,6 +6,8 @@ export const BRAND = {
   accent: "#C9A84C",
 } as const;
 
+export const PROGRAM_NAME = "Corporate Academy Career Readiness Program";
+
 export const SUPPORT_EMAIL = "academy@corpacad.com";
 
 export const LOGIN_HELP_MAILTO = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PROGRAM_NAME } from "@/lib/constants";
 import { BookOpen } from "lucide-react";
 import { ModuleHeader } from "@/components/modules/module-header";
 import { VideoSection } from "@/components/modules/video-section";
@@ -110,7 +111,7 @@ export function ModuleExperience({
     void total;
   }
 
-  const linkedInCaption = `I'm proud to share that I've completed the Corporate Academy program — building my pre-professional identity, communication skills, and career strategy. #CorporateAcademy #CareerReady`;
+  const linkedInCaption = `I'm proud to share that I've completed the ${PROGRAM_NAME} — building my pre-professional identity, communication skills, and career strategy. #CorporateAcademy #CareerReady`;
 
   if (isExperienceLiftModule(moduleCode)) {
     return (

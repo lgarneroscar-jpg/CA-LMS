@@ -1,8 +1,8 @@
 import Link from "next/link";
 import type { ReadinessDirection } from "@/lib/capri/scoring";
+import { PROGRAM_NAME } from "@/lib/constants";
 import {
   PORTFOLIO_COMPLETION_DEFINITION,
-  PORTFOLIO_PROGRAM_NAME,
   type PortfolioDocumentData,
 } from "@/lib/portfolio";
 import { PortfolioAnswer } from "@/components/portfolio/portfolio-answer";
@@ -132,7 +132,7 @@ export function PortfolioDocument({ data }: { data: PortfolioDocumentData }) {
           </h1>
           <dl className="text-[0.9rem]">
             <IdentityRow label="Institution" value={data.institutionName} />
-            <IdentityRow label="Program" value={PORTFOLIO_PROGRAM_NAME} />
+            <IdentityRow label="Program" value={PROGRAM_NAME} />
             <IdentityRow label="Cohort dates" value={cohortDates} />
           </dl>
         </header>

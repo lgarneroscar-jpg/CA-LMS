@@ -19,9 +19,6 @@ import {
 
 type DbClient = SupabaseClient<Database>;
 
-/** Named once, on the document's identity block. The issuer appears only on the verification line. */
-export const PORTFOLIO_PROGRAM_NAME = "Pre-Professional Readiness Program";
-
 export const PORTFOLIO_COMPLETION_DEFINITION =
   "A module is complete when every workbook exercise in it has been answered and its quiz has been passed at 75% or above.";
 

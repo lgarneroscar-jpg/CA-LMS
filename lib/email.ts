@@ -1,3 +1,5 @@
+import { PROGRAM_NAME } from "@/lib/constants";
+
 const APP_URL =
   process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -9,7 +11,7 @@ export async function sendProgramCompletionEmail(params: {
   completedAt: string;
 }) {
   const certificateUrl = `${APP_URL}/certificate/${params.studentId}`;
-  const linkedInCaption = `I'm proud to share that I've completed the Corporate Academy program at ${params.institutionName} — building my pre-professional identity, communication skills, and career strategy. #CorporateAcademy #CareerReady`;
+  const linkedInCaption = `I'm proud to share that I've completed the ${PROGRAM_NAME} at ${params.institutionName} — building my pre-professional identity, communication skills, and career strategy. #CorporateAcademy #CareerReady`;
 
   const body = {
     to: params.to,

@@ -27,7 +27,7 @@ function NothingArrivedList() {
         Make sure it&apos;s the address your programme enrolled you with —
         often your university email, not a personal one.
       </li>
-      <li>Links expire after 24 hours. If yours is older, request a new one.</li>
+      <li>Links expire after a short time. If yours is old, request a new one.</li>
       <li>Check your spam or junk folder.</li>
       <li>
         Still nothing? Email <SupportLink />{" "}and we&apos;ll help.
@@ -188,8 +188,8 @@ export function LoginForm() {
           description="If that address is enrolled in the programme, a sign-in link is on its way."
         />
         <p className="text-sm">
-          Open the link in this browser, on this device. It works once, for 24
-          hours, and lets you choose a password.
+          The link works once and lets you choose a password. Use the newest
+          email if you&apos;ve asked more than once.
         </p>
         <div className="space-y-2 rounded-xl bg-muted/60 px-4 py-3 text-sm">
           <p className="font-medium">Nothing arrived after a few minutes?</p>
@@ -223,16 +223,17 @@ export function LoginForm() {
         <div className="space-y-2 rounded-xl border border-border bg-muted/60 px-4 py-3 text-sm">
           <p className="font-medium">That link has expired or was already used.</p>
           <p>
-            Invite and sign-in links work once, and only for 24 hours. You can
-            get a fresh one yourself — use{" "}
+            Invite and sign-in links work once, and only for a short time. You
+            can get a fresh one yourself — use{" "}
             <button
               type="button"
               onClick={openForgot}
               className="font-medium underline underline-offset-2"
             >
               Email me a sign-in link
-            </button>{" "}
-            and open the new email in this browser.
+            </button>
+            . If a new link also fails, open it on the same device you
+            requested it from.
           </p>
         </div>
       ) : null}

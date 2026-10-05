@@ -7,10 +7,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
+  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   --font-serif: Georgia, "Times New Roman", Times, serif;
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-geist-sans);
   --color-lift: var(--lift);
   --color-lift-hover: var(--lift-hover);
   --color-lift-foreground: var(--lift-foreground);

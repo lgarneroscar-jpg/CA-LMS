@@ -1,11 +1,11 @@
-import { LOGIN_HELP_MAILTO, SUPPORT_EMAIL } from "@/lib/constants";
+import { LOGIN_HELP_MAILTO, PROGRAM_NAME, SUPPORT_EMAIL } from "@/lib/constants";
 
 export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="experience-lift lift-body flex min-h-dvh flex-col items-center justify-center bg-lift-muted/40 px-4 py-10 sm:py-16">
       <div className="w-full max-w-md">
         <p className="mb-6 text-center text-sm font-medium tracking-wide text-muted-foreground">
-          Corporate Academy Career Readiness Program
+          {PROGRAM_NAME}
         </p>
         <div className="lift-card p-6 sm:p-8">{children}</div>
       </div>

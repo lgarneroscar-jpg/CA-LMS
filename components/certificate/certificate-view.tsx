@@ -1,6 +1,6 @@
 "use client";
 
-import { BRAND } from "@/lib/constants";
+import { BRAND, PROGRAM_NAME } from "@/lib/constants";
 
 type CertificateViewProps = {
   studentName: string;
@@ -43,7 +43,7 @@ export function CertificateView({
             {studentName}
           </p>
           <p className="mt-8 max-w-xl mx-auto leading-relaxed text-muted-foreground">
-            has successfully completed the Corporate Academy curriculum at{" "}
+            has successfully completed the {PROGRAM_NAME} at{" "}
             <strong>{institutionName}</strong>, demonstrating readiness in
             pre-professional identity, communication, and opportunity strategy.
           </p>

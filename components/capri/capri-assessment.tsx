@@ -255,7 +255,9 @@ export function CapriAssessment({
             </p>
           ) : null}
 
-          <p className="text-sm font-medium leading-snug">{item.prompt}</p>
+          <p id={promptId(item.id)} className="text-sm font-medium leading-snug">
+            {item.prompt}
+          </p>
 
           <LikertRow
             itemId={item.id}
@@ -282,8 +284,12 @@ export function CapriAssessment({
   function renderBehavioralItems(list: CapriItem[]) {
     return list.map((item) => (
       <div key={item.id} className="space-y-3">
-        <p className="text-sm font-medium leading-snug">{item.prompt}</p>
+        <p id={promptId(item.id)} className="text-sm font-medium leading-snug">
+          {item.prompt}
+        </p>
         <RadioGroup
+          name={`capri-${item.id}-current`}
+          aria-labelledby={promptId(item.id)}
           value={String(answers[key(item.id, "current")] ?? "")}
           onValueChange={(value: unknown) =>
             setAnswer(item.id, "current", Number(value))
@@ -310,6 +316,10 @@ export function CapriAssessment({
   }
 }
 
+function promptId(itemId: string) {
+  return `capri-${itemId}-prompt`;
+}
+
 function LikertRow({
   itemId,
   context,
@@ -323,12 +333,16 @@ function LikertRow({
   value: number | undefined;
   onChange: (itemId: string, context: RatingContext, value: number) => void;
 }) {
+  const groupName = `capri-${itemId}-${context}`;
+  const labelId = `${groupName}-label`;
   return (
     <div className="space-y-2">
       {label ? (
-        <p className="text-xs text-muted-foreground">{label}</p>
+        <p id={labelId} className="text-xs text-muted-foreground">{label}</p>
       ) : null}
       <RadioGroup
+        name={groupName}
+        aria-labelledby={label ? `${promptId(itemId)} ${labelId}` : promptId(itemId)}
         value={String(value ?? "")}
         onValueChange={(next: unknown) =>
           onChange(itemId, context, Number(next))

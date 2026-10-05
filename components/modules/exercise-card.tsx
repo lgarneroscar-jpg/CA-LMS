@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { StructuredExerciseInput } from "@/components/modules/structured-exercise-input";
-import { ExerciseVisibilityPrompt } from "@/components/modules/exercise-visibility-prompt";
 import { saveExerciseAnswer } from "@/app/actions/exercise-answers";
 import type { ExerciseField } from "@/types/modules";
 import { isStructuredExercise } from "@/types/modules";
@@ -30,7 +29,10 @@ type ExerciseCardProps = {
   moduleSlug: string;
   initialSaved?: SavedExerciseAnswer;
   defaultAnswerVisibility: boolean | null;
-  hasAnySavedAnswers: boolean;
+  /** True until the student has chosen a default visibility. */
+  needsVisibilityChoice: boolean;
+  /** Opens the shared prompt; resolves with the choice, or null if cancelled. */
+  onRequestDefaultVisibility: () => Promise<boolean | null>;
   onSaved: (saved: SavedExerciseAnswer) => void;
 };
 
@@ -44,29 +46,26 @@ export function ExerciseCard({
   moduleSlug,
   initialSaved,
   defaultAnswerVisibility,
-  hasAnySavedAnswers,
+  needsVisibilityChoice,
+  onRequestDefaultVisibility,
   onSaved,
 }: ExerciseCardProps) {
-  if (!isStructuredExercise(exercise)) return null;
-
   const [draft, setDraft] = useState<ExerciseAnswerData>(
     initialSaved?.answer ?? emptyAnswerData()
   );
-  const [isPublic, setIsPublic] = useState(
-    initialSaved?.is_public ?? defaultAnswerVisibility ?? false
+  // null = follow the student's default, which can change after mount.
+  const [visibilityOverride, setVisibilityOverride] = useState<boolean | null>(
+    initialSaved?.is_public ?? null
   );
+  const isPublic = visibilityOverride ?? defaultAnswerVisibility ?? false;
   const [updatedAt, setUpdatedAt] = useState<string | null>(
     initialSaved?.updated_at ?? null
   );
   const [savedFlash, setSavedFlash] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showPrompt, setShowPrompt] = useState(false);
 
-  const needsFirstSavePrompt =
-    defaultAnswerVisibility === null && !hasAnySavedAnswers && !initialSaved;
-
-  async function persist(setDefaultVisibility?: boolean | null) {
+  async function persist(nextIsPublic: boolean, setDefaultVisibility?: boolean) {
     setLoading(true);
     setError(null);
     try {
@@ -76,11 +75,11 @@ export function ExerciseCard({
         moduleSlug,
         exerciseKey: exercise.key,
         answer: draft,
-        isPublic,
-        setDefaultVisibility: setDefaultVisibility ?? undefined,
+        isPublic: nextIsPublic,
+        setDefaultVisibility,
       });
       setUpdatedAt(result.updatedAt);
-      setIsPublic(result.isPublic);
+      setVisibilityOverride(result.isPublic);
       setSavedFlash(true);
       window.setTimeout(() => setSavedFlash(false), 2500);
       onSaved({
@@ -93,39 +92,36 @@ export function ExerciseCard({
       setError(err instanceof Error ? err.message : "Failed to save");
     } finally {
       setLoading(false);
-      setShowPrompt(false);
     }
   }
 
-  function handleSaveClick() {
+  async function handleSaveClick() {
     if (isAnswerEmpty(exercise.input_type, draft, exercise.fields, exercise.key)) {
       setError("Add at least one response before saving");
       return;
     }
-    if (needsFirstSavePrompt) {
-      setShowPrompt(true);
+    if (needsVisibilityChoice) {
+      setError(null);
+      const choice = await onRequestDefaultVisibility();
+      if (choice === null) {
+        setError("Not saved yet — choose a visibility to save this exercise.");
+        return;
+      }
+      // The choice applies to this save directly; state would still be stale here.
+      setVisibilityOverride(choice);
+      await persist(choice, choice);
       return;
     }
-    void persist();
+    await persist(isPublic);
   }
 
-  function handleVisibilityChoice(isPublicDefault: boolean) {
-    setIsPublic(isPublicDefault);
-    void persist(isPublicDefault);
-  }
+  if (!isStructuredExercise(exercise)) return null;
 
   const isLift = variant === "lift";
   const isSaved = Boolean(updatedAt);
 
   return (
     <>
-      <ExerciseVisibilityPrompt
-        open={showPrompt}
-        saving={loading}
-        onCancel={() => setShowPrompt(false)}
-        onChoose={handleVisibilityChoice}
-      />
-
       <div
         className={cn(
           "space-y-5 border bg-card",
@@ -179,7 +175,7 @@ export function ExerciseCard({
           <label className={cn("flex items-center gap-2", isLift ? "lift-body" : "text-sm")}>
             <Checkbox
               checked={isPublic}
-              onCheckedChange={(checked) => setIsPublic(checked === true)}
+              onCheckedChange={(checked) => setVisibilityOverride(checked === true)}
             />
             <span>Show on my profile when public</span>
           </label>
@@ -187,7 +183,7 @@ export function ExerciseCard({
           <div className="flex flex-col items-start gap-1 sm:items-end">
             <Button
               type="button"
-              onClick={handleSaveClick}
+              onClick={() => void handleSaveClick()}
               disabled={loading}
               className={cn(isLift && "lift-btn px-6")}
             >

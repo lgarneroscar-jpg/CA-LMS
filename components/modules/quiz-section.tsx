@@ -239,11 +239,13 @@ export function QuizSection({
         <form onSubmit={handleSubmit} className="space-y-8">
           {questions.map((q, index) => (
             <div key={q.id} className="space-y-3">
-              <p className="font-medium">
+              <p id={`quiz-${q.id}-question`} className="font-medium">
                 <span className="text-muted-foreground">{index + 1}. </span>
                 {q.question}
               </p>
               <RadioGroup
+                name={`quiz-${q.id}`}
+                aria-labelledby={`quiz-${q.id}-question`}
                 value={answers[q.id] ?? ""}
                 onValueChange={(v) =>
                   setAnswers((a) => ({ ...a, [q.id]: v }))

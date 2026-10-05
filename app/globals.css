@@ -228,3 +228,14 @@
     @apply font-sans;
   }
 }
+@keyframes visibility-prompt-nudge {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [class*="visibility-prompt-nudge"] {
+    animation: none !important;
+  }
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -114,6 +115,7 @@ function AnchorSelectChips({
   onChange,
   disabled,
 }: AnchorSelectChipsProps) {
+  const idBase = useId();
   const selections = readAnchorSelections(value, pairs);
   const maxSelections = pairs.length;
   const atMax = selections.length >= maxSelections;
@@ -177,6 +179,7 @@ function AnchorSelectChips({
               size="sm"
               variant="outline"
               disabled={disabled || (atMax && !isSelected)}
+              aria-pressed={isSelected}
               className={cn(
                 "h-auto whitespace-normal px-3 py-1.5 text-left anchor-chip",
                 isSelected && "anchor-chip-selected"
@@ -191,15 +194,19 @@ function AnchorSelectChips({
       <p className="text-xs text-muted-foreground">
         Select up to {maxSelections} anchors ({selections.length}/{maxSelections} selected)
       </p>
-      {selections.map((selection) => (
+      {selections.map((selection, index) => (
         <div
           key={selection.label}
           className="relative space-y-2 rounded-lg border p-3 pr-10"
         >
+          {/* Out of the tab order: sitting between reason fields, a stray
+              space keystroke here silently dropped an anchor. Keyboard users
+              deselect with the chip above, which comes before every reason. */}
           <Button
             type="button"
             variant="ghost"
             size="icon"
+            tabIndex={-1}
             className="absolute right-1 top-1 size-7"
             disabled={disabled}
             aria-label={`Remove ${selection.label}`}
@@ -207,8 +214,14 @@ function AnchorSelectChips({
           >
             <X className="size-4" />
           </Button>
-          <Label className="text-sm font-medium">{selection.label}</Label>
+          <Label
+            htmlFor={`${idBase}-reason-${index}`}
+            className="text-sm font-medium"
+          >
+            {selection.label}
+          </Label>
           <Textarea
+            id={`${idBase}-reason-${index}`}
             value={selection.reason}
             onChange={(e) => updateReason(selection.label, e.target.value)}
             placeholder="Why this anchor matters to you"

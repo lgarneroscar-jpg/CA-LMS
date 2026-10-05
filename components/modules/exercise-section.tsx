@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { PenLine, Lock } from "lucide-react";
 import { submitExercises } from "@/app/actions/module-progress";
 import { markExercisesReadyForQuiz } from "@/app/actions/exercise-answers";
@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ExerciseCard } from "@/components/modules/exercise-card";
+import { ExerciseVisibilityPrompt } from "@/components/modules/exercise-visibility-prompt";
 import type { ExerciseField } from "@/types/modules";
 import { isStructuredExercise } from "@/types/modules";
 import type { SavedExerciseAnswer } from "@/lib/exercise-answers";
@@ -78,6 +79,37 @@ export function ExerciseSection({
   const [hasAnySavedAnswers, setHasAnySavedAnswers] = useState(
     initialHasAnySavedAnswers
   );
+  // Owned here, not per card, so a default chosen on one card reaches every
+  // card already on the page instead of each keeping the null it mounted with.
+  const [defaultVisibility, setDefaultVisibility] = useState(
+    defaultAnswerVisibility
+  );
+  const [visibilityPromptOpen, setVisibilityPromptOpen] = useState(false);
+  const [visibilityPromptNudge, setVisibilityPromptNudge] = useState(0);
+  const pendingVisibilityChoices = useRef<((choice: boolean | null) => void)[]>(
+    []
+  );
+
+  const requestDefaultVisibility = useCallback(
+    () =>
+      new Promise<boolean | null>((resolve) => {
+        pendingVisibilityChoices.current.push(resolve);
+        if (pendingVisibilityChoices.current.length > 1) {
+          setVisibilityPromptNudge((n) => n + 1);
+        }
+        setVisibilityPromptOpen(true);
+      }),
+    []
+  );
+
+  function settleDefaultVisibility(choice: boolean | null) {
+    const waiting = pendingVisibilityChoices.current;
+    pendingVisibilityChoices.current = [];
+    setVisibilityPromptOpen(false);
+    setVisibilityPromptNudge(0);
+    if (choice !== null) setDefaultVisibility(choice);
+    waiting.forEach((resolve) => resolve(choice));
+  }
   const [loading, setLoading] = useState(false);
   const [continueLoading, setContinueLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -210,11 +242,23 @@ export function ExerciseSection({
               pillarSlug={pillarSlug}
               moduleSlug={moduleSlug}
               initialSaved={savedAnswers[exercise.key]}
-              defaultAnswerVisibility={defaultAnswerVisibility}
-              hasAnySavedAnswers={hasAnySavedAnswers}
+              defaultAnswerVisibility={defaultVisibility}
+              needsVisibilityChoice={
+                defaultVisibility === null &&
+                !hasAnySavedAnswers &&
+                !savedAnswers[exercise.key]
+              }
+              onRequestDefaultVisibility={requestDefaultVisibility}
               onSaved={handleAnswerSaved}
             />
           ))}
+
+          <ExerciseVisibilityPrompt
+            open={visibilityPromptOpen}
+            nudge={visibilityPromptNudge}
+            onCancel={() => settleDefaultVisibility(null)}
+            onChoose={(isPublic) => settleDefaultVisibility(isPublic)}
+          />
 
           {legacyExercises.length > 0 ? (
             <form onSubmit={handleLegacySubmit} className="space-y-8">
@@ -222,7 +266,10 @@ export function ExerciseSection({
                 <div key={field.key} className="space-y-3">
                   {field.type !== "checkbox" && (
                     <div className="space-y-1">
-                      <Label className="text-base font-medium">
+                      <Label
+                        id={`${field.key}-label`}
+                        className="text-base font-medium"
+                      >
                         <span className="mr-2 text-muted-foreground">
                           {structuredExercises.length + index + 1}.
                         </span>
@@ -266,6 +313,8 @@ export function ExerciseSection({
 
                   {field.type === "choice" && (
                     <RadioGroup
+                      name={`exercise-${field.key}`}
+                      aria-labelledby={`${field.key}-label`}
                       value={responses[field.key] ?? ""}
                       onValueChange={(v) =>
                         setResponses((r) => ({ ...r, [field.key]: v }))

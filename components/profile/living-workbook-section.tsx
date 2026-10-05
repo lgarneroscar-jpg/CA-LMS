@@ -83,14 +83,6 @@ export function LivingWorkbookSection({
                       >
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                           <div className="min-w-0 space-y-1.5">
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <span className="shrink-0 rounded-full bg-lift-muted px-2 py-0.5 font-mono text-[10px] font-bold text-lift">
-                                {exercise.moduleCode}
-                              </span>
-                              <span className="min-w-0 lift-text-wrap text-xs text-muted-foreground">
-                                {exercise.moduleTitle}
-                              </span>
-                            </div>
                             <h4 className="lift-text-wrap font-semibold leading-snug">
                               {exercise.title}
                             </h4>

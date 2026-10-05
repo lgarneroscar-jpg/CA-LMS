@@ -6,6 +6,8 @@ import {
   type CapriAnswer,
   type CapriItem,
   type CapriPillar,
+  readinessDirection,
+  type ReadinessDirection,
   type RatingContext,
   type ScoredResponse,
 } from "./scoring";
@@ -366,4 +368,55 @@ export async function fetchInstitutionScores(
     scopeId: row.scope_id,
     value: Number(row.value),
   }));
+}
+
+/**
+ * Per-pillar direction of change, baseline → post, for one student's own
+ * portfolio. Returns null unless both administrations are submitted and every
+ * pillar has a `current` score in each. Scores stay inside this function —
+ * only the direction leaves it.
+ */
+export async function fetchStudentReadinessDirections(
+  supabase: DbClient,
+  studentId: string,
+  version: string = CAPRI_INSTRUMENT_VERSION
+): Promise<Record<CapriPillar, ReadinessDirection> | null> {
+  const { data, error } = await supabase
+    .from("capri_scores")
+    .select(
+      "scope_id, value, capri_responses!inner(student_id, submitted_at, capri_administrations!inner(administration_type))"
+    )
+    .eq("scope", "pillar")
+    .eq("rating_context", "current")
+    .eq("instrument_version", version)
+    .eq("capri_responses.student_id", studentId)
+    .not("capri_responses.submitted_at", "is", null);
+
+  if (error || !data) return null;
+
+  type JoinedRow = {
+    scope_id: string;
+    value: number;
+    capri_responses: {
+      capri_administrations: { administration_type: string };
+    };
+  };
+
+  const baseline = new Map<string, number>();
+  const post = new Map<string, number>();
+  for (const row of data as unknown as JoinedRow[]) {
+    const type = row.capri_responses.capri_administrations.administration_type;
+    if (type === "baseline") baseline.set(row.scope_id, Number(row.value));
+    if (type === "post") post.set(row.scope_id, Number(row.value));
+  }
+
+  const pillars: CapriPillar[] = [1, 2, 3];
+  const directions = {} as Record<CapriPillar, ReadinessDirection>;
+  for (const pillar of pillars) {
+    const before = baseline.get(String(pillar));
+    const after = post.get(String(pillar));
+    if (before === undefined || after === undefined) return null;
+    directions[pillar] = readinessDirection(before, after);
+  }
+  return directions;
 }

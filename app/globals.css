@@ -239,3 +239,49 @@
     animation: none !important;
   }
 }
+
+/* Print: paper is white, ink is black, chrome is gone. Margins fit A4 and Letter. */
+@media print {
+  @page {
+    margin: 18mm 16mm 20mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000;
+    height: auto !important;
+    min-height: 0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .app-shell {
+    min-height: 0 !important;
+    display: block !important;
+  }
+
+  [data-print-hide] {
+    display: none !important;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  p,
+  li,
+  dd {
+    orphans: 3;
+    widows: 3;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+}

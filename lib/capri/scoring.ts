@@ -160,6 +160,29 @@ export function bandMovement(before: number, after: number): number {
     BAND_ORDER.indexOf(bandForScore(before));
 }
 
+/**
+ * Pillar movement smaller than this (0–100 scale) reads as "held steady".
+ * One Likert step on one item moves a 9-item pillar by ~2.8 points, so this
+ * asks for roughly two item-steps of net change before calling a direction.
+ */
+export const READINESS_STEADY_BAND_POINTS = 5;
+
+export type ReadinessDirection = "improved" | "held_steady" | "declined";
+
+/**
+ * Direction only — for student-facing documents where a number would be
+ * read as a grade. Compares like with like (both `current` ratings).
+ */
+export function readinessDirection(
+  before: number,
+  after: number
+): ReadinessDirection {
+  const delta = after - before;
+  if (delta >= READINESS_STEADY_BAND_POINTS) return "improved";
+  if (delta <= -READINESS_STEADY_BAND_POINTS) return "declined";
+  return "held_steady";
+}
+
 export type ScoredResponse = {
   ratingContext: RatingContext;
   /** Keyed by sub-dimension id, e.g. "1A". Internal coaching detail only. */

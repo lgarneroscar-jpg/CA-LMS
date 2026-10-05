@@ -26,8 +26,10 @@ export default async function ProtectedLayout({
   if (profile.role === "student" && !profile.institution_id) {
     return (
       <div className="app-shell flex min-h-full flex-col">
-        <AppHeader profile={profile} />
-        <main className="flex-1 overflow-auto bg-muted/30 p-4 md:p-6">
+        <div className="contents print:hidden">
+          <AppHeader profile={profile} />
+        </div>
+        <main className="flex-1 overflow-auto bg-muted/30 p-4 md:p-6 print:overflow-visible print:bg-white print:p-0">
           <NoCohortNotice email={user.email ?? null} />
         </main>
       </div>
@@ -68,23 +70,31 @@ export default async function ProtectedLayout({
   return (
     <div className="app-shell flex min-h-full flex-col">
       <LoginTracker />
-      <AppHeader
-        profile={profile}
-        notifications={notifications ?? []}
-        unreadCount={unreadCount}
-      />
-      <div className="flex flex-1 flex-col md:flex-row">
-        <AppSidebar
-          role={profile.role as UserRole}
-          institutionId={profile.institution_id}
-          isDemo={profile.is_demo}
-          programNav={programNav}
+      <div className="contents print:hidden">
+        <AppHeader
+          profile={profile}
+          notifications={notifications ?? []}
+          unreadCount={unreadCount}
         />
-        <main className="flex-1 overflow-auto bg-muted/30 p-4 pb-20 md:p-6 md:pb-6">
+      </div>
+      <div className="flex flex-1 flex-col md:flex-row">
+        <div className="contents print:hidden">
+          <AppSidebar
+            role={profile.role as UserRole}
+            institutionId={profile.institution_id}
+            isDemo={profile.is_demo}
+            programNav={programNav}
+          />
+        </div>
+        <main className="flex-1 overflow-auto bg-muted/30 p-4 pb-20 md:p-6 md:pb-6 print:overflow-visible print:bg-white print:p-0">
           {children}
         </main>
       </div>
-      {profile.role === "student" ? <MobileNav /> : null}
+      {profile.role === "student" ? (
+        <div className="contents print:hidden">
+          <MobileNav />
+        </div>
+      ) : null}
     </div>
   );
 }

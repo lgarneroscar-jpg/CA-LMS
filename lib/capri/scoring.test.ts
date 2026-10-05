@@ -8,6 +8,8 @@ import {
   interpretCalibration,
   isSuspectResponse,
   likertMeanToScore,
+  readinessDirection,
+  READINESS_STEADY_BAND_POINTS,
   scoreResponse,
   summarizeCohort,
   type CapriAnswer,
@@ -320,5 +322,18 @@ describe("isSuspectResponse", () => {
     answers[0].rawValue = 5;
     answers[1].rawValue = 2;
     assert.equal(isSuspectResponse({ answers, durationSeconds: 400 }), false);
+  });
+});
+
+describe("readinessDirection", () => {
+  it("calls movement at or past the band a direction", () => {
+    assert.equal(readinessDirection(40, 40 + READINESS_STEADY_BAND_POINTS), "improved");
+    assert.equal(readinessDirection(60, 60 - READINESS_STEADY_BAND_POINTS), "declined");
+  });
+
+  it("treats small movement either way as held steady", () => {
+    assert.equal(readinessDirection(50, 50), "held_steady");
+    assert.equal(readinessDirection(50, 54.99), "held_steady");
+    assert.equal(readinessDirection(50, 45.01), "held_steady");
   });
 });

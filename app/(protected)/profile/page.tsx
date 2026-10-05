@@ -5,6 +5,8 @@ import { buildStreakHistory } from "@/lib/streaks";
 import { fetchWorkbookPortfolio } from "@/lib/profile-workbook";
 import { ProfileEditor } from "@/components/profile/profile-editor";
 import { LivingWorkbookSection } from "@/components/profile/living-workbook-section";
+import { PortfolioEntryCard } from "@/components/portfolio/portfolio-entry-card";
+import { CONTENT_MODULE_COUNT } from "@/lib/program-completion";
 
 export default async function ProfilePage() {
   const profile = await requireRole(["student"]);
@@ -55,6 +57,14 @@ export default async function ProfilePage() {
     };
   });
 
+  const contentModulesCompleted = Math.min(
+    (progress ?? []).filter((p) => {
+      const mod = moduleMap.get(p.module_id);
+      return mod && !mod.is_live_session;
+    }).length,
+    CONTENT_MODULE_COUNT
+  );
+
   const streakHistory = buildStreakHistory(
     (profile.streak_milestones_awarded as number[]) ?? []
   );
@@ -88,10 +98,21 @@ export default async function ProfilePage() {
         xpLines={breakdown.lines}
         completedModules={completedModules}
         afterIdentity={
-          <LivingWorkbookSection
-            pillars={workbookPillars}
-            showVisibilityControls
-          />
+          <>
+            {profile.program_completed_at ? (
+              <PortfolioEntryCard unlocked />
+            ) : (
+              <PortfolioEntryCard
+                unlocked={false}
+                modulesCompleted={contentModulesCompleted}
+                modulesTotal={CONTENT_MODULE_COUNT}
+              />
+            )}
+            <LivingWorkbookSection
+              pillars={workbookPillars}
+              showVisibilityControls
+            />
+          </>
         }
       />
     </div>

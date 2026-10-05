@@ -568,6 +568,7 @@ export type Database = {
           linkedin_url: string | null;
           onboarding_complete: boolean;
           is_demo: boolean;
+          portfolio_selection: Json;
           profile_picture_url: string | null;
           program_completed_at: string | null;
           program_started_at: string | null;
@@ -593,6 +594,7 @@ export type Database = {
           linkedin_url?: string | null;
           onboarding_complete?: boolean;
           is_demo?: boolean;
+          portfolio_selection?: Json;
           profile_picture_url?: string | null;
           program_completed_at?: string | null;
           program_started_at?: string | null;
@@ -618,6 +620,7 @@ export type Database = {
           linkedin_url?: string | null;
           onboarding_complete?: boolean;
           is_demo?: boolean;
+          portfolio_selection?: Json;
           profile_picture_url?: string | null;
           program_completed_at?: string | null;
           program_started_at?: string | null;

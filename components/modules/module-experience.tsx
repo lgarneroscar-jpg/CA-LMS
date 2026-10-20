@@ -12,6 +12,7 @@ import { CompletionCelebration } from "@/components/modules/completion-celebrati
 import { ProgramCompletionCelebration } from "@/components/program/program-completion-celebration";
 import { isExperienceLiftModule } from "@/lib/experience-lift";
 import { ModuleExperienceV2 } from "@/components/modules/v2/module-experience-v2";
+import { VideoStripV2 } from "@/components/modules/v2/station-nav";
 import type { ExerciseField, WorkbookBlock, ModuleProgressState } from "@/types/modules";
 import { isStructuredExercise } from "@/types/modules";
 import type { SavedExerciseAnswer } from "@/lib/exercise-answers";
@@ -45,6 +46,8 @@ type ModuleExperienceProps = {
   unlockWeek: number;
   estimatedMinutes: number;
   videoUrl: string;
+  /** False while this module's recording is still a stand-in. */
+  hasVideo: boolean;
   workbookBlocks: WorkbookBlock[];
   workbookOverview?: string;
   completionCheck?: string[];
@@ -55,6 +58,8 @@ type ModuleExperienceProps = {
   savedAnswers: Record<string, SavedExerciseAnswer>;
   defaultAnswerVisibility: boolean | null;
   hasAnySavedAnswers: boolean;
+  /** False in demo institutions, where the DB forces every answer private. */
+  sharingAvailable: boolean;
   nextModuleHref: string | null;
   studentName: string;
 };
@@ -69,6 +74,7 @@ export function ModuleExperience({
   unlockWeek,
   estimatedMinutes,
   videoUrl,
+  hasVideo,
   workbookBlocks,
   workbookOverview,
   completionCheck,
@@ -79,6 +85,7 @@ export function ModuleExperience({
   savedAnswers,
   defaultAnswerVisibility,
   hasAnySavedAnswers,
+  sharingAvailable,
   nextModuleHref,
   studentName,
 }: ModuleExperienceProps) {
@@ -125,6 +132,7 @@ export function ModuleExperience({
         unlockWeek={unlockWeek}
         estimatedMinutes={estimatedMinutes}
         videoUrl={videoUrl}
+        hasVideo={hasVideo}
         workbookBlocks={workbookBlocks}
         workbookOverview={workbookOverview}
         completionCheck={completionCheck}
@@ -135,6 +143,7 @@ export function ModuleExperience({
         savedAnswers={savedAnswers}
         defaultAnswerVisibility={defaultAnswerVisibility}
         hasAnySavedAnswers={hasAnySavedAnswers}
+        sharingAvailable={sharingAvailable}
         nextModuleHref={nextModuleHref}
         studentName={studentName}
       />
@@ -167,13 +176,17 @@ export function ModuleExperience({
         />
       ) : (
         <>
-          <VideoSection
-            videoUrl={videoUrl}
-            moduleId={moduleId}
-            pillarSlug={pillarSlug}
-            moduleSlug={moduleSlug}
-            videoWatched={progress.video_watched}
-          />
+          {hasVideo ? (
+            <VideoSection
+              videoUrl={videoUrl}
+              moduleId={moduleId}
+              pillarSlug={pillarSlug}
+              moduleSlug={moduleSlug}
+              videoWatched={progress.video_watched}
+            />
+          ) : (
+            <VideoStripV2 />
+          )}
 
           <section className="space-y-4">
             <h2 className="flex items-center gap-2 text-lg font-semibold">
@@ -201,6 +214,7 @@ export function ModuleExperience({
             savedAnswers={savedAnswers}
             defaultAnswerVisibility={defaultAnswerVisibility}
             hasAnySavedAnswers={hasAnySavedAnswers}
+            sharingAvailable={sharingAvailable}
           />
 
           <QuizSection

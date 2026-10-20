@@ -19,7 +19,6 @@ import {
 } from "@/components/modules/v2/station-nav";
 import { StationHeaderV2 } from "@/components/modules/v2/station-header";
 import { WorkbookBlocksV2 } from "@/components/modules/v2/workbook-blocks";
-import { SHOW_PLACEHOLDER_VIDEO_STRIP } from "@/lib/experience-lift";
 import type { ExerciseField, WorkbookBlock, ModuleProgressState } from "@/types/modules";
 import { isStructuredExercise } from "@/types/modules";
 import type { SavedExerciseAnswer } from "@/lib/exercise-answers";
@@ -53,6 +52,7 @@ type ModuleExperienceV2Props = {
   unlockWeek: number;
   estimatedMinutes: number;
   videoUrl: string;
+  hasVideo: boolean;
   workbookBlocks: WorkbookBlock[];
   workbookOverview?: string;
   completionCheck?: string[];
@@ -63,6 +63,7 @@ type ModuleExperienceV2Props = {
   savedAnswers: Record<string, SavedExerciseAnswer>;
   defaultAnswerVisibility: boolean | null;
   hasAnySavedAnswers: boolean;
+  sharingAvailable: boolean;
   nextModuleHref: string | null;
   studentName: string;
 };
@@ -75,6 +76,7 @@ export function ModuleExperienceV2(props: ModuleExperienceV2Props) {
     pillarSlug,
     moduleSlug,
     videoUrl,
+    hasVideo,
     workbookBlocks,
     workbookOverview,
     completionCheck,
@@ -85,6 +87,7 @@ export function ModuleExperienceV2(props: ModuleExperienceV2Props) {
     savedAnswers,
     defaultAnswerVisibility,
     hasAnySavedAnswers,
+    sharingAvailable,
     nextModuleHref,
     studentName,
     title,
@@ -113,7 +116,7 @@ export function ModuleExperienceV2(props: ModuleExperienceV2Props) {
 
   const stationProgress = buildStationProgress({
     videoWatched: progress.video_watched,
-    placeholderVideo: SHOW_PLACEHOLDER_VIDEO_STRIP,
+    placeholderVideo: !hasVideo,
     hasSavedExercise,
     exercisesSubmitted: progress.exercises_submitted,
     quizCompleted: progress.quiz_completed,
@@ -181,7 +184,7 @@ export function ModuleExperienceV2(props: ModuleExperienceV2Props) {
               icon={<span className="text-lg">▶</span>}
               status={stationProgress.watch}
             />
-            {SHOW_PLACEHOLDER_VIDEO_STRIP ? (
+            {!hasVideo ? (
               <VideoStripV2 />
             ) : (
               <VideoSection
@@ -222,6 +225,7 @@ export function ModuleExperienceV2(props: ModuleExperienceV2Props) {
             savedAnswers={savedAnswers}
             defaultAnswerVisibility={defaultAnswerVisibility}
             hasAnySavedAnswers={hasAnySavedAnswers}
+            sharingAvailable={sharingAvailable}
           />
 
           <QuizSection

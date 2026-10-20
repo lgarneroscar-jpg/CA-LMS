@@ -21,6 +21,9 @@ export function RosterUpload({ institutionId }: { institutionId: string }) {
   const [results, setResults] = useState<InviteRowResult[] | null>(null);
   const [smtpNotConfigured, setSmtpNotConfigured] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [under18Overrides, setUnder18Overrides] = useState<
+    Record<string, boolean>
+  >({});
 
   const parsed = useMemo(
     () => (rawText != null ? parseRosterCsv(rawText) : null),
@@ -39,6 +42,7 @@ export function RosterUpload({ institutionId }: { institutionId: string }) {
     setAwaitingConfirm(false);
     setAlreadyUserEmails([]);
     setExistingStudentCount(null);
+    setUnder18Overrides({});
     setError(null);
     if (!file) {
       setRawText(null);
@@ -94,6 +98,8 @@ export function RosterUpload({ institutionId }: { institutionId: string }) {
           invitableRows.map((r) => ({
             full_name: r.full_name,
             email: r.email,
+            under_18_at_enrollment:
+              under18Overrides[r.email] ?? r.under_18,
           })),
           { confirmed: true }
         );
@@ -110,7 +116,7 @@ export function RosterUpload({ institutionId }: { institutionId: string }) {
     <div className="space-y-4">
       <div className="space-y-2">
         <label className="text-sm font-medium">
-          Upload roster CSV (`full_name,email`)
+          Upload roster CSV (`full_name,email`, optional `under_18`)
         </label>
         <input
           type="file"
@@ -125,6 +131,12 @@ export function RosterUpload({ institutionId }: { institutionId: string }) {
           Uploading never sends invites. Preview first, then confirm to send.
           Rosters always <strong>add</strong> — they never replace existing
           students.
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Mark a student under 18 at enrollment in the preview, or with an
+          under_18 column of yes or no. That stores a flag, not a birth date.
+          Their written work then needs a parent or guardian signature before
+          it can be used in marketing.
         </p>
       </div>
 
@@ -156,6 +168,7 @@ export function RosterUpload({ institutionId }: { institutionId: string }) {
                   <tr>
                     <th className="px-3 py-2 font-medium">Name</th>
                     <th className="px-3 py-2 font-medium">Email</th>
+                    <th className="px-3 py-2 font-medium">Under 18</th>
                     <th className="px-3 py-2 font-medium">Flag</th>
                   </tr>
                 </thead>
@@ -169,6 +182,25 @@ export function RosterUpload({ institutionId }: { institutionId: string }) {
                         <td className="px-3 py-1.5">{row.full_name}</td>
                         <td className="px-3 py-1.5 font-mono text-xs">
                           {row.email}
+                        </td>
+                        <td className="px-3 py-1.5">
+                          <label className="inline-flex items-center gap-2 text-xs">
+                            <input
+                              type="checkbox"
+                              checked={
+                                under18Overrides[row.email] ?? row.under_18
+                              }
+                              disabled={exists || pending}
+                              onChange={(event) => {
+                                const checked = event.target.checked;
+                                setUnder18Overrides((prev) => ({
+                                  ...prev,
+                                  [row.email]: checked,
+                                }));
+                              }}
+                            />
+                            Under 18
+                          </label>
                         </td>
                         <td className="px-3 py-1.5 text-xs text-muted-foreground">
                           {exists ? "Already a user — will skip" : "—"}

@@ -6,7 +6,7 @@ import type { UserRole } from "@/types/index";
 
 // /auth/* pages validate their own session so an expired link can explain
 // itself instead of bouncing silently to /login.
-const PUBLIC_PATHS = ["/login", "/auth/"];
+const PUBLIC_PATHS = ["/login", "/auth/", "/preview-request.html"];
 
 /** Routes that need profile/role data for redirects or guards */
 function needsProfileLookup(pathname: string): boolean {

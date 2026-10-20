@@ -7,7 +7,12 @@ import type { WorkbookPortfolioPillar } from "@/lib/profile-workbook";
 
 type LivingWorkbookSectionProps = {
   pillars: WorkbookPortfolioPillar[];
-  showVisibilityControls?: boolean;
+  /**
+   * `controls`: owner can toggle each answer. `public-badge`: someone else's
+   * profile, where everything shown is public. `none`: owner where sharing
+   * isn't available.
+   */
+  visibility?: "controls" | "public-badge" | "none";
   sectionTitle?: string;
   sectionDescription?: string;
   emptyTitle?: string;
@@ -17,7 +22,7 @@ type LivingWorkbookSectionProps = {
 
 export function LivingWorkbookSection({
   pillars,
-  showVisibilityControls = false,
+  visibility = "public-badge",
   sectionTitle = "My Living Workbook",
   sectionDescription = "Saved exercise responses from your program journey.",
   emptyTitle = "No workbook answers yet",
@@ -87,7 +92,7 @@ export function LivingWorkbookSection({
                               {exercise.title}
                             </h4>
                           </div>
-                          {showVisibilityControls ? (
+                          {visibility === "controls" ? (
                             <AnswerVisibilityControl
                               answerId={exercise.answerId}
                               moduleId={exercise.moduleId}
@@ -95,11 +100,11 @@ export function LivingWorkbookSection({
                               moduleSlug={exercise.moduleSlug}
                               initialIsPublic={exercise.isPublic}
                             />
-                          ) : (
+                          ) : visibility === "public-badge" ? (
                             <span className="shrink-0 rounded-full bg-lift px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-lift-foreground">
                               Public
                             </span>
-                          )}
+                          ) : null}
                         </div>
 
                         <AnswerDisplay

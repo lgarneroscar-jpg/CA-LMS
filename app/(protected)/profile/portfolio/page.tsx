@@ -3,7 +3,10 @@ import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { ExerciseAnswerData } from "@/lib/exercise-answers";
 import { fetchWorkbookPortfolio } from "@/lib/profile-workbook";
-import { PORTFOLIO_COMPLETION_DEFINITION } from "@/lib/portfolio";
+import {
+  canOpenOwnPortfolio,
+  PORTFOLIO_COMPLETION_DEFINITION,
+} from "@/lib/portfolio";
 import { CONTENT_MODULE_COUNT } from "@/lib/program-completion";
 import {
   parsePortfolioSelection,
@@ -27,7 +30,7 @@ export default async function PortfolioSelectionPage() {
   const profile = await requireRole(["student"]);
   const supabase = await createClient();
 
-  if (!profile.program_completed_at) {
+  if (!canOpenOwnPortfolio(profile)) {
     const [{ data: modules }, { data: progress }] = await Promise.all([
       supabase.from("modules").select("id").eq("is_live_session", false),
       supabase
@@ -67,6 +70,7 @@ export default async function PortfolioSelectionPage() {
     );
   }
 
+  const isPreview = !profile.program_completed_at;
   const pillars = await fetchWorkbookPortfolio(supabase, profile.id);
   const groups: PortfolioSelectionGroup[] = pillars.map((pillar) => ({
     pillar: pillar.pillar,
@@ -101,6 +105,22 @@ export default async function PortfolioSelectionPage() {
           save as a PDF.
         </p>
       </div>
+
+      {isPreview ? (
+        <div className="lift-card space-y-2 rounded-2xl p-5 text-sm">
+          <p className="font-semibold">You&apos;re previewing the portfolio</p>
+          <p className="text-muted-foreground">
+            Students unlock this when they finish the program. You can build one now from
+            whatever you&apos;ve written so far; it will be marked as a preview.
+          </p>
+          <Link
+            href="/portfolio/example"
+            className="inline-block font-medium text-lift underline-offset-4 hover:underline"
+          >
+            See a finished example
+          </Link>
+        </div>
+      ) : null}
 
       <div
         role="note"

@@ -22,7 +22,8 @@ export type InstitutionOverviewRow = {
 
 /**
  * Cross-institution rollup for /superadmin.
- * Excludes is_demo students from all totals (S1.5 rule).
+ * Excludes demo institutions entirely, and is_demo students inside real
+ * institutions, from all totals (S1.5 rule).
  */
 export async function getCrossInstitutionOverview(): Promise<
   InstitutionOverviewRow[]
@@ -35,6 +36,7 @@ export async function getCrossInstitutionOverview(): Promise<
     .select(
       "id, name, is_pilot, cohort_start_date, reporting_cadence, drip_type"
     )
+    .eq("is_demo", false)
     .order("name");
 
   if (error) throw new Error(error.message);

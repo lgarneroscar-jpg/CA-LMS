@@ -64,18 +64,20 @@ export default async function ModuleContentEditPage({ params }: PageProps) {
   ]);
 
   const answeringStudentIds = [...new Set(answerRows.map((r) => r.student_id))];
-  const { data: demoRows } = answeringStudentIds.length
+  // Platform-wide figures: only real students in real institutions count.
+  const { data: countedRows } = answeringStudentIds.length
     ? await admin
         .from("profiles")
-        .select("id")
+        .select("id, institutions!inner(is_demo)")
         .in("id", answeringStudentIds)
-        .eq("is_demo", true)
+        .eq("is_demo", false)
+        .eq("institutions.is_demo", false)
     : { data: [] };
-  const demoIds = new Set((demoRows ?? []).map((r) => r.id));
+  const countedIds = new Set((countedRows ?? []).map((r) => r.id));
 
   const analysis = analyzeQuestions(
     quizRows ?? [],
-    answerRows.filter((r) => !demoIds.has(r.student_id))
+    answerRows.filter((r) => countedIds.has(r.student_id))
   );
   const correctLabels = new Map(
     (quizRows ?? []).map((q) => [

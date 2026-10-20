@@ -22,6 +22,8 @@ import {
   type SavedExerciseAnswer,
 } from "@/lib/exercise-answers";
 import { normalizeExerciseField } from "@/lib/content-normalize";
+import { isAnswerSharingAvailable } from "@/lib/sharing";
+import { videoContentIsPlaceholder } from "@/lib/module-content-status";
 import {
   Card,
   CardContent,
@@ -134,10 +136,19 @@ export default async function ModulePage({ params }: PageProps) {
     };
   });
 
-  const { count: totalSavedCount } = await supabase
-    .from("exercise_answers")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", profile.id);
+  const [{ count: totalSavedCount }, sharingAvailable, { data: videoRows }] =
+    await Promise.all([
+      supabase
+        .from("exercise_answers")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", profile.id),
+      isAnswerSharingAvailable(supabase, profile.institution_id),
+      supabase.from("modules").select("video_url").eq("is_live_session", false),
+    ]);
+  const hasVideo = !videoContentIsPlaceholder(
+    module.video_url,
+    (videoRows ?? []).map((row) => row.video_url)
+  );
 
   const quizRows = quizResult.data ?? [];
   const questions: QuizQuestionView[] = quizRows.map((q) => ({
@@ -164,7 +175,8 @@ export default async function ModulePage({ params }: PageProps) {
       pillar={module.pillar}
       unlockWeek={module.unlock_week ?? 1}
       estimatedMinutes={workbook.estimated_minutes}
-      videoUrl={module.video_url ?? "https://www.youtube.com/watch?v=LXb3EKWsInQ"}
+      videoUrl={module.video_url ?? ""}
+      hasVideo={hasVideo}
       workbookBlocks={workbook.blocks}
       workbookOverview={workbook.overview}
       completionCheck={workbook.completion_check}
@@ -175,6 +187,7 @@ export default async function ModulePage({ params }: PageProps) {
       savedAnswers={savedAnswers}
       defaultAnswerVisibility={profile.default_answer_visibility ?? null}
       hasAnySavedAnswers={(totalSavedCount ?? 0) > 0}
+      sharingAvailable={sharingAvailable}
       nextModuleHref={nextModuleHref}
       studentName={profile.full_name?.split(" ")[0] ?? "Student"}
     />

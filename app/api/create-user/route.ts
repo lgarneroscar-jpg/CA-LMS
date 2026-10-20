@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { provisionProfile } from "@/lib/provision-profile";
 
 export type CreateUserBody = {
   email: string;
@@ -198,9 +199,7 @@ export async function POST(request: Request) {
       password,
       email_confirm: true,
       user_metadata: {
-        role,
         full_name: body.full_name ?? email.split("@")[0],
-        institution_id: body.institution_id ?? null,
       },
     });
 
@@ -209,18 +208,16 @@ export async function POST(request: Request) {
 
     const userId = data.user.id;
 
+    const { error: profileError } = await provisionProfile(admin, {
+      userId,
+      role,
+      institutionId: body.institution_id ?? null,
+      fullName: body.full_name ?? email.split("@")[0],
+    });
+    if (profileError) throw new Error(profileError);
+
     if (body.is_demo || body.seed_demo_progress) {
       await seedDemoProgress(admin, userId);
-    } else if (body.role || body.institution_id || body.full_name) {
-      await admin
-        .from("profiles")
-        .update({
-          role,
-          full_name: body.full_name ?? null,
-          institution_id: body.institution_id ?? null,
-          is_demo: body.is_demo ?? false,
-        })
-        .eq("id", userId);
     }
 
     return NextResponse.json({

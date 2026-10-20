@@ -52,6 +52,7 @@ type ExerciseSectionProps = {
   savedAnswers: Record<string, SavedExerciseAnswer>;
   defaultAnswerVisibility: boolean | null;
   hasAnySavedAnswers: boolean;
+  sharingAvailable: boolean;
   variant?: "default" | "lift";
   sectionId?: string;
   liftStationStatus?: "complete" | "current" | "upcoming";
@@ -68,6 +69,7 @@ export function ExerciseSection({
   savedAnswers: initialSavedAnswers,
   defaultAnswerVisibility,
   hasAnySavedAnswers: initialHasAnySavedAnswers,
+  sharingAvailable,
   variant = "default",
   sectionId,
   liftStationStatus = "current",
@@ -243,7 +245,9 @@ export function ExerciseSection({
               moduleSlug={moduleSlug}
               initialSaved={savedAnswers[exercise.key]}
               defaultAnswerVisibility={defaultVisibility}
+              sharingAvailable={sharingAvailable}
               needsVisibilityChoice={
+                sharingAvailable &&
                 defaultVisibility === null &&
                 !hasAnySavedAnswers &&
                 !savedAnswers[exercise.key]
@@ -253,12 +257,14 @@ export function ExerciseSection({
             />
           ))}
 
-          <ExerciseVisibilityPrompt
-            open={visibilityPromptOpen}
-            nudge={visibilityPromptNudge}
-            onCancel={() => settleDefaultVisibility(null)}
-            onChoose={(isPublic) => settleDefaultVisibility(isPublic)}
-          />
+          {sharingAvailable ? (
+            <ExerciseVisibilityPrompt
+              open={visibilityPromptOpen}
+              nudge={visibilityPromptNudge}
+              onCancel={() => settleDefaultVisibility(null)}
+              onChoose={(isPublic) => settleDefaultVisibility(isPublic)}
+            />
+          ) : null}
 
           {legacyExercises.length > 0 ? (
             <form onSubmit={handleLegacySubmit} className="space-y-8">

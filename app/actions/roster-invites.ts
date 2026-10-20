@@ -13,10 +13,12 @@ import {
 } from "@/lib/auth-invite-status";
 import { authCallbackUrl, passwordResetRedirectUrl } from "@/lib/auth-links";
 import { hasRecordedActivity } from "@/lib/admin-reporting";
+import { provisionProfile } from "@/lib/provision-profile";
 
 export type InviteRowInput = {
   full_name: string;
   email: string;
+  under_18_at_enrollment?: boolean;
 };
 
 export type InviteRowResult = {
@@ -136,11 +138,7 @@ export async function inviteStudentsBatch(
       }
 
       const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
-        data: {
-          role: "student",
-          institution_id: institutionId,
-          full_name,
-        },
+        data: { full_name },
         redirectTo,
       });
 
@@ -165,11 +163,33 @@ export async function inviteStudentsBatch(
         continue;
       }
 
-      if (data.user?.email) {
-        byEmail.set(data.user.email.toLowerCase(), {
-          id: data.user.id,
-          email: data.user.email,
+      if (!data.user) {
+        results.push({
+          email,
+          full_name,
+          status: "failed",
+          reason: "Invite returned no user",
         });
+        continue;
+      }
+
+      byEmail.set(email, { id: data.user.id, email });
+
+      const { error: profileError } = await provisionProfile(admin, {
+        userId: data.user.id,
+        role: "student",
+        institutionId,
+        fullName: full_name,
+        under18AtEnrollment: row.under_18_at_enrollment === true,
+      });
+      if (profileError) {
+        results.push({
+          email,
+          full_name,
+          status: "failed",
+          reason: `Invite email sent, but the profile could not be attached to this institution: ${profileError}`,
+        });
+        continue;
       }
 
       results.push({ email, full_name, status: "sent" });
@@ -243,8 +263,6 @@ export async function resendStudentInvite(
     status.email,
     {
       data: {
-        role: "student",
-        institution_id: institutionId,
         full_name: profile.full_name ?? status.email.split("@")[0],
       },
       redirectTo: authCallbackUrl(),
@@ -286,6 +304,7 @@ export type RosterStudentRow = {
   email: string | null;
   xp: number;
   is_demo: boolean;
+  under_18_at_enrollment: boolean;
   inviteStatus: InviteUiStatus;
   invitedAt: string | null;
   lastLinkSentAt: string | null;
@@ -301,7 +320,7 @@ export async function getInstitutionRoster(
   const { data: students, error } = await supabase
     .from("profiles")
     .select(
-      "id, full_name, xp, rank, last_login, last_active_date, diagnostic_complete, created_at, is_demo"
+      "id, full_name, xp, rank, last_login, last_active_date, diagnostic_complete, created_at, is_demo, under_18_at_enrollment"
     )
     .eq("institution_id", institutionId)
     .eq("role", "student")
@@ -326,6 +345,7 @@ export async function getInstitutionRoster(
       email: auth?.email ?? null,
       xp: student.xp,
       is_demo: student.is_demo,
+      under_18_at_enrollment: student.under_18_at_enrollment,
       inviteStatus,
       invitedAt: auth?.invitedAt ?? student.created_at,
       lastLinkSentAt: auth?.lastLinkSentAt ?? auth?.invitedAt ?? null,

@@ -19,6 +19,10 @@ export type CapriOutcomesContext = {
   periodEnd: string;
 };
 
+/**
+ * Implementations must leave out is_demo students unless the institution is
+ * itself a demo institution — these figures go to clients.
+ */
 export interface CapriOutcomesProvider {
   getOutcomes(context: CapriOutcomesContext): Promise<CapriOutcomesPayload>;
 }

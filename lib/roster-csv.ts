@@ -2,6 +2,7 @@ export type RosterCsvRow = {
   line: number;
   full_name: string;
   email: string;
+  under_18: boolean;
 };
 
 export type RosterCsvIssue = {
@@ -16,6 +17,24 @@ export type RosterCsvParseResult = {
 };
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const UNDER_18_HEADERS = [
+  "under_18",
+  "under_18_at_enrollment",
+  "under18",
+  "minor",
+];
+
+function parseUnder18(raw: string): boolean | null {
+  const value = raw.trim().toLowerCase();
+  if (!value || value === "no" || value === "n" || value === "false" || value === "0") {
+    return false;
+  }
+  if (value === "yes" || value === "y" || value === "true" || value === "1") {
+    return true;
+  }
+  return null;
+}
 
 function parseCsvLine(line: string): string[] {
   const cells: string[] = [];
@@ -50,7 +69,9 @@ function parseCsvLine(line: string): string[] {
 
 /**
  * Parse a roster CSV. Expects a header row with full_name and email
- * (order flexible; aliases: name, student_name).
+ * (order flexible; aliases: name, student_name). An optional under_18
+ * column (aliases: under_18_at_enrollment, under18, minor) accepts
+ * yes/no. A missing column or blank cell means not under 18.
  */
 export function parseRosterCsv(text: string): RosterCsvParseResult {
   const lines = text
@@ -71,6 +92,7 @@ export function parseRosterCsv(text: string): RosterCsvParseResult {
   const emailIdx = headerCells.findIndex((h) =>
     ["email", "email_address", "e-mail"].includes(h)
   );
+  const under18Idx = headerCells.findIndex((h) => UNDER_18_HEADERS.includes(h));
 
   if (nameIdx < 0 || emailIdx < 0) {
     return {
@@ -92,6 +114,7 @@ export function parseRosterCsv(text: string): RosterCsvParseResult {
     const cells = parseCsvLine(lines[i]);
     const full_name = (cells[nameIdx] ?? "").trim();
     const email = (cells[emailIdx] ?? "").trim().toLowerCase();
+    const under18Raw = under18Idx >= 0 ? (cells[under18Idx] ?? "") : "";
 
     if (!full_name && !email) continue;
 
@@ -122,8 +145,18 @@ export function parseRosterCsv(text: string): RosterCsvParseResult {
       continue;
     }
 
+    const under18 = parseUnder18(under18Raw);
+    if (under18 === null) {
+      issues.push({
+        line: lineNumber,
+        email,
+        message: "under_18 must be yes or no",
+      });
+      continue;
+    }
+
     seenEmails.set(email, lineNumber);
-    rows.push({ line: lineNumber, full_name, email });
+    rows.push({ line: lineNumber, full_name, email, under_18: under18 });
   }
 
   return { rows, issues };

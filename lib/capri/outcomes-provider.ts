@@ -22,6 +22,36 @@ type Accumulator = {
   postPillars: Partial<Record<CapriPillar, number>>;
 };
 
+/**
+ * Demo test accounts can sit inside a real cohort; their scores must not reach
+ * that institution's outcome figures. A demo institution keeps its own.
+ */
+async function fetchDemoStudentIdsOutsideDemoInstitution(
+  adminClient: ReturnType<typeof createAdminClient>,
+  institutionId: string,
+  studentIds: string[]
+): Promise<Set<string>> {
+  const { data: institution, error: institutionError } = await adminClient
+    .from("institutions")
+    .select("is_demo")
+    .eq("id", institutionId)
+    .single();
+  if (institutionError) {
+    throw new Error(`[capri] institution lookup: ${institutionError.message}`);
+  }
+  if (institution.is_demo || studentIds.length === 0) return new Set();
+
+  const { data, error } = await adminClient
+    .from("profiles")
+    .select("id")
+    .in("id", studentIds)
+    .eq("is_demo", true);
+  if (error) {
+    throw new Error(`[capri] demo profile lookup: ${error.message}`);
+  }
+  return new Set((data ?? []).map((row) => row.id));
+}
+
 function signed(value: number): string {
   return `${value >= 0 ? "+" : ""}${value.toFixed(1)}`;
 }
@@ -40,7 +70,16 @@ function percent(fraction: number): string {
 export const capriOutcomesProvider: CapriOutcomesProvider = {
   async getOutcomes({ institutionId }): Promise<CapriOutcomesPayload> {
     const adminClient = createAdminClient();
-    const rows = await fetchInstitutionScores(adminClient, institutionId);
+    const allRows = await fetchInstitutionScores(adminClient, institutionId);
+
+    if (allRows.length === 0) return null;
+
+    const demoStudentIds = await fetchDemoStudentIdsOutsideDemoInstitution(
+      adminClient,
+      institutionId,
+      [...new Set(allRows.map((row) => row.studentId))]
+    );
+    const rows = allRows.filter((row) => !demoStudentIds.has(row.studentId));
 
     if (rows.length === 0) return null;
 

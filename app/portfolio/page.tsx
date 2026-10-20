@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { loadPortfolioDocument } from "@/lib/portfolio";
+import { canOpenOwnPortfolio, loadPortfolioDocument } from "@/lib/portfolio";
 import { PortfolioDocument } from "@/components/portfolio/portfolio-document";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -14,11 +14,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
 /**
  * The student's own printable portfolio. Outside the (protected) group so no
- * app chrome renders. Same completion gate as the certificate.
+ * app chrome renders. Same completion gate as the certificate, except that
+ * preview (is_demo) users can open it early, marked as a preview.
  */
 export default async function PortfolioDocumentPage() {
   const profile = await requireRole(["student"]);
-  if (!profile.program_completed_at) redirect("/profile/portfolio");
+  if (!canOpenOwnPortfolio(profile)) redirect("/profile/portfolio");
 
   const supabase = await createClient();
   const data = await loadPortfolioDocument(supabase, {
@@ -31,5 +32,10 @@ export default async function PortfolioDocumentPage() {
 
   if (data.selectedWork.length === 0) redirect("/profile/portfolio");
 
-  return <PortfolioDocument data={data} />;
+  return (
+    <PortfolioDocument
+      data={data}
+      variant={profile.program_completed_at ? "own" : "preview"}
+    />
+  );
 }

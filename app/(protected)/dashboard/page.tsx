@@ -14,6 +14,8 @@ import { ContinueLearning } from "@/components/dashboard/continue-learning";
 import { ProgramCompletionBanner } from "@/components/dashboard/program-completion-banner";
 import { StartProgramButton } from "@/components/dashboard/start-program-button";
 import { PaceIndicator } from "@/components/dashboard/pace-indicator";
+import { PasswordPrompt } from "@/components/auth/password-prompt";
+import { getPasswordStatus } from "@/lib/password-status";
 
 export default async function StudentDashboardPage() {
   const profile = await requireRole(["student"]);
@@ -68,6 +70,14 @@ export default async function StudentDashboardPage() {
 
   const flatModules = weeks.flatMap((w) => w.modules);
   const nextModule = diagnosticComplete ? findNextModule(flatModules) : null;
+
+  const passwordStatus = profile.onboarding_complete
+    ? await getPasswordStatus()
+    : null;
+  const showPasswordPrompt =
+    passwordStatus !== null &&
+    !passwordStatus.hasPassword &&
+    !passwordStatus.promptDismissed;
 
   return (
     <div className="experience-lift mx-auto max-w-5xl space-y-10 pb-12">
@@ -129,6 +139,8 @@ export default async function StudentDashboardPage() {
           <StartProgramButton />
         </div>
       ) : null}
+
+      {showPasswordPrompt ? <PasswordPrompt /> : null}
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
         <div className="lift-card rounded-2xl p-5">

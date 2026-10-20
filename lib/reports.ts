@@ -292,7 +292,7 @@ export async function generateReportSnapshot(params: {
 
   const { data: institution, error: institutionError } = await supabase
     .from("institutions")
-    .select("id, reporting_cadence, cohort_start_date")
+    .select("id, reporting_cadence, cohort_start_date, is_demo")
     .eq("id", institutionId)
     .single();
 
@@ -345,7 +345,11 @@ export async function generateReportSnapshot(params: {
 
   let analytics: CohortAnalytics | null;
   try {
-    analytics = await getCohortAnalytics(supabase, institutionId);
+    // Demo test accounts inside a real cohort stay out of its client report;
+    // a demo institution's own report is made of demo students.
+    analytics = await getCohortAnalytics(supabase, institutionId, {
+      excludeDemo: !institution.is_demo,
+    });
   } catch (err) {
     return {
       status: "error",

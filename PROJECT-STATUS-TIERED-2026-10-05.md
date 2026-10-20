@@ -10,6 +10,10 @@
 
 ## Verdict
 
+> **UPDATE 2026-10-05, later the same day: T3.2 and T3.3 are CLOSED.**
+> **T3.1 (videos) is the only Tier 3 item still open, and it is an upload task — Oscar has the recordings.**
+> One item remains unproven rather than unfinished: **send one invite or password reset from `learn.corpacad.com`** to confirm the Supabase URL configuration accepts the new origin. That is the last link in the chain that cannot be verified from outside the dashboard.
+
 **Three Tier 3 items. Two are content/configuration, one is a two-line code fix.** Nothing in the application architecture blocks selling.
 
 The platform does what it claims: students are invited, set passwords, take a real readiness assessment, work through gated modules, build a living workbook, and leave with a portfolio. Institutions get an honest, versioned report. That has all been verified in production against the database, not just on screen.

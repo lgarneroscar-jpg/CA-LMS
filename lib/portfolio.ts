@@ -22,6 +22,23 @@ type DbClient = SupabaseClient<Database>;
 export const PORTFOLIO_COMPLETION_DEFINITION =
   "A module is complete when every workbook exercise in it has been answered and its quiz has been passed at 75% or above.";
 
+/**
+ * Seeded preview-institution fixture (scripts/seed-demo-cohort.ts) that has
+ * finished the program. Shown read-only to preview users as a finished
+ * example. Pinned by id rather than "any demo profile with a completion date":
+ * a real prospect who finishes inside the preview institution must never have
+ * their writing shown to other prospects.
+ */
+export const PORTFOLIO_EXAMPLE_STUDENT_ID = "dee00000-0000-4000-a000-000000000001";
+
+/** Who may open the portfolio builder and document for their own work. */
+export function canOpenOwnPortfolio(profile: {
+  program_completed_at: string | null;
+  is_demo: boolean;
+}): boolean {
+  return Boolean(profile.program_completed_at) || profile.is_demo;
+}
+
 export type PortfolioReadinessLine = {
   pillar: CapriPillar;
   pillarName: string;
@@ -33,7 +50,8 @@ export type PortfolioDocumentData = {
   institutionName: string | null;
   cohortStart: string | null;
   cohortEnd: string | null;
-  completedAt: string;
+  /** Null for a preview built before the program is finished. */
+  completedAt: string | null;
   modulesCompleted: number;
   modulesTotal: number;
   liveSessions: {
@@ -75,8 +93,9 @@ function addDaysIso(isoDate: string, days: number): string {
 }
 
 /**
- * Everything the printable document shows, for the signed-in student only.
- * Caller is responsible for the program_completed_at gate.
+ * Everything the printable document shows, for the signed-in student only
+ * (or the pinned example, via the service role). Caller is responsible for
+ * the access gate. `includeAllWork` ignores the selection.
  */
 export async function loadPortfolioDocument(
   supabase: DbClient,
@@ -84,9 +103,10 @@ export async function loadPortfolioDocument(
     id: string;
     full_name: string | null;
     institution_id: string | null;
-    program_completed_at: string;
+    program_completed_at: string | null;
     portfolio_selection?: unknown;
-  }
+  },
+  options: { includeAllWork?: boolean } = {}
 ): Promise<PortfolioDocumentData> {
   const [
     workbook,
@@ -147,9 +167,11 @@ export async function loadPortfolioDocument(
           direction: readinessDirections[pillar],
         }))
       : null,
-    selectedWork: filterPortfolioSelection(
-      workbook,
-      parsePortfolioSelection(student.portfolio_selection)
-    ),
+    selectedWork: options.includeAllWork
+      ? workbook
+      : filterPortfolioSelection(
+          workbook,
+          parsePortfolioSelection(student.portfolio_selection)
+        ),
   };
 }

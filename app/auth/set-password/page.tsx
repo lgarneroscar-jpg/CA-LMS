@@ -17,14 +17,30 @@ export default async function SetPasswordPage({ searchParams }: Props) {
     redirect("/login?error=link_expired");
   }
 
+  // Invited users go straight into the programme; a password is offered later.
   const { mode } = await searchParams;
+  if (mode !== "recovery") {
+    redirect("/");
+  }
+
+  // A student who has not finished onboarding is still effectively accepting an
+  // invite (e.g. via "Email me a sign-in link" after it expired).
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, is_demo, onboarding_complete")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (
+    profile?.role === "student" &&
+    !profile.is_demo &&
+    !profile.onboarding_complete
+  ) {
+    redirect("/");
+  }
 
   return (
     <AuthShell>
-      <SetPasswordForm
-        mode={mode === "recovery" ? "recovery" : "invite"}
-        email={user.email ?? null}
-      />
+      <SetPasswordForm email={user.email ?? null} />
     </AuthShell>
   );
 }

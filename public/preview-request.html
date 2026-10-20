@@ -1,0 +1,282 @@
+<!--
+  Squarespace code block for corpacad.com. Self-contained: paste this file as-is.
+  CALENDLY_URL is set to the Book a Call link below. Update it there if the
+  booking link changes.
+
+  Posts to https://learn.corpacad.com/api/preview-request (localhost uses the
+  page origin so the widget can be tried on the app).
+
+  The approved Artifact canvas "Preview CTA — corpacad.com" was not in the
+  workspace. This band is 760px, navy #1B2A4A, gold #C9A227, copy on the left
+  and the form on the right from 700px up.
+
+  FREE_DOMAINS must stay in sync with FREE_EMAIL_DOMAINS in lib/preview-request.ts.
+-->
+<div id="corp-preview-cta">
+  <div class="layout">
+    <div class="copy">
+      <p class="kicker">For institutions</p>
+      <h2>Preview the program</h2>
+      <p class="lede">
+        Use your work email. If that address is eligible, a sign-in link
+        arrives within a minute.
+      </p>
+    </div>
+    <form id="corp-preview-form" method="post" action="https://learn.corpacad.com/api/preview-request" novalidate>
+      <div class="field">
+        <label for="corp-preview-email">Work email</label>
+        <input id="corp-preview-email" name="email" type="email" autocomplete="email" inputmode="email" />
+      </div>
+      <div class="field">
+        <label for="corp-preview-name">Name <span>(optional)</span></label>
+        <input id="corp-preview-name" name="full_name" type="text" autocomplete="name" />
+      </div>
+      <div class="field">
+        <label for="corp-preview-institution">Institution <span>(optional)</span></label>
+        <input id="corp-preview-institution" name="institution_name" type="text" autocomplete="organization" />
+      </div>
+      <div class="hp" aria-hidden="true">
+        <label for="corp-preview-company">Company</label>
+        <input id="corp-preview-company" name="company" type="text" tabindex="-1" autocomplete="off" />
+      </div>
+      <p id="corp-preview-error" class="error" role="alert" hidden></p>
+      <button type="submit" id="corp-preview-submit">Send my preview link</button>
+      <p class="alt" id="corp-preview-alt" hidden>
+        <a id="corp-preview-calendly" href="https://www.corpacad.com/">Book a call</a>
+      </p>
+    </form>
+  </div>
+</div>
+<style>
+  #corp-preview-cta, #corp-preview-cta * { box-sizing: border-box; }
+  #corp-preview-cta {
+    position: relative;
+    max-width: 760px;
+    width: 100%;
+    margin: 0 auto;
+    background: #1B2A4A;
+    color: #ffffff;
+    border-radius: 16px;
+    padding: 36px 40px;
+    font-family: Georgia, "Times New Roman", serif;
+    overflow: hidden;
+  }
+  @media (max-width: 699px) {
+    #corp-preview-cta { padding: 24px 20px; }
+  }
+  #corp-preview-cta .layout { display: block; }
+  @media (min-width: 700px) {
+    #corp-preview-cta .layout {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      column-gap: 40px;
+      align-items: center;
+    }
+  }
+  #corp-preview-cta .kicker {
+    margin: 0 0 8px;
+    color: #C9A227;
+    font-family: system-ui, sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  #corp-preview-cta h2 {
+    margin: 0 0 12px;
+    font-size: 28px;
+    line-height: 1.2;
+    font-weight: 600;
+  }
+  #corp-preview-cta .lede {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.45;
+    color: rgba(255, 255, 255, 0.88);
+  }
+  #corp-preview-cta form { margin-top: 24px; }
+  @media (min-width: 700px) {
+    #corp-preview-cta form { margin-top: 0; }
+  }
+  #corp-preview-cta .field { margin: 0 0 12px; }
+  #corp-preview-cta label {
+    display: block;
+    margin-bottom: 4px;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  #corp-preview-cta label span { font-weight: 400; opacity: 0.75; }
+  #corp-preview-cta input {
+    width: 100%;
+    height: 44px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #1B2A4A;
+    font-family: system-ui, sans-serif;
+    font-size: 15px;
+  }
+  #corp-preview-cta .hp {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+  #corp-preview-cta .error {
+    margin: 0 0 12px;
+    color: #F6E7B8;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+  #corp-preview-cta button {
+    width: 100%;
+    height: 46px;
+    border: 0;
+    border-radius: 8px;
+    background: #C9A227;
+    color: #1B2A4A;
+    font-family: system-ui, sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  #corp-preview-cta button:disabled { opacity: 0.7; cursor: progress; }
+  #corp-preview-cta .confirm {
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.45;
+  }
+  #corp-preview-cta .alt {
+    margin: 12px 0 0;
+    font-family: system-ui, sans-serif;
+    font-size: 13px;
+  }
+  #corp-preview-cta .alt a { color: #C9A227; }
+</style>
+<script>
+(function () {
+  var CALENDLY_URL = "https://calendly.com/academy-corpacad/30min";
+  var ENDPOINT = "https://learn.corpacad.com/api/preview-request";
+  var FREE_DOMAINS = [
+    "gmail.com", "googlemail.com", "yahoo.com", "yahoo.co.uk", "ymail.com",
+    "rocketmail.com", "hotmail.com", "hotmail.co.uk", "outlook.com", "live.com",
+    "msn.com", "icloud.com", "me.com", "mac.com", "aol.com", "proton.me",
+    "protonmail.com", "pm.me", "gmx.com", "gmx.net", "mail.com", "zoho.com",
+    "yandex.com", "yandex.ru", "qq.com", "163.com", "126.com", "fastmail.com",
+    "hey.com", "tutanota.com", "tuta.io", "duck.com"
+  ];
+
+  var root = document.getElementById("corp-preview-cta");
+  if (!root) return;
+  var form = document.getElementById("corp-preview-form");
+  var errorEl = document.getElementById("corp-preview-error");
+  var submit = document.getElementById("corp-preview-submit");
+  var alt = document.getElementById("corp-preview-alt");
+  var calendly = document.getElementById("corp-preview-calendly");
+  var emailInput = document.getElementById("corp-preview-email");
+  if (!form || !errorEl || !submit || !alt || !calendly || !emailInput) return;
+
+  if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+    ENDPOINT = location.origin + "/api/preview-request";
+  }
+  form.setAttribute("action", ENDPOINT);
+  if (CALENDLY_URL) calendly.setAttribute("href", CALENDLY_URL);
+
+  function showError(message) {
+    errorEl.hidden = false;
+    errorEl.textContent = message;
+    emailInput.setAttribute("aria-invalid", "true");
+    emailInput.setAttribute("aria-describedby", "corp-preview-error");
+  }
+
+  function clearError() {
+    errorEl.hidden = true;
+    errorEl.textContent = "";
+    emailInput.removeAttribute("aria-invalid");
+  }
+
+  function showCalendly() {
+    alt.hidden = false;
+  }
+
+  function domainOf(email) {
+    var at = email.lastIndexOf("@");
+    return at === -1 ? "" : email.slice(at + 1).toLowerCase();
+  }
+
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    clearError();
+    var email = emailInput.value.trim();
+    var company = document.getElementById("corp-preview-company");
+    var name = document.getElementById("corp-preview-name");
+    var institution = document.getElementById("corp-preview-institution");
+
+    var companyFilled = company && company.value.trim();
+    if (!companyFilled && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showError("Enter a valid email address.");
+      return;
+    }
+    if (!companyFilled && FREE_DOMAINS.indexOf(domainOf(email)) !== -1) {
+      showError("Use your institutional or work address. Personal inboxes aren't eligible for an automatic preview.");
+      showCalendly();
+      return;
+    }
+
+    submit.disabled = true;
+    submit.textContent = "Sending…";
+
+    fetch(ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: email,
+        full_name: name ? name.value : "",
+        institution_name: institution ? institution.value : "",
+        company: company ? company.value : ""
+      })
+    }).then(function (response) {
+      return response.json().then(function (data) {
+        return { ok: response.ok, status: response.status, data: data };
+      });
+    }).then(function (result) {
+      if (result.ok && result.data && result.data.ok) {
+        form.replaceWith(confirmation(result.data.message));
+        return;
+      }
+      var message = (result.data && result.data.message) || "We couldn't complete that request.";
+      showError(message);
+      showCalendly();
+      submit.disabled = false;
+      submit.textContent = "Send my preview link";
+    }).catch(function () {
+      showError("We couldn't reach the preview service.");
+      showCalendly();
+      submit.disabled = false;
+      submit.textContent = "Send my preview link";
+    });
+  });
+
+  function confirmation(message) {
+    var note = document.createElement("p");
+    note.className = "confirm";
+    note.setAttribute("role", "status");
+    note.textContent = message || "Check your email — if that address is eligible, a sign-in link is on its way.";
+    return note;
+  }
+})();
+</script>
+<noscript>
+  <p>Book a call and we'll set up a preview with you: <a href="https://www.corpacad.com/">corpacad.com</a></p>
+</noscript>

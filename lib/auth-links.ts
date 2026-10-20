@@ -36,11 +36,13 @@ export function safeNextPath(next: string | null | undefined): string | null {
   return next;
 }
 
-/** Supabase link `type` values that require the user to choose a password. */
+/**
+ * Supabase link `type` values that lead to the set-password page. Invites do
+ * not: invited users land in the programme and are offered a password later.
+ */
 export function setPasswordModeForType(
   type: string | null | undefined
 ): SetPasswordMode | null {
-  if (type === "invite") return "invite";
   if (type === "recovery") return "recovery";
   return null;
 }

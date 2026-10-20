@@ -40,7 +40,7 @@ export async function sendProgramCompletionEmail(params: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Corporate Academy <hello@corpacad.com>",
+      from: "Corporate Academy <hello@mail.corpacad.com>",
       to: params.to,
       subject: body.subject,
       html: body.html,
@@ -87,7 +87,7 @@ export async function sendBehindPaceEmail(params: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      from: "Corporate Academy <hello@corpacad.com>",
+      from: "Corporate Academy <hello@mail.corpacad.com>",
       to: params.to,
       subject: body.subject,
       html: body.html,
@@ -96,6 +96,70 @@ export async function sendBehindPaceEmail(params: {
 
   if (!res.ok) {
     console.error("[sendBehindPaceEmail]", await res.text());
+    return { sent: false };
+  }
+
+  return { sent: true };
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/**
+ * Ops notice for an accepted public preview request. The public response
+ * never includes this branch; the inbox does.
+ */
+export async function sendPreviewRequestNotice(params: {
+  to: string;
+  email: string;
+  fullName: string | null;
+  institutionName: string | null;
+  branch: "new account" | "already existed" | "could not create";
+  detail?: string;
+}) {
+  const lines = [
+    `<p><strong>Branch:</strong> ${escapeHtml(params.branch)}</p>`,
+    `<p><strong>Address:</strong> ${escapeHtml(params.email)}</p>`,
+    `<p><strong>Name:</strong> ${escapeHtml(params.fullName ?? "—")}</p>`,
+    `<p><strong>Institution:</strong> ${escapeHtml(params.institutionName ?? "—")}</p>`,
+  ];
+  if (params.detail) {
+    lines.push(`<p><strong>Detail:</strong> ${escapeHtml(params.detail)}</p>`);
+  }
+
+  const body = {
+    to: params.to,
+    subject: `Preview request — ${params.branch}`,
+    html: lines.join("\n"),
+  };
+
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.info("[sendPreviewRequestNotice] (dev — no RESEND_API_KEY)", body);
+    return { sent: false };
+  }
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: "Corporate Academy <hello@mail.corpacad.com>",
+      to: params.to,
+      subject: body.subject,
+      html: body.html,
+    }),
+  });
+
+  if (!res.ok) {
+    console.error("[sendPreviewRequestNotice]", await res.text());
     return { sent: false };
   }
 

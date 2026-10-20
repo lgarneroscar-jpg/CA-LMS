@@ -7,6 +7,8 @@ import {
   setInstitutionFullyUnlocked,
 } from "@/app/actions/cohort-controls";
 import { getCrossInstitutionOverview } from "@/lib/cross-institution-overview";
+import { PREVIEW_INSTITUTION_ID } from "@/lib/preview";
+import { PreviewInviteForm } from "@/components/superadmin/preview-invite-form";
 import {
   Card,
   CardContent,
@@ -41,18 +43,28 @@ export default async function SuperAdminPage() {
   const [overview, { count: institutionCount }, { count: studentCount }] =
     await Promise.all([
       getCrossInstitutionOverview(),
-      supabase.from("institutions").select("*", { count: "exact", head: true }),
+      supabase
+        .from("institutions")
+        .select("*", { count: "exact", head: true })
+        .eq("is_demo", false),
       supabase
         .from("profiles")
-        .select("*", { count: "exact", head: true })
+        .select("id, institutions!inner(is_demo)", {
+          count: "exact",
+          head: true,
+        })
         .eq("role", "student")
-        .eq("is_demo", false),
+        .eq("is_demo", false)
+        .eq("institutions.is_demo", false),
     ]);
 
   const { data: institutions } = await supabase
     .from("institutions")
-    .select("id, name, cohort_start_date, drip_type, is_fully_unlocked")
+    .select("id, name, cohort_start_date, drip_type, is_fully_unlocked, is_demo")
     .order("name");
+  const previewInstitution = (institutions ?? []).find(
+    (inst) => inst.id === PREVIEW_INSTITUTION_ID && inst.is_demo
+  );
 
   const { data: unlockedRows } = await supabase
     .from("institution_unlocked_weeks")
@@ -72,7 +84,8 @@ export default async function SuperAdminPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Super Admin</h1>
           <p className="text-muted-foreground">
-            How every cohort is doing — demo students excluded from totals.
+            How every cohort is doing — demo institutions and demo students
+            excluded from totals.
           </p>
         </div>
         <Link
@@ -128,12 +141,17 @@ export default async function SuperAdminPage() {
         </Card>
       </div>
 
+      {previewInstitution ? (
+        <PreviewInviteForm institutionName={previewInstitution.name} />
+      ) : null}
+
       <Card>
         <CardHeader>
           <CardTitle>Cross-institution overview</CardTitle>
           <CardDescription>
-            One row per institution. Demo students (`is_demo`) are excluded from
-            cohort size and averages.
+            One row per real institution. Demo institutions are not listed, and
+            demo students (`is_demo`) are excluded from cohort size and
+            averages.
           </CardDescription>
         </CardHeader>
         <CardContent>

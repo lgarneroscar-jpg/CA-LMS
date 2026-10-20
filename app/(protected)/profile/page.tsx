@@ -7,6 +7,9 @@ import { ProfileEditor } from "@/components/profile/profile-editor";
 import { LivingWorkbookSection } from "@/components/profile/living-workbook-section";
 import { PortfolioEntryCard } from "@/components/portfolio/portfolio-entry-card";
 import { CONTENT_MODULE_COUNT } from "@/lib/program-completion";
+import { getPasswordStatus } from "@/lib/password-status";
+import { PasswordSettings } from "@/components/profile/password-settings";
+import { isAnswerSharingAvailable } from "@/lib/sharing";
 
 export default async function ProfilePage() {
   const profile = await requireRole(["student"]);
@@ -70,6 +73,11 @@ export default async function ProfilePage() {
   );
 
   const workbookPillars = await fetchWorkbookPortfolio(supabase, profile.id);
+  const passwordStatus = await getPasswordStatus();
+  const sharingAvailable = await isAnswerSharingAvailable(
+    supabase,
+    profile.institution_id
+  );
 
   const { data: institution } = profile.institution_id
     ? await supabase
@@ -101,6 +109,8 @@ export default async function ProfilePage() {
           <>
             {profile.program_completed_at ? (
               <PortfolioEntryCard unlocked />
+            ) : profile.is_demo ? (
+              <PortfolioEntryCard unlocked preview />
             ) : (
               <PortfolioEntryCard
                 unlocked={false}
@@ -110,11 +120,12 @@ export default async function ProfilePage() {
             )}
             <LivingWorkbookSection
               pillars={workbookPillars}
-              showVisibilityControls
+              visibility={sharingAvailable ? "controls" : "none"}
             />
           </>
         }
       />
+      <PasswordSettings hasPassword={passwordStatus.hasPassword} />
     </div>
   );
 }

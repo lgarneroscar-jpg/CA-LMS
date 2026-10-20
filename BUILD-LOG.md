@@ -1830,3 +1830,29 @@ Append-only chronological history. Every entry begins with an explicit update st
   · The INSERT policy does not check that the administration belongs to the student's own institution. A student could open an empty row in another institution's administration. Confirmed harmless to outcomes — the app always resolves administrations through `ensureAdministration` with the student's own `institution_id`, and outcome pairing requires submitted responses with composite scores — but it could inflate a "started" count.
 
 - Next step: Oscar adds the CNAME and the Supabase URL configuration; then marketing can begin, with video upload as the real schedule driver.
+
+---
+
+=== LOG UPDATED: 2026-10-05 (America/Detroit) — T3.3 CLOSED end to end. Squarespace linked. S10 auth lift + self-service recovery. S11 font fix ===
+
+- **T3.3 complete and verified.** `learn.corpacad.com` resolves via `d293cb136abe59c8.vercel-dns-017.com` to Vercel, serves the app over valid TLS. `NEXT_PUBLIC_SITE_URL` updated and — checked — the redeploy landed **9 seconds after** the env change, so it picked up the new value rather than baking in the old one.
+
+- **Squarespace linked, by me via the browser.** Added "Student Login" → `https://learn.corpacad.com/login` to Main Navigation on corpacad.com. It inserted **first**, ahead of Home, which made the site read as a product rather than a service; dragged it to last, before the "Book a Call" CTA. Set to open in the same tab — a new tab orphans the marketing page and makes signing out later look like it failed. Verified live: nav is Home · Program · Insights · About · For Institutions · Student Login · [Book a Call].
+  · **Squarespace publishes navigation changes immediately** — no draft step. Worth remembering before editing that site again.
+  · The marketing chain now runs end to end: corpacad.com → login → invite → password → assessment → programme.
+
+- **S10 (`c56b04b`) — auth pages lifted, recovery made self-service.** The login page had **no Campus Indigo at all** — a bare card on grey, which was fine as an internal URL and jarring as the first screen a student sees after leaving a polished marketing site.
+  · **Design change I pushed after Oscar asked how to remove himself from the loop:** a student who never accepted an invite and one who forgot their password need the *same thing* — a link landing on `/auth/set-password`. So three help cases collapsed into **one self-service action**, "Email me a sign-in link". Oscar is now only needed for the very first invite.
+  · Cursor verified against a genuinely unconfirmed invited user that `resetPasswordForEmail` reaches them — rather than assuming — so no switch to `signInWithOtp` was needed. The identical-confirmation behaviour is preserved, so nobody can probe which students are enrolled.
+  · **Corrected Oscar's suggestion** to change the email placeholder to `you@corpacad.com`: that is *his* domain, and no student has an address there — it would have created the confusion it was meant to prevent. Replaced with a neutral placeholder plus helper text, "Use the address your program used to enrol you", which answers the actual question a placeholder cannot.
+  · Contact constant: `academy@corpacad.com`.
+  · The one case deliberately left needing a human — "I don't know which email I'm enrolled with" — because answering it automatically would reveal who is enrolled.
+
+- **S11 (`6300b33`) — the one-character bug behind months of visual complaints.** `app/globals.css` line 10 read `--font-sans: var(--font-sans)` — self-referential, so Geist never loaded and **every piece of body text in the product had been falling back to a default serif since the beginning**, with `--font-heading` inheriting the break. Found by Cursor during the S10 review; I confirmed it against `layout.tsx`, which exposes the font as `--font-geist-sans`.
+  · **This is very likely what Oscar was reacting to on 2026-08-16:** *"it looks like a fancy slideshow between the covers of an old dusty book… we gotta update the bindings."* That triggered the entire E1.5/E1.6 reskin. The diagnosis was partly wrong — a reskin was applied to work around a CSS variable typo.
+  · Layout barely moved after the fix (module page +1px, workbook section 28px shorter), which confirms the E1 work was not tuned against the broken fallback. Station titles that were serif only by accident are now sans; left as-is, flagged for Oscar's eye since he is the one who found the original too bookish.
+  · Also in S11: single `PROGRAM_NAME` constant — "Corporate Academy Career Readiness Program" — replacing two competing names, now used on auth, portfolio, certificate and LinkedIn share copy; stated link lifetimes removed in favour of wording that cannot go stale.
+
+- **One open item, and one test that closes three questions.** Item 4 of S11 — which link form the live emails use — could not be settled: Resend is not signed in on this browser and Cursor's test sends went to `example.com`. Requesting a sign-in link on the live site for a real address simultaneously proves (a) Supabase accepts the `learn.corpacad.com` origin, (b) delivery to a real inbox works, and (c) whether the token-hash template is live. If the link reads `learn.corpacad.com/auth/callback?token_hash=…` the browser-binding limitation is gone and the fallback copy can be removed.
+
+- Next step: Oscar runs that one email test. Remaining Tier 3 is video upload only.

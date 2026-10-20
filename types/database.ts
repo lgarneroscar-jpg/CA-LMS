@@ -312,6 +312,7 @@ export type Database = {
           exercise_key: string;
           answer: Json;
           is_public: boolean;
+          institution_id: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -322,6 +323,7 @@ export type Database = {
           exercise_key: string;
           answer?: Json;
           is_public?: boolean;
+          institution_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -332,6 +334,7 @@ export type Database = {
           exercise_key?: string;
           answer?: Json;
           is_public?: boolean;
+          institution_id?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -348,6 +351,13 @@ export type Database = {
             columns: ["module_id"];
             isOneToOne: false;
             referencedRelation: "modules";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "exercise_answers_institution_id_fkey";
+            columns: ["institution_id"];
+            isOneToOne: false;
+            referencedRelation: "institutions";
             referencedColumns: ["id"];
           },
         ];
@@ -398,6 +408,7 @@ export type Database = {
           created_at: string;
           drip_type: string;
           id: string;
+          is_demo: boolean;
           is_pilot: boolean;
           is_fully_unlocked: boolean;
           logo_url: string | null;
@@ -412,6 +423,7 @@ export type Database = {
           created_at?: string;
           drip_type?: string;
           id?: string;
+          is_demo?: boolean;
           is_pilot?: boolean;
           is_fully_unlocked?: boolean;
           logo_url?: string | null;
@@ -426,6 +438,7 @@ export type Database = {
           created_at?: string;
           drip_type?: string;
           id?: string;
+          is_demo?: boolean;
           is_pilot?: boolean;
           is_fully_unlocked?: boolean;
           logo_url?: string | null;
@@ -568,6 +581,7 @@ export type Database = {
           linkedin_url: string | null;
           onboarding_complete: boolean;
           is_demo: boolean;
+          under_18_at_enrollment: boolean;
           portfolio_selection: Json;
           profile_picture_url: string | null;
           program_completed_at: string | null;
@@ -594,6 +608,7 @@ export type Database = {
           linkedin_url?: string | null;
           onboarding_complete?: boolean;
           is_demo?: boolean;
+          under_18_at_enrollment?: boolean;
           portfolio_selection?: Json;
           profile_picture_url?: string | null;
           program_completed_at?: string | null;
@@ -620,6 +635,7 @@ export type Database = {
           linkedin_url?: string | null;
           onboarding_complete?: boolean;
           is_demo?: boolean;
+          under_18_at_enrollment?: boolean;
           portfolio_selection?: Json;
           profile_picture_url?: string | null;
           program_completed_at?: string | null;
@@ -639,6 +655,27 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      preview_request_attempts: {
+        Row: {
+          created_at: string;
+          email_domain: string;
+          id: string;
+          ip: string;
+        };
+        Insert: {
+          created_at?: string;
+          email_domain: string;
+          id?: string;
+          ip: string;
+        };
+        Update: {
+          created_at?: string;
+          email_domain?: string;
+          id?: string;
+          ip?: string;
+        };
+        Relationships: [];
       };
       quiz_answers: {
         Row: {
@@ -859,6 +896,7 @@ export type Database = {
     Functions: {
       current_user_institution_id: { Args: Record<string, never>; Returns: string };
       current_user_role: { Args: Record<string, never>; Returns: string };
+      institution_of_user: { Args: { uid: string }; Returns: string };
       recalculate_cohort_ranks: {
         Args: { p_institution_id: string };
         Returns: undefined;

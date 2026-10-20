@@ -13,11 +13,20 @@ import { AuthHeading, SupportLink } from "@/components/auth/auth-shell";
 
 type View = "sign_in" | "forgot" | "reset_sent";
 
-function signInErrorMessage(message: string) {
-  if (message === "Invalid login credentials") {
+function signInErrorMessage(error: { code?: string; status?: number; name?: string }) {
+  if (error.code === "invalid_credentials") {
     return "That email and password don't match. Check for typos, or use “Email me a sign-in link” below — it works even if you've never set a password.";
   }
-  return message;
+  if (error.code === "email_not_confirmed") {
+    return "You haven't finished accepting your invite yet. Use “Email me a sign-in link” below to get in.";
+  }
+  if (error.code === "over_request_rate_limit" || error.status === 429) {
+    return "Too many sign-in attempts in a short time. Wait a minute and try again, or use “Email me a sign-in link” below.";
+  }
+  if (error.name === "AuthRetryableFetchError" || error.status === 0) {
+    return "We couldn't reach the server. Check your connection and try again.";
+  }
+  return "We couldn't sign you in just now. Please try again, or use “Email me a sign-in link” below.";
 }
 
 function NothingArrivedList() {
@@ -74,7 +83,7 @@ export function LoginForm() {
     });
 
     if (signInError) {
-      setError(signInErrorMessage(signInError.message));
+      setError(signInErrorMessage(signInError));
       setLoading(false);
       return;
     }

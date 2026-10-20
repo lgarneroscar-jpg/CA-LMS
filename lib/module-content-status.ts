@@ -3,30 +3,28 @@ export const QUIZ_QUESTIONS_PER_MODULE = 4;
 
 const PLACEHOLDER_URL_PATTERN = /placeholder/i;
 
+/** Stand-in videos used while recordings are produced. */
+const KNOWN_PLACEHOLDER_VIDEO_IDS = ["Z7dXDfqy0e8", "LXb3EKWsInQ"];
+
 export function isPlaceholderMediaUrl(url: string | null | undefined): boolean {
   if (!url) return true;
+  if (KNOWN_PLACEHOLDER_VIDEO_IDS.some((id) => url.includes(id))) return true;
   return PLACEHOLDER_URL_PATTERN.test(url);
 }
 
-/** When every module shares one URL it is almost certainly a seed placeholder. */
-export function getSharedVideoUrl(
-  videoUrls: (string | null | undefined)[]
-): string | null {
-  const nonNull = videoUrls.filter((url): url is string => Boolean(url));
-  if (nonNull.length === 0) return null;
-  const first = nonNull[0];
-  return nonNull.every((url) => url === first) ? first : null;
-}
-
+/**
+ * Per module: each real lesson is its own recording, so a URL that another
+ * content module also uses is still a stand-in. This lets modules go live one
+ * at a time as recordings land, with no deploy.
+ */
 export function videoContentIsPlaceholder(
   videoUrl: string | null | undefined,
   allModuleVideoUrls: (string | null | undefined)[]
 ): boolean {
   if (!videoUrl) return true;
   if (isPlaceholderMediaUrl(videoUrl)) return true;
-  const shared = getSharedVideoUrl(allModuleVideoUrls);
-  if (shared && videoUrl === shared) return true;
-  return false;
+  const uses = allModuleVideoUrls.filter((url) => url === videoUrl).length;
+  return uses > 1;
 }
 
 export function countPlaceholderVideos(

@@ -29,6 +29,8 @@ type ExerciseCardProps = {
   moduleSlug: string;
   initialSaved?: SavedExerciseAnswer;
   defaultAnswerVisibility: boolean | null;
+  /** False where answers can't be shared; every save is private and no toggle shows. */
+  sharingAvailable: boolean;
   /** True until the student has chosen a default visibility. */
   needsVisibilityChoice: boolean;
   /** Opens the shared prompt; resolves with the choice, or null if cancelled. */
@@ -46,6 +48,7 @@ export function ExerciseCard({
   moduleSlug,
   initialSaved,
   defaultAnswerVisibility,
+  sharingAvailable,
   needsVisibilityChoice,
   onRequestDefaultVisibility,
   onSaved,
@@ -57,7 +60,8 @@ export function ExerciseCard({
   const [visibilityOverride, setVisibilityOverride] = useState<boolean | null>(
     initialSaved?.is_public ?? null
   );
-  const isPublic = visibilityOverride ?? defaultAnswerVisibility ?? false;
+  const isPublic =
+    sharingAvailable && (visibilityOverride ?? defaultAnswerVisibility ?? false);
   const [updatedAt, setUpdatedAt] = useState<string | null>(
     initialSaved?.updated_at ?? null
   );
@@ -171,14 +175,21 @@ export function ExerciseCard({
           onChange={setDraft}
         />
 
-        <div className="flex flex-col gap-4 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between">
-          <label className={cn("flex items-center gap-2", isLift ? "lift-body" : "text-sm")}>
-            <Checkbox
-              checked={isPublic}
-              onCheckedChange={(checked) => setVisibilityOverride(checked === true)}
-            />
-            <span>Show on my profile when public</span>
-          </label>
+        <div
+          className={cn(
+            "flex flex-col gap-4 border-t border-border pt-4 sm:flex-row sm:items-center",
+            sharingAvailable ? "sm:justify-between" : "sm:justify-end"
+          )}
+        >
+          {sharingAvailable ? (
+            <label className={cn("flex items-center gap-2", isLift ? "lift-body" : "text-sm")}>
+              <Checkbox
+                checked={isPublic}
+                onCheckedChange={(checked) => setVisibilityOverride(checked === true)}
+              />
+              <span>Show on my profile when public</span>
+            </label>
+          ) : null}
 
           <div className="flex flex-col items-start gap-1 sm:items-end">
             <Button

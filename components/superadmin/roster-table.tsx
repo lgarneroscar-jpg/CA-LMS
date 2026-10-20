@@ -98,6 +98,12 @@ export function RosterTable({
             <tr>
               <th className="px-3 py-2 font-medium">Name</th>
               <th className="px-3 py-2 font-medium">Email</th>
+              <th
+                className="px-3 py-2 font-medium"
+                title="Under 18 at enrollment. Their written work needs a parent or guardian signature before it can be used in marketing."
+              >
+                Under 18
+              </th>
               <th className="px-3 py-2 font-medium">Status</th>
               <th className="px-3 py-2 font-medium">Last invite sent</th>
               <th className="px-3 py-2 font-medium">Actions</th>
@@ -116,6 +122,13 @@ export function RosterTable({
                 </td>
                 <td className="px-3 py-2 font-mono text-xs">
                   {student.email ?? "—"}
+                </td>
+                <td className="px-3 py-2">
+                  {student.under_18_at_enrollment ? (
+                    <Badge variant="secondary">Yes</Badge>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </td>
                 <td className="px-3 py-2">
                   <Badge

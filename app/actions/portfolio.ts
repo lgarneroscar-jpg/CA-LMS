@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { canOpenOwnPortfolio } from "@/lib/portfolio";
 import {
   parsePortfolioSelection,
   portfolioSelectionKey,
@@ -21,7 +22,7 @@ export async function savePortfolioSelection(
   keys: string[]
 ): Promise<SavePortfolioSelectionResult> {
   const profile = await requireRole(["student"]);
-  if (!profile.program_completed_at) {
+  if (!canOpenOwnPortfolio(profile)) {
     return {
       ok: false,
       error: "Your portfolio unlocks when you complete the program.",

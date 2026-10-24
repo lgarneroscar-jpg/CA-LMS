@@ -21,7 +21,14 @@
 --
 -- ORDER: must run AFTER the tables exist and AFTER the functions the policies
 -- call — current_user_role(), current_user_institution_id() (base schema) and
--- institution_of_user() (20240608000000). Numbered 20240619 so it lands last.
+-- institution_of_user() (20240608000000), and BEFORE 20240618000000.
+--
+-- The 20240617500000 number is deliberate. 20240618000000 rewrites auth.uid()
+-- as (select auth.uid()) across 22 policies, and drops the redundant
+-- exercise_answers SELECT policy. If this file ran after it, it would recreate
+-- those policies unwrapped and resurrect the dropped one, silently undoing
+-- both. Running first, it establishes the policies and 20240618 then corrects
+-- them, which is the same order live went through.
 --
 -- IDEMPOTENT: every policy is dropped and recreated, so re-running is safe.
 --
@@ -173,9 +180,9 @@ CREATE POLICY "Admins read institution exercise responses" ON public.exercise_re
 
 -- exercise_answers -----------------------------------------------------------
 -- NOTE: "Users read own or public exercise answers" is the narrowed remnant of
--- the original leaking policy. 20240618000000 drops it. It is reproduced here
--- only so this file matches live at time of generation; once 20240618 has been
--- applied to live, delete this block.
+-- the original leaking policy. It is reproduced here because it is still on
+-- live; 20240618000000, which runs after this file, is what drops it. Leave it
+-- here so the chain mirrors the real sequence.
 
 DROP POLICY IF EXISTS "Users read own or public cohort exercise answers" ON public.exercise_answers;
 CREATE POLICY "Users read own or public cohort exercise answers" ON public.exercise_answers AS PERMISSIVE FOR SELECT TO public

@@ -2,18 +2,17 @@ import type { AuthError } from "@supabase/supabase-js";
 import { SUPPORT_EMAIL } from "@/lib/constants";
 
 /**
- * Mirrors Supabase Auth → Password requirements for this project (minimum 10
- * characters; lowercase, uppercase, digit and symbol all required). If the
- * dashboard setting changes, change these to match, or the checklist will
- * promise something the server rejects.
+ * Mirrors Supabase Auth → Password requirements for this project, as set on
+ * 2026-10-20: minimum 12 characters, no required character classes.
+ * Leaked-password protection is on in the dashboard (HaveIBeenPwned); that
+ * rejection is mapped in passwordErrorMessage, not as a checklist row.
+ * If the dashboard setting changes, change this to match, or the checklist
+ * will promise something the server rejects.
  */
-export const PASSWORD_MIN_LENGTH = 10;
-
-/** The symbol set Supabase accepts for the "symbol" requirement. Spaces do not count. */
-const PASSWORD_SYMBOLS = "!@#$%^&*()_+-=[]{};'\\:\"|<>?,./`~";
+export const PASSWORD_MIN_LENGTH = 12;
 
 export type PasswordRule = {
-  id: "length" | "lower" | "upper" | "digit" | "symbol";
+  id: "length";
   label: string;
   test: (password: string) => boolean;
 };
@@ -23,14 +22,6 @@ export const PASSWORD_RULES: PasswordRule[] = [
     id: "length",
     label: `At least ${PASSWORD_MIN_LENGTH} characters`,
     test: (pw) => pw.length >= PASSWORD_MIN_LENGTH,
-  },
-  { id: "lower", label: "A lowercase letter (a–z)", test: (pw) => /[a-z]/.test(pw) },
-  { id: "upper", label: "An uppercase letter (A–Z)", test: (pw) => /[A-Z]/.test(pw) },
-  { id: "digit", label: "A number (0–9)", test: (pw) => /[0-9]/.test(pw) },
-  {
-    id: "symbol",
-    label: "A symbol, such as ! ? # @ or -",
-    test: (pw) => [...pw].some((c) => PASSWORD_SYMBOLS.includes(c)),
   },
 ];
 
@@ -49,21 +40,18 @@ type AuthErrorLike = Pick<AuthError, "message"> & {
 export function passwordErrorMessage(error: AuthErrorLike): string {
   const code = error.code;
 
-  if (code === "weak_password") {
+  if (code === "weak_password" || error.name === "AuthWeakPasswordError") {
     const reasons = error.reasons ?? [];
-    if (reasons.includes("pwned")) {
-      return "That password has appeared in a known data breach, so it isn't safe to use. Please choose a different one.";
+    const leaked =
+      reasons.includes("pwned") ||
+      /pwned|breach|leaked/i.test(error.message ?? "");
+    if (leaked) {
+      return "That password has appeared in a known data breach. Please choose another.";
     }
-    const parts: string[] = [];
     if (reasons.includes("length")) {
-      parts.push(`at least ${PASSWORD_MIN_LENGTH} characters`);
+      return `Your password needs at least ${PASSWORD_MIN_LENGTH} characters.`;
     }
-    if (reasons.includes("characters")) {
-      parts.push("a lowercase letter, an uppercase letter, a number and a symbol");
-    }
-    return parts.length > 0
-      ? `Your password needs ${parts.join(", and ")}.`
-      : "That password isn't strong enough. Check the requirements above and try again.";
+    return "That password isn't strong enough. Check the requirements above and try again.";
   }
   if (code === "same_password") {
     return "That's already your password. Choose a different one, or keep using the one you have.";

@@ -6,3 +6,10 @@
  * its students are excluded from every cross-institution figure.
  */
 export const PREVIEW_INSTITUTION_ID = "ffc653d3-da74-4141-afa5-be70d6eaf1c8";
+
+/**
+ * The older one-student fixture institution ("Demo Preview"). Distinct from
+ * PREVIEW_INSTITUTION_ID. Referenced by id so a rename cannot move seeded
+ * demo progress, which is what /api/create-user attaches.
+ */
+export const DEMO_PREVIEW_INSTITUTION_ID = "60b990ac-5f7e-4612-abcd-1e894aa85ad9";

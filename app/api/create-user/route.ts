@@ -1,6 +1,8 @@
 import { timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { PASSWORD_MIN_LENGTH } from "@/lib/password-policy";
+import { DEMO_PREVIEW_INSTITUTION_ID } from "@/lib/preview";
 import { provisionProfile } from "@/lib/provision-profile";
 
 export type CreateUserBody = {
@@ -56,16 +58,10 @@ async function seedDemoProgress(
   const p1 = modules?.find((m) => m.module_code === "P1");
   const p2 = modules?.find((m) => m.module_code === "P2");
 
-  const { data: institution } = await admin
-    .from("institutions")
-    .select("id")
-    .eq("name", "Demo Preview")
-    .maybeSingle();
-
   await admin
     .from("profiles")
     .update({
-      institution_id: institution?.id ?? null,
+      institution_id: DEMO_PREVIEW_INSTITUTION_ID,
       role: "student",
       is_demo: true,
       full_name: "Demo Student",
@@ -174,9 +170,9 @@ export async function POST(request: Request) {
     );
   }
 
-  if (password.length < 8) {
+  if (password.length < PASSWORD_MIN_LENGTH) {
     return NextResponse.json(
-      { error: "password must be at least 8 characters" },
+      { error: `password must be at least ${PASSWORD_MIN_LENGTH} characters` },
       { status: 400 }
     );
   }

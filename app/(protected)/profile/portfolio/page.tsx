@@ -16,6 +16,7 @@ import {
   PortfolioSelectionForm,
   type PortfolioSelectionGroup,
 } from "@/components/portfolio/portfolio-selection-form";
+import { isAnswerSharingAvailable } from "@/lib/sharing";
 
 function answerPreview(answer: ExerciseAnswerData): string {
   for (const value of Object.values(answer.values)) {
@@ -71,6 +72,10 @@ export default async function PortfolioSelectionPage() {
   }
 
   const isPreview = !profile.program_completed_at;
+  const sharingAvailable = await isAnswerSharingAvailable(
+    supabase,
+    profile.institution_id
+  );
   const pillars = await fetchWorkbookPortfolio(supabase, profile.id);
   const groups: PortfolioSelectionGroup[] = pillars.map((pillar) => ({
     pillar: pillar.pillar,
@@ -129,8 +134,10 @@ export default async function PortfolioSelectionPage() {
         <p className="font-semibold">This document leaves Corporate Academy.</p>
         <p className="mt-1">
           Once you save or send the PDF, anyone who has it can read everything you tick
-          below. It isn&apos;t affected by your public or private settings for your cohort,
-          and nothing is included unless you tick it here.
+          below.{" "}
+          {sharingAvailable
+            ? "It isn't affected by your public or private settings for your cohort, and nothing is included unless you tick it here."
+            : "Nothing is included unless you tick it here."}
         </p>
       </div>
 
